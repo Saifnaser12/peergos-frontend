@@ -9,6 +9,7 @@ import UAEComplianceDashboard from '@/components/compliance/uae-compliance-dashb
 import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
 import SetupWizard from '@/components/setup/setup-wizard';
 import CitValidator from '@/components/testing/cit-validator';
+import InvoiceScanner from '@/components/invoice/invoice-scanner';
 import { 
   Settings, 
   Shield, 
@@ -97,10 +98,11 @@ export default function Setup() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="wizard">Setup Wizard</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
             <TabsTrigger value="einvoicing">E-Invoicing</TabsTrigger>
+            <TabsTrigger value="scanner">Invoice OCR</TabsTrigger>
             <TabsTrigger value="testing">CIT Testing</TabsTrigger>
             <TabsTrigger value="company">Company</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
@@ -139,6 +141,11 @@ export default function Setup() {
                 <UBLInvoiceGenerator invoice={sampleInvoice} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Invoice Scanner & OCR */}
+          <TabsContent value="scanner" className="space-y-6">
+            <InvoiceScanner />
           </TabsContent>
 
           {/* CIT Testing & Validation */}
