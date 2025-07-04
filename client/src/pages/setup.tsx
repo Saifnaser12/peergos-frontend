@@ -10,6 +10,8 @@ import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
 import SetupWizard from '@/components/setup/setup-wizard';
 import CitValidator from '@/components/testing/cit-validator';
 import InvoiceScanner from '@/components/invoice/invoice-scanner';
+import SmartComplianceDashboard from '@/components/compliance/smart-compliance-dashboard';
+import SMESimplifiedDashboard from '@/components/sme/sme-simplified-dashboard';
 import { 
   Settings, 
   Shield, 
@@ -25,7 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Setup() {
-  const [activeTab, setActiveTab] = useState('wizard');
+  const [activeTab, setActiveTab] = useState('sme');
   const { user, company } = useAuth();
   const { language, setLanguage } = useLanguage();
 
@@ -98,16 +100,22 @@ export default function Setup() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="wizard">Setup Wizard</TabsTrigger>
-            <TabsTrigger value="compliance">Compliance</TabsTrigger>
-            <TabsTrigger value="einvoicing">E-Invoicing</TabsTrigger>
-            <TabsTrigger value="scanner">Invoice OCR</TabsTrigger>
-            <TabsTrigger value="testing">CIT Testing</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="sme">SME Hub</TabsTrigger>
+            <TabsTrigger value="wizard">Setup</TabsTrigger>
+            <TabsTrigger value="smart">Smart Compliance</TabsTrigger>
+            <TabsTrigger value="einvoicing">E-Invoice</TabsTrigger>
+            <TabsTrigger value="scanner">OCR</TabsTrigger>
+            <TabsTrigger value="testing">Testing</TabsTrigger>
             <TabsTrigger value="company">Company</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="preferences">Settings</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
           </TabsList>
+
+          {/* SME Simplified Dashboard */}
+          <TabsContent value="sme" className="space-y-6">
+            <SMESimplifiedDashboard />
+          </TabsContent>
 
           {/* Setup Wizard */}
           <TabsContent value="wizard" className="space-y-6">
@@ -120,9 +128,9 @@ export default function Setup() {
             />
           </TabsContent>
 
-          {/* UAE Compliance Dashboard */}
-          <TabsContent value="compliance" className="space-y-6">
-            <UAEComplianceDashboard />
+          {/* Smart Compliance Dashboard */}
+          <TabsContent value="smart" className="space-y-6">
+            <SmartComplianceDashboard />
           </TabsContent>
 
           {/* E-Invoicing UBL Generator */}
