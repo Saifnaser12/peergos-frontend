@@ -12,6 +12,9 @@ import CitValidator from '@/components/testing/cit-validator';
 import InvoiceScanner from '@/components/invoice/invoice-scanner';
 import SmartComplianceDashboard from '@/components/compliance/smart-compliance-dashboard';
 import SMESimplifiedDashboard from '@/components/sme/sme-simplified-dashboard';
+import EndToEndTaxWorkflow from '@/components/workflow/end-to-end-tax-workflow';
+import RevenueExpenseCategories from '@/components/financial/revenue-expense-categories';
+import BalanceSheetGenerator from '@/components/financial/balance-sheet-generator';
 import { 
   Settings, 
   Shield, 
@@ -27,7 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Setup() {
-  const [activeTab, setActiveTab] = useState('sme');
+  const [activeTab, setActiveTab] = useState('workflow');
   const { user, company } = useAuth();
   const { language, setLanguage } = useLanguage();
 
@@ -100,7 +103,8 @@ export default function Setup() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
+            <TabsTrigger value="workflow">Complete Workflow</TabsTrigger>
             <TabsTrigger value="sme">SME Hub</TabsTrigger>
             <TabsTrigger value="wizard">Setup</TabsTrigger>
             <TabsTrigger value="smart">Smart Compliance</TabsTrigger>
@@ -111,6 +115,11 @@ export default function Setup() {
             <TabsTrigger value="preferences">Settings</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
           </TabsList>
+
+          {/* Complete End-to-End Workflow */}
+          <TabsContent value="workflow" className="space-y-6">
+            <EndToEndTaxWorkflow />
+          </TabsContent>
 
           {/* SME Simplified Dashboard */}
           <TabsContent value="sme" className="space-y-6">
