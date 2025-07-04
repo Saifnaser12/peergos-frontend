@@ -196,11 +196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", async (req, res) => {
     try {
+      console.log('Received invoice data:', req.body);
       const validatedData = insertInvoiceSchema.parse(req.body);
+      console.log('Validated invoice data:', validatedData);
       const invoice = await storage.createInvoice(validatedData);
       res.status(201).json(invoice);
     } catch (error) {
-      res.status(400).json({ message: "Invalid invoice data" });
+      console.error('Invoice validation error:', error);
+      res.status(400).json({ message: "Invalid invoice data", error: error?.message || error });
     }
   });
 

@@ -141,6 +141,9 @@ export const insertTaxFilingSchema = createInsertSchema(taxFilings).omit({
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
   createdAt: true,
+}).extend({
+  issueDate: z.coerce.date(),
+  dueDate: z.coerce.date(),
 });
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
