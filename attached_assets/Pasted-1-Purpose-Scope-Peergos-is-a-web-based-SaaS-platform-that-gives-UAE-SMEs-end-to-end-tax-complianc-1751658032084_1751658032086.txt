@@ -1,0 +1,172 @@
+1 Purpose & Scope
+
+Peergos is a web-based SaaS platform that gives UAE SMEs end-to-end tax compliance:
+
+Corporate Income Tax (CIT) — auto-calculations incl. Small-Business Relief (0 % below AED 375 k)
+VAT (5 %) — return preparation, FTA e-filing, invoice XML & QR generation (Phase 2 ready)
+Accounting — simple revenue / expense entry → auto Income-Statement, Balance-Sheet, Cash-Flow
+FTA Integration — TRN lookup, tax-agent certificate uploads, submission status polling
+Transfer Pricing — placeholder UI (no uploads)
+Dashboard + Calendar — KPIs, deadline reminders (smart notifications)
+AI Assistant — GPT-like Q&A on UAE tax law, in English & Arabic
+Whitelabeling — logo + color overrides per tenant
+Multi-language — English (LTR) & Arabic (RTL) toggle
+Roles — Admin, Accountant, Assistant, SME Client
+Target devices: desktop & tablet (responsive).
+
+2 Tech Stack
+
+Layer	Choice
+Build tool	Vite 5 (ESM, Hot-Reload)
+Language	TypeScript 5
+Framework	React 18 + React-Router-DOM 6
+Package mgr	pnpm 8
+Styling	Tailwind 3 + @mui/material 5 (emotion engine)
+State	Context API + hooks
+Forms & validation	react-hook-form, zod
+Charts	chart.js + react-chartjs-2
+PDF	jspdf, jspdf-autotable
+Excel & CSV	exceljs, papaparse
+XML/QR	xml-crypto, qrcode
+i18n	react-i18next, i18next
+Auth placeholder	email / password only
+Tests	Jest 29, React-Testing-Library, Playwright 1.53
+Lint/Format	ESLint 8, Prettier 3
+Deployment	Replit (dev) • Vercel (prod)
+3 Folder & File Layout
+
+peergos-fixed/
+├─ package.json            ← scripts: dev, build, test, lint
+├─ pnpm-lock.yaml
+├─ vite.config.ts          ← full config below
+├─ tailwind.config.js
+├─ tsconfig.json
+├─ .replit                 ← run = "cd peergos-fixed && pnpm run dev"
+│
+├─ public/
+│   ├─ images/…            ← 100+ PNG slides for landing page
+│   └─ locales/seed.json   ← copied to /src/locales on first run
+│
+└─ src/
+    ├─ main.tsx            ← ReactDOM.createRoot + BrowserRouter
+    ├─ App.tsx             ← Layout + Suspense routes
+    │
+    ├─ pages/
+    │   ├─ Dashboard.tsx
+    │   ├─ Setup.tsx
+    │   ├─ Accounting.tsx
+    │   ├─ CIT.tsx
+    │   ├─ VAT.tsx
+    │   ├─ Financials.tsx
+    │   ├─ TransferPricing.tsx
+    │   ├─ SimpleInvoice.tsx
+    │   ├─ Assistant.tsx
+    │   ├─ Admin.tsx
+    │   └─ Calendar.tsx
+    │
+    ├─ components/
+    │   ├─ common/…        ← Button, Card, Grid, Input, Navbar, Sidebar, Layout
+    │   ├─ accounting/…    ← ExpenseModal, RevenueModal, InvoiceModal, Summary
+    │   ├─ financials/…    ← IncomeStatement, BalanceSheet, CashFlowStatement
+    │   ├─ invoice/…       ← InvoiceForm, InvoiceDetail, Dashboard
+    │   ├─ transferPricing/…
+    │   └─ misc/…          ← ErrorBoundary, Spinner, SkeletonLoader, Tooltip
+    │
+    ├─ context/
+    │   ├─ AppContext.tsx
+    │   ├─ FinanceContext.tsx
+    │   ├─ TaxContext.tsx
+    │   ├─ NotificationContext.tsx
+    │   ├─ ThemeContext.tsx
+    │   └─ … (12 total)
+    │
+    ├─ hooks/
+    │   ├─ useAsync.ts
+    │   ├─ useDebounce.ts
+    │   ├─ useForm.ts
+    │   ├─ useBackup.ts
+    │   └─ useTransferPricing.ts
+    │
+    ├─ services/
+    │   ├─ ftaService.ts          ← Axios wrapper w/ token auth
+    │   ├─ invoice.service.ts
+    │   ├─ transferPricingService.ts
+    │   └─ IntegrationAPI.ts      ← Omnivore POS stub
+    │
+    ├─ utils/
+    │   ├─ calculations.ts        ← VAT, CIT, TP math
+    │   ├─ ftaPdfExport.ts
+    │   ├─ invoiceXml.ts
+    │   ├─ freeZoneComplianceReport.ts
+    │   └─ … (45 helpers total)
+    │
+    ├─ locales/
+    │   ├─ en.json
+    │   └─ ar.json
+    │
+    └─ tests/
+        ├─ unit (Jest)     ← *.test.ts(x)
+        └─ e2e (Playwright)← filing.spec.ts
+4 Vite configuration (drop-in)
+
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  base: '/',
+  plugins: [react()],
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+    process: { env: {}, browser: true },
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 5000,
+    strictPort: false,
+    hmr: { overlay: false },
+    fs: { allow: ['..'] },
+    allowedHosts: 'all',     // ← IMPORTANT for *.replit.dev
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          i18n: ['react-i18next', 'i18next'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+  },
+});
+5 Scripts (package.json)
+
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5000",
+    "lint": "eslint 'src/**/*.{ts,tsx}' --max-warnings=0",
+    "test": "jest",
+    "e2e": "playwright test"
+  }
+}
+6 Run & Install commands for .replit
+
+run = "cd peergos-fixed && pnpm run dev"
+install = "cd peergos-fixed && pnpm install --no-frozen-lockfile"
+7 Key functional notes
+
+CIT & VAT engines – exported from utils/calculations.ts; use zod schemas for validation.
+SmartReminders – cron in NotificationContext checks deadlines daily, triggers toast.
+BackupService – zips JSON state to localStorage or download.
+QFZP logic – if Free-Zone toggle + eligible income < AED 3 m, CIT stays 0 %.
+RTL – Tailwind’s rtl: variant enabled; LanguageSwitcher flips dir="rtl".
+Security – crypto-js encrypts local backups; xml-crypto signs invoice XML.
+Tests – sample unit tests exist; e2e script logs in, creates VAT filing draft, submits.
