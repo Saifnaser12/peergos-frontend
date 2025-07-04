@@ -136,6 +136,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 export const insertTaxFilingSchema = createInsertSchema(taxFilings).omit({
   id: true,
   createdAt: true,
+}).extend({
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  dueDate: z.coerce.date(),
+  submittedAt: z.coerce.date().optional(),
 });
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
@@ -149,6 +154,8 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
+}).extend({
+  scheduledFor: z.coerce.date().optional(),
 });
 
 export const insertKpiDataSchema = createInsertSchema(kpiData).omit({

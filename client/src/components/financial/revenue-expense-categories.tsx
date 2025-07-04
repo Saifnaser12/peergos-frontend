@@ -79,6 +79,8 @@ export default function RevenueExpenseCategories() {
     enabled: !!company?.id,
   });
 
+  const typedTransactions = transactions as any[];
+
   // Create transaction mutation
   const createTransactionMutation = useMutation({
     mutationFn: async (transactionData: any) => {
@@ -161,19 +163,19 @@ export default function RevenueExpenseCategories() {
   };
 
   const calculateTotals = () => {
-    const revenue = transactions
+    const revenue = typedTransactions
       .filter((t: any) => t.type === 'REVENUE')
       .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
     
-    const expenses = transactions
+    const expenses = typedTransactions
       .filter((t: any) => t.type === 'EXPENSE')
       .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
 
-    const outputVAT = transactions
+    const outputVAT = typedTransactions
       .filter((t: any) => t.type === 'REVENUE')
       .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || 0), 0);
 
-    const inputVAT = transactions
+    const inputVAT = typedTransactions
       .filter((t: any) => t.type === 'EXPENSE')
       .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || 0), 0);
 
@@ -190,7 +192,7 @@ export default function RevenueExpenseCategories() {
     const headers = ['Date', 'Type', 'Category', 'Description', 'Amount (AED)', 'VAT Amount (AED)', 'Reference'];
     const csvContent = [
       headers.join(','),
-      ...transactions.map(t => [
+      ...typedTransactions.map(t => [
         t.date,
         t.type,
         `"${t.category}"`,
@@ -356,11 +358,11 @@ export default function RevenueExpenseCategories() {
       {/* Transaction List */}
       <Card>
         <CardHeader>
-          <CardTitle>Transaction History ({transactions.length} entries)</CardTitle>
+          <CardTitle>Transaction History ({typedTransactions.length} entries)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {transactions.map((transaction) => (
+            {typedTransactions.map((transaction: any) => (
               <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -390,7 +392,7 @@ export default function RevenueExpenseCategories() {
               </div>
             ))}
             
-            {transactions.length === 0 && (
+            {typedTransactions.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 No transactions added yet. Start by adding your first revenue or expense entry.
               </div>

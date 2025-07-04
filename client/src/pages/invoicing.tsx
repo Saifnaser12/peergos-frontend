@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import InvoiceForm from '@/components/invoice/invoice-form';
+import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
 import { Plus, Receipt, Search, Download, Eye, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/i18n';
@@ -16,25 +17,110 @@ export default function Invoicing() {
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const { company } = useAuth();
   const { language, t } = useLanguage();
 
-  const { data: invoices, isLoading } = useQuery({
+  const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['/api/invoices', { companyId: company?.id }],
     enabled: !!company?.id,
   });
 
-  const filteredInvoices = invoices?.filter(invoice => {
+  const typedInvoices = invoices as any[];
+
+  // PDF Download function
+  const downloadInvoicePDF = (invoice: any) => {
+    const printContent = generateInvoicePrintHTML(invoice);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const generateInvoicePrintHTML = (invoice: any) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice ${invoice.invoiceNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .invoice-details { margin-bottom: 20px; }
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .items-table th { background-color: #f2f2f2; }
+          .totals { text-align: right; }
+          .company-info { margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>TAX INVOICE</h1>
+          <p>Invoice No: ${invoice.invoiceNumber}</p>
+          <p>Date: ${new Date(invoice.issueDate).toLocaleDateString()}</p>
+        </div>
+        
+        <div class="company-info">
+          <h3>${company?.name || 'Demo Company'}</h3>
+          <p>TRN: ${company?.trn || 'TRN123456789'}</p>
+          <p>${company?.address || 'Address not available'}</p>
+        </div>
+        
+        <div class="invoice-details">
+          <h4>Bill To:</h4>
+          <p><strong>${invoice.clientName}</strong></p>
+          <p>${invoice.clientAddress}</p>
+          ${invoice.clientEmail ? `<p>Email: ${invoice.clientEmail}</p>` : ''}
+        </div>
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>VAT Rate</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoice.items.map((item: any) => `
+              <tr>
+                <td>${item.description}</td>
+                <td>${item.quantity}</td>
+                <td>AED ${item.unitPrice}</td>
+                <td>${(item.vatRate * 100).toFixed(1)}%</td>
+                <td>AED ${item.total}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="totals">
+          <p><strong>Subtotal: AED ${invoice.subtotal}</strong></p>
+          <p><strong>VAT: AED ${invoice.vatAmount}</strong></p>
+          <p><strong>Total: AED ${invoice.total}</strong></p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const filteredInvoices = typedInvoices?.filter((invoice: any) => {
     const matchesSearch = invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === 'all' || invoice.status.toLowerCase() === activeTab;
     return matchesSearch && matchesTab;
   }) || [];
 
-  const totalInvoiced = invoices?.reduce((sum, inv) => sum + parseFloat(inv.total), 0) || 0;
-  const paidInvoices = invoices?.filter(inv => inv.status === 'PAID') || [];
-  const totalPaid = paidInvoices.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
-  const overdueInvoices = invoices?.filter(inv => 
+  const totalInvoiced = typedInvoices?.reduce((sum: number, inv: any) => sum + parseFloat(inv.total), 0) || 0;
+  const paidInvoices = typedInvoices?.filter((inv: any) => inv.status === 'PAID') || [];
+  const totalPaid = paidInvoices.reduce((sum: number, inv: any) => sum + parseFloat(inv.total), 0);
+  const overdueInvoices = typedInvoices?.filter((inv: any) => 
     inv.status === 'OVERDUE' || (inv.status === 'SENT' && new Date(inv.dueDate) < new Date())
   ) || [];
 
@@ -207,13 +293,31 @@ export default function Invoicing() {
                             </div>
                             
                             <div className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setSelectedInvoice(invoice)}
+                                title="Preview Invoice"
+                              >
                                 <Eye size={14} />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingInvoice(invoice);
+                                  setShowInvoiceForm(true);
+                                }}
+                                title="Edit Invoice"
+                              >
                                 <Edit size={14} />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => downloadInvoicePDF(invoice)}
+                                title="Download PDF"
+                              >
                                 <Download size={14} />
                               </Button>
                             </div>
@@ -233,7 +337,19 @@ export default function Invoicing() {
       {showInvoiceForm && (
         <InvoiceForm
           isOpen={showInvoiceForm}
-          onClose={() => setShowInvoiceForm(false)}
+          onClose={() => {
+            setShowInvoiceForm(false);
+            setEditingInvoice(null);
+          }}
+          invoice={editingInvoice}
+        />
+      )}
+
+      {/* Invoice Preview Modal */}
+      {selectedInvoice && (
+        <UBLInvoiceGenerator
+          invoice={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
         />
       )}
     </div>

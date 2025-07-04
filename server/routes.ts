@@ -92,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Validated data:', validatedData);
       const transaction = await storage.createTransaction(validatedData);
       res.status(201).json(transaction);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Transaction validation error:', error);
       res.status(400).json({ message: "Invalid transaction data", error: error?.message || error });
     }
@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Validated invoice data:', validatedData);
       const invoice = await storage.createInvoice(validatedData);
       res.status(201).json(invoice);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Invoice validation error:', error);
       res.status(400).json({ message: "Invalid invoice data", error: error?.message || error });
     }
