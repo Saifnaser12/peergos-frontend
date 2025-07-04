@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
 
 // UAE FTA Standard Chart of Accounts for SMEs
 export const REVENUE_CATEGORIES = [
@@ -56,7 +60,10 @@ interface TransactionEntry {
 }
 
 export default function RevenueExpenseCategories() {
-  const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
+  const { company, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const [newTransaction, setNewTransaction] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -66,8 +73,64 @@ export default function RevenueExpenseCategories() {
     reference: ''
   });
 
+  // Fetch transactions from API
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['/api/transactions', { companyId: company?.id }],
+    enabled: !!company?.id,
+  });
+
+  // Create transaction mutation
+  const createTransactionMutation = useMutation({
+    mutationFn: async (transactionData: any) => {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create transaction');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({
+        title: "Success",
+        description: "Transaction added successfully",
+      });
+      
+      // Reset form
+      setNewTransaction({
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        category: '',
+        amount: 0,
+        type: 'revenue',
+        reference: ''
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to create transaction. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addTransaction = () => {
-    if (!newTransaction.description || !newTransaction.category || newTransaction.amount <= 0) return;
+    if (!newTransaction.description || !newTransaction.category || newTransaction.amount <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const category = newTransaction.type === 'revenue' 
       ? REVENUE_CATEGORIES.find(c => c.code === newTransaction.category)
@@ -77,50 +140,42 @@ export default function RevenueExpenseCategories() {
 
     const vatAmount = (newTransaction.amount * category.vatRate) / 100;
     
-    const transaction: TransactionEntry = {
-      id: Date.now().toString(),
-      date: newTransaction.date,
-      description: newTransaction.description,
+    const transactionData = {
+      companyId: company?.id,
+      type: newTransaction.type.toUpperCase(), // REVENUE or EXPENSE
       category: `${category.code} - ${category.name}`,
-      amount: newTransaction.amount,
-      vatAmount: vatAmount,
-      type: newTransaction.type,
-      reference: newTransaction.reference
+      description: newTransaction.description,
+      amount: newTransaction.amount.toString(),
+      vatAmount: vatAmount.toString(),
+      transactionDate: new Date(newTransaction.date).toISOString(),
+      attachments: [],
+      status: 'PROCESSED',
+      createdBy: user?.id
     };
 
-    setTransactions([...transactions, transaction]);
-    
-    // Reset form
-    setNewTransaction({
-      date: new Date().toISOString().split('T')[0],
-      description: '',
-      category: '',
-      amount: 0,
-      type: 'revenue',
-      reference: ''
-    });
+    createTransactionMutation.mutate(transactionData);
   };
 
-  const removeTransaction = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+  const removeTransaction = (id: number) => {
+    // Add delete mutation here if needed
   };
 
   const calculateTotals = () => {
     const revenue = transactions
-      .filter(t => t.type === 'revenue')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter((t: any) => t.type === 'REVENUE')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
     
     const expenses = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter((t: any) => t.type === 'EXPENSE')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
 
     const outputVAT = transactions
-      .filter(t => t.type === 'revenue')
-      .reduce((sum, t) => sum + t.vatAmount, 0);
+      .filter((t: any) => t.type === 'REVENUE')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || 0), 0);
 
     const inputVAT = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.vatAmount, 0);
+      .filter((t: any) => t.type === 'EXPENSE')
+      .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || 0), 0);
 
     const netIncome = revenue - expenses;
     const netVAT = outputVAT - inputVAT;
