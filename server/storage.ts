@@ -1,8 +1,9 @@
 import { 
-  users, companies, transactions, taxFilings, invoices, notifications, kpiData,
+  users, companies, transactions, taxFilings, invoices, notifications, creditNotes, debitNotes, kpiData,
   type User, type InsertUser, type Company, type InsertCompany,
   type Transaction, type InsertTransaction, type TaxFiling, type InsertTaxFiling,
   type Invoice, type InsertInvoice, type Notification, type InsertNotification,
+  type CreditNote, type InsertCreditNote, type DebitNote, type InsertDebitNote,
   type KpiData, type InsertKpiData
 } from "@shared/schema";
 import { db } from "./db";
@@ -38,6 +39,18 @@ export interface IStorage {
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: number, updates: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   
+  // Credit Notes
+  getCreditNotes(companyId: number): Promise<CreditNote[]>;
+  getCreditNote(id: number): Promise<CreditNote | undefined>;
+  createCreditNote(creditNote: InsertCreditNote): Promise<CreditNote>;
+  updateCreditNote(id: number, updates: Partial<InsertCreditNote>): Promise<CreditNote | undefined>;
+  
+  // Debit Notes
+  getDebitNotes(companyId: number): Promise<DebitNote[]>;
+  getDebitNote(id: number): Promise<DebitNote | undefined>;
+  createDebitNote(debitNote: InsertDebitNote): Promise<DebitNote>;
+  updateDebitNote(id: number, updates: Partial<InsertDebitNote>): Promise<DebitNote | undefined>;
+  
   // Notifications
   getNotifications(companyId: number, userId?: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -47,6 +60,10 @@ export interface IStorage {
   getKpiData(companyId: number, period?: string): Promise<KpiData[]>;
   createKpiData(data: InsertKpiData): Promise<KpiData>;
   updateKpiData(companyId: number, period: string, updates: Partial<InsertKpiData>): Promise<KpiData | undefined>;
+  
+  // Automatic Tax Calculations
+  calculateAndUpdateTaxes(companyId: number, period?: string): Promise<{ vatDue: number; citDue: number; netIncome: number }>;
+  recalculateFinancials(companyId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,6 +137,10 @@ export class DatabaseStorage implements IStorage {
       .insert(transactions)
       .values(insertTransaction)
       .returning();
+    
+    // Automatically recalculate financials after creating transaction
+    await this.recalculateFinancials(insertTransaction.companyId);
+    
     return transaction;
   }
 
@@ -178,6 +199,10 @@ export class DatabaseStorage implements IStorage {
       .insert(invoices)
       .values(insertInvoice)
       .returning();
+    
+    // Automatically recalculate financials after creating invoice
+    await this.recalculateFinancials(insertInvoice.companyId);
+    
     return invoice;
   }
 
@@ -188,6 +213,68 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invoices.id, id))
       .returning();
     return invoice || undefined;
+  }
+
+  // Credit Notes methods
+  async getCreditNotes(companyId: number): Promise<CreditNote[]> {
+    return await db.select().from(creditNotes).where(eq(creditNotes.companyId, companyId));
+  }
+
+  async getCreditNote(id: number): Promise<CreditNote | undefined> {
+    const [creditNote] = await db.select().from(creditNotes).where(eq(creditNotes.id, id));
+    return creditNote || undefined;
+  }
+
+  async createCreditNote(insertCreditNote: InsertCreditNote): Promise<CreditNote> {
+    const [creditNote] = await db
+      .insert(creditNotes)
+      .values(insertCreditNote)
+      .returning();
+    
+    // Automatically recalculate financials after creating credit note
+    await this.recalculateFinancials(insertCreditNote.companyId);
+    
+    return creditNote;
+  }
+
+  async updateCreditNote(id: number, updates: Partial<InsertCreditNote>): Promise<CreditNote | undefined> {
+    const [creditNote] = await db
+      .update(creditNotes)
+      .set(updates)
+      .where(eq(creditNotes.id, id))
+      .returning();
+    return creditNote || undefined;
+  }
+
+  // Debit Notes methods
+  async getDebitNotes(companyId: number): Promise<DebitNote[]> {
+    return await db.select().from(debitNotes).where(eq(debitNotes.companyId, companyId));
+  }
+
+  async getDebitNote(id: number): Promise<DebitNote | undefined> {
+    const [debitNote] = await db.select().from(debitNotes).where(eq(debitNotes.id, id));
+    return debitNote || undefined;
+  }
+
+  async createDebitNote(insertDebitNote: InsertDebitNote): Promise<DebitNote> {
+    const [debitNote] = await db
+      .insert(debitNotes)
+      .values(insertDebitNote)
+      .returning();
+    
+    // Automatically recalculate financials after creating debit note
+    await this.recalculateFinancials(insertDebitNote.companyId);
+    
+    return debitNote;
+  }
+
+  async updateDebitNote(id: number, updates: Partial<InsertDebitNote>): Promise<DebitNote | undefined> {
+    const [debitNote] = await db
+      .update(debitNotes)
+      .set(updates)
+      .where(eq(debitNotes.id, id))
+      .returning();
+    return debitNote || undefined;
   }
 
   async getNotifications(companyId: number, userId?: number): Promise<Notification[]> {
@@ -244,6 +331,96 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning();
     return data || undefined;
+  }
+
+  // Automatic Tax Calculations
+  async calculateAndUpdateTaxes(companyId: number, period?: string): Promise<{ vatDue: number; citDue: number; netIncome: number }> {
+    const currentPeriod = period || new Date().toISOString().slice(0, 7); // YYYY-MM format
+    
+    // Get all financial data for calculations
+    const allTransactions = await db.select().from(transactions).where(eq(transactions.companyId, companyId));
+    const allInvoices = await db.select().from(invoices).where(eq(invoices.companyId, companyId));
+    const allCreditNotes = await db.select().from(creditNotes).where(eq(creditNotes.companyId, companyId));
+    const allDebitNotes = await db.select().from(debitNotes).where(eq(debitNotes.companyId, companyId));
+    
+    // Calculate revenue from invoices and transactions
+    const invoiceRevenue = allInvoices.reduce((sum, inv) => sum + parseFloat(inv.total.toString()), 0);
+    const transactionRevenue = allTransactions
+      .filter(t => t.type === 'REVENUE')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    
+    // Calculate adjustments from credit/debit notes
+    const creditAdjustments = allCreditNotes.reduce((sum, cn) => sum - parseFloat(cn.total.toString()), 0);
+    const debitAdjustments = allDebitNotes.reduce((sum, dn) => sum + parseFloat(dn.total.toString()), 0);
+    
+    // Calculate expenses
+    const expenses = allTransactions
+      .filter(t => t.type === 'EXPENSE')
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    
+    // Calculate totals
+    const totalRevenue = invoiceRevenue + transactionRevenue + creditAdjustments + debitAdjustments;
+    const netIncome = totalRevenue - expenses;
+    
+    // Calculate VAT (5% UAE rate)
+    const outputVAT = allInvoices.reduce((sum, inv) => sum + parseFloat(inv.vatAmount.toString()), 0) +
+                     allTransactions.filter(t => t.type === 'REVENUE').reduce((sum, t) => sum + parseFloat(t.vatAmount?.toString() || '0'), 0) +
+                     allDebitNotes.reduce((sum, dn) => sum + parseFloat(dn.vatAmount.toString()), 0);
+    
+    const inputVAT = allTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + parseFloat(t.vatAmount?.toString() || '0'), 0) +
+                    allCreditNotes.reduce((sum, cn) => sum + parseFloat(cn.vatAmount.toString()), 0);
+    
+    const vatDue = Math.max(0, outputVAT - inputVAT);
+    
+    // Calculate CIT (UAE Corporate Income Tax)
+    // Small Business Relief: 0% on first AED 375,000
+    // Standard rate: 9% on excess
+    let citDue = 0;
+    if (netIncome > 375000) {
+      citDue = (netIncome - 375000) * 0.09;
+    }
+    
+    // Update or create KPI data
+    const existingKpi = await db.select().from(kpiData).where(and(
+      eq(kpiData.companyId, companyId),
+      eq(kpiData.period, currentPeriod)
+    ));
+    
+    const kpiValues = {
+      companyId,
+      period: currentPeriod,
+      revenue: totalRevenue.toString(),
+      expenses: expenses.toString(),
+      netIncome: netIncome.toString(),
+      vatDue: vatDue.toString(),
+      citDue: citDue.toString()
+    };
+    
+    if (existingKpi.length > 0) {
+      await db.update(kpiData)
+        .set(kpiValues)
+        .where(and(
+          eq(kpiData.companyId, companyId),
+          eq(kpiData.period, currentPeriod)
+        ));
+    } else {
+      await db.insert(kpiData).values(kpiValues);
+    }
+    
+    return { vatDue, citDue, netIncome };
+  }
+
+  async recalculateFinancials(companyId: number): Promise<void> {
+    // Recalculate for current period
+    await this.calculateAndUpdateTaxes(companyId);
+    
+    // Also recalculate for the last 12 months to ensure historical accuracy
+    const currentDate = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const period = date.toISOString().slice(0, 7);
+      await this.calculateAndUpdateTaxes(companyId, period);
+    }
   }
 }
 

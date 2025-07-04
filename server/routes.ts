@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema } from "@shared/schema";
+import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -204,6 +204,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Invoice validation error:', error);
       res.status(400).json({ message: "Invalid invoice data", error: error?.message || error });
+    }
+  });
+
+  // Credit Notes routes
+  app.get("/api/credit-notes", async (req, res) => {
+    try {
+      const companyId = parseInt(req.query.companyId as string) || 1;
+      const creditNotes = await storage.getCreditNotes(companyId);
+      res.json(creditNotes);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/credit-notes", async (req, res) => {
+    try {
+      console.log('Received credit note data:', req.body);
+      const validatedData = insertCreditNoteSchema.parse(req.body);
+      console.log('Validated credit note data:', validatedData);
+      const creditNote = await storage.createCreditNote(validatedData);
+      res.status(201).json(creditNote);
+    } catch (error: any) {
+      console.error('Credit note validation error:', error);
+      res.status(400).json({ message: "Invalid credit note data", error: error?.message || error });
+    }
+  });
+
+  // Debit Notes routes
+  app.get("/api/debit-notes", async (req, res) => {
+    try {
+      const companyId = parseInt(req.query.companyId as string) || 1;
+      const debitNotes = await storage.getDebitNotes(companyId);
+      res.json(debitNotes);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/debit-notes", async (req, res) => {
+    try {
+      console.log('Received debit note data:', req.body);
+      const validatedData = insertDebitNoteSchema.parse(req.body);
+      console.log('Validated debit note data:', validatedData);
+      const debitNote = await storage.createDebitNote(validatedData);
+      res.status(201).json(debitNote);
+    } catch (error: any) {
+      console.error('Debit note validation error:', error);
+      res.status(400).json({ message: "Invalid debit note data", error: error?.message || error });
+    }
+  });
+
+  // Automatic Tax Calculation routes
+  app.post("/api/calculate-taxes", async (req, res) => {
+    try {
+      const companyId = parseInt(req.body.companyId) || 1;
+      const period = req.body.period;
+      
+      const calculations = await storage.calculateAndUpdateTaxes(companyId, period);
+      res.json(calculations);
+    } catch (error) {
+      console.error('Tax calculation error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/recalculate-financials", async (req, res) => {
+    try {
+      const companyId = parseInt(req.body.companyId) || 1;
+      
+      await storage.recalculateFinancials(companyId);
+      res.json({ message: "Financial calculations updated successfully" });
+    } catch (error) {
+      console.error('Financial recalculation error:', error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 

@@ -102,6 +102,46 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Credit Notes
+export const creditNotes = pgTable("credit_notes", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  creditNoteNumber: text("credit_note_number").notNull(),
+  originalInvoiceId: integer("original_invoice_id"),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email"),
+  clientAddress: text("client_address"),
+  issueDate: timestamp("issue_date").notNull(),
+  reason: text("reason").notNull(),
+  items: json("items").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("DRAFT"),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Debit Notes
+export const debitNotes = pgTable("debit_notes", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  debitNoteNumber: text("debit_note_number").notNull(),
+  originalInvoiceId: integer("original_invoice_id"),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email"),
+  clientAddress: text("client_address"),
+  issueDate: timestamp("issue_date").notNull(),
+  reason: text("reason").notNull(),
+  items: json("items").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("DRAFT"),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // KPI/Dashboard Data
 export const kpiData = pgTable("kpi_data", {
   id: serial("id").primaryKey(),
@@ -158,6 +198,20 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   scheduledFor: z.coerce.date().optional(),
 });
 
+export const insertCreditNoteSchema = createInsertSchema(creditNotes).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  issueDate: z.coerce.date(),
+});
+
+export const insertDebitNoteSchema = createInsertSchema(debitNotes).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  issueDate: z.coerce.date(),
+});
+
 export const insertKpiDataSchema = createInsertSchema(kpiData).omit({
   id: true,
   calculatedAt: true,
@@ -176,5 +230,9 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type CreditNote = typeof creditNotes.$inferSelect;
+export type InsertCreditNote = z.infer<typeof insertCreditNoteSchema>;
+export type DebitNote = typeof debitNotes.$inferSelect;
+export type InsertDebitNote = z.infer<typeof insertDebitNoteSchema>;
 export type KpiData = typeof kpiData.$inferSelect;
 export type InsertKpiData = z.infer<typeof insertKpiDataSchema>;
