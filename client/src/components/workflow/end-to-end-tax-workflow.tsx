@@ -349,7 +349,7 @@ export default function EndToEndTaxWorkflow() {
       {/* Workflow Steps */}
       <div className="space-y-4">
         {workflowSteps.map((step, index) => (
-          <Card key={step.id} className={currentStep === step.id ? 'border-blue-500' : ''}>
+          <Card key={step.id} className={currentStep === step.id ? 'border-blue-500 bg-blue-50' : 'cursor-pointer hover:bg-gray-50'} onClick={() => setCurrentStep(step.id)}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -359,6 +359,9 @@ export default function EndToEndTaxWorkflow() {
                     <Badge variant="outline" className="text-xs">
                       Depends on: {step.dependencies.join(', ')}
                     </Badge>
+                  )}
+                  {currentStep === step.id && (
+                    <Badge className="bg-blue-600">Active</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
