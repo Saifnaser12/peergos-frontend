@@ -5,6 +5,8 @@ import {
   type Invoice, type InsertInvoice, type Notification, type InsertNotification,
   type KpiData, type InsertKpiData
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User management
@@ -45,6 +47,204 @@ export interface IStorage {
   getKpiData(companyId: number, period?: string): Promise<KpiData[]>;
   createKpiData(data: InsertKpiData): Promise<KpiData>;
   updateKpiData(companyId: number, period: string, updates: Partial<InsertKpiData>): Promise<KpiData | undefined>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async getCompany(id: number): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company || undefined;
+  }
+
+  async createCompany(insertCompany: InsertCompany): Promise<Company> {
+    const [company] = await db
+      .insert(companies)
+      .values(insertCompany)
+      .returning();
+    return company;
+  }
+
+  async updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company | undefined> {
+    const [company] = await db
+      .update(companies)
+      .set(updates)
+      .where(eq(companies.id, id))
+      .returning();
+    return company || undefined;
+  }
+
+  async getTransactions(companyId: number, filters?: { type?: string; startDate?: Date; endDate?: Date }): Promise<Transaction[]> {
+    const conditions = [eq(transactions.companyId, companyId)];
+    
+    if (filters?.type) {
+      conditions.push(eq(transactions.type, filters.type));
+    }
+    
+    const results = await db.select().from(transactions).where(and(...conditions));
+    return results;
+  }
+
+  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await db
+      .insert(transactions)
+      .values(insertTransaction)
+      .returning();
+    return transaction;
+  }
+
+  async updateTransaction(id: number, updates: Partial<InsertTransaction>): Promise<Transaction | undefined> {
+    const [transaction] = await db
+      .update(transactions)
+      .set(updates)
+      .where(eq(transactions.id, id))
+      .returning();
+    return transaction || undefined;
+  }
+
+  async deleteTransaction(id: number): Promise<boolean> {
+    const result = await db.delete(transactions).where(eq(transactions.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getTaxFilings(companyId: number, type?: string): Promise<TaxFiling[]> {
+    const conditions = [eq(taxFilings.companyId, companyId)];
+    
+    if (type) {
+      conditions.push(eq(taxFilings.type, type));
+    }
+    
+    return await db.select().from(taxFilings).where(and(...conditions));
+  }
+
+  async createTaxFiling(insertFiling: InsertTaxFiling): Promise<TaxFiling> {
+    const [filing] = await db
+      .insert(taxFilings)
+      .values(insertFiling)
+      .returning();
+    return filing;
+  }
+
+  async updateTaxFiling(id: number, updates: Partial<InsertTaxFiling>): Promise<TaxFiling | undefined> {
+    const [filing] = await db
+      .update(taxFilings)
+      .set(updates)
+      .where(eq(taxFilings.id, id))
+      .returning();
+    return filing || undefined;
+  }
+
+  async getInvoices(companyId: number): Promise<Invoice[]> {
+    return await db.select().from(invoices).where(eq(invoices.companyId, companyId));
+  }
+
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice || undefined;
+  }
+
+  async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
+    const [invoice] = await db
+      .insert(invoices)
+      .values(insertInvoice)
+      .returning();
+    return invoice;
+  }
+
+  async updateInvoice(id: number, updates: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .update(invoices)
+      .set(updates)
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice || undefined;
+  }
+
+  async getNotifications(companyId: number, userId?: number): Promise<Notification[]> {
+    const conditions = [eq(notifications.companyId, companyId)];
+    
+    if (userId) {
+      conditions.push(eq(notifications.userId, userId));
+    }
+    
+    return await db.select().from(notifications).where(and(...conditions));
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values(insertNotification)
+      .returning();
+    return notification;
+  }
+
+  async markNotificationAsRead(id: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getKpiData(companyId: number, period?: string): Promise<KpiData[]> {
+    const conditions = [eq(kpiData.companyId, companyId)];
+    
+    if (period) {
+      conditions.push(eq(kpiData.period, period));
+    }
+    
+    return await db.select().from(kpiData).where(and(...conditions));
+  }
+
+  async createKpiData(insertData: InsertKpiData): Promise<KpiData> {
+    const [data] = await db
+      .insert(kpiData)
+      .values(insertData)
+      .returning();
+    return data;
+  }
+
+  async updateKpiData(companyId: number, period: string, updates: Partial<InsertKpiData>): Promise<KpiData | undefined> {
+    const [data] = await db
+      .update(kpiData)
+      .set(updates)
+      .where(and(
+        eq(kpiData.companyId, companyId),
+        eq(kpiData.period, period)
+      ))
+      .returning();
+    return data || undefined;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -427,4 +627,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
