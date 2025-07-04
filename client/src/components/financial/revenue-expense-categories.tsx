@@ -212,10 +212,32 @@ export default function RevenueExpenseCategories() {
 
   return (
     <div className="space-y-6">
+      {/* Company TRN Display */}
+      {company?.trn && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-blue-900">{company.name}</h3>
+              <p className="text-blue-700">TRN: {company.trn}</p>
+            </div>
+            <Badge variant="outline" className="bg-blue-100 text-blue-800">
+              UAE Tax Registered
+            </Badge>
+          </div>
+        </div>
+      )}
+
       {/* Transaction Entry Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Add Revenue/Expense Transaction</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            Add Revenue/Expense Transaction
+            {company?.trn && (
+              <Badge variant="secondary" className="text-xs">
+                TRN: {company.trn}
+              </Badge>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

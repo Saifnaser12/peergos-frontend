@@ -15,6 +15,7 @@ import SMESimplifiedDashboard from '@/components/sme/sme-simplified-dashboard';
 import EndToEndTaxWorkflow from '@/components/workflow/end-to-end-tax-workflow';
 import RevenueExpenseCategories from '@/components/financial/revenue-expense-categories';
 import BalanceSheetGenerator from '@/components/financial/balance-sheet-generator';
+import TRNManagement from '@/components/setup/trn-management';
 import { 
   Settings, 
   Shield, 
@@ -103,10 +104,11 @@ export default function Setup() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="workflow">Complete Workflow</TabsTrigger>
             <TabsTrigger value="sme">SME Hub</TabsTrigger>
             <TabsTrigger value="wizard">Setup</TabsTrigger>
+            <TabsTrigger value="trn">TRN</TabsTrigger>
             <TabsTrigger value="smart">Smart Compliance</TabsTrigger>
             <TabsTrigger value="einvoicing">E-Invoice</TabsTrigger>
             <TabsTrigger value="scanner">OCR</TabsTrigger>
@@ -135,6 +137,11 @@ export default function Setup() {
                 setActiveTab('compliance');
               }} 
             />
+          </TabsContent>
+
+          {/* TRN Management */}
+          <TabsContent value="trn" className="space-y-6">
+            <TRNManagement />
           </TabsContent>
 
           {/* Smart Compliance Dashboard */}
