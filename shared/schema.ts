@@ -129,6 +129,8 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
+}).extend({
+  transactionDate: z.coerce.date(),
 });
 
 export const insertTaxFilingSchema = createInsertSchema(taxFilings).omit({

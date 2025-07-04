@@ -88,20 +88,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transactions", async (req, res) => {
     try {
       console.log('Received transaction data:', req.body);
-      
-      // Convert date string to Date object for validation
-      const processedData = {
-        ...req.body,
-        transactionDate: new Date(req.body.transactionDate)
-      };
-      
-      const validatedData = insertTransactionSchema.parse(processedData);
+      const validatedData = insertTransactionSchema.parse(req.body);
       console.log('Validated data:', validatedData);
       const transaction = await storage.createTransaction(validatedData);
       res.status(201).json(transaction);
     } catch (error) {
       console.error('Transaction validation error:', error);
-      res.status(400).json({ message: "Invalid transaction data", error: error.message });
+      res.status(400).json({ message: "Invalid transaction data", error: error?.message || error });
     }
   });
 
