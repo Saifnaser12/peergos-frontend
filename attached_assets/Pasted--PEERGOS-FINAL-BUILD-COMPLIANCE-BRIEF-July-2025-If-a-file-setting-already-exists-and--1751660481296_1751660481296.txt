@@ -1,0 +1,71 @@
+### PEERGOS – FINAL BUILD & COMPLIANCE BRIEF (July 2025)
+
+‼️ If a file / setting already exists and works, **keep it**. Only add what’s missing.
+
+════════ 1. CORE WORKFLOWS  (from slides)
+1️⃣ **Setup Wizard**  
+   • Auto-detect SME size & tax category (revenue tiers on slide 7).  
+   • Collect licence docs, UAE-PASS login, bank-connect consent.  
+   • Flag Free-Zone toggle → QFZP logic (0 % on qualifying income).
+
+2️⃣ **Book-keeping**  
+   • Revenue | Expense dropdowns, POS & bank API sync, invoice-scan OCR.  
+   • Auto FS (IS, BS, CF) – cash basis if Rev < AED 3 m; accrual otherwise.  
+   • Smart Reminders, KPI charts.
+
+3️⃣ **CIT Flow** (slide 8)  
+   ① Record revenue/expenses → ② CIT Engine (0 % ≤ AED 3 m; 9 % excess) →  
+   ③ XML return + PDFs → ④ Tax-agent e-sign & cert upload →  
+   ⑤ Payment slip upload → Auto-submit via FTA API.
+
+4️⃣ **VAT Flow** (slide 9)  
+   POS / invoices → VAT engine → return XML → net VAT payable / refund → auto-submit.
+
+5️⃣ **E-Invoicing (Phase 2)**  
+   • UBL 2.1 XML, XML-DSig, SHA-256 hash, optional QR per FTA spec.  
+   • Real-time TRN check before posting.  
+   • Store signed XML + PDF in UAE cloud 7 yrs, indexed by TRN.
+
+6️⃣ **AI Assistant**  
+   GPT-4-o, bilingual (EN/AR), trained on FTA guides & CT Decree-Law.
+
+════════ 2. FTA RULES TO ENFORCE  
+• **Small-Business Relief** ≤ AED 3 m revenue → CIT 0 % :contentReference[oaicite:2]{index=2}  
+• **TRN Verification API** – call live endpoint before each filing :contentReference[oaicite:3]{index=3}  
+• **QFZP Guide** – adequate substance, qualifying activities list :contentReference[oaicite:4]{index=4}  
+• **Phase 2 e-invoice** – UBL XML + digital signature (X.509) :contentReference[oaicite:5]{index=5}  
+• Records retention 7 yrs; FTA gets live read-only access via TRN filter.
+
+════════ 3. TECH BASELINE (keep existing where present)  
+• Vite 5 + React 18 + TS 5 + pnpm 8  
+• Tailwind 3 + MUI 5 (emotion)  
+• Context API + hooks; react-i18next EN/AR + RTL  
+• axios, chart.js, jspdf, exceljs, xml-crypto, qrcode, crypto-js  
+• Jest + Playwright; ESLint + Prettier
+
+════════ 4. MUST-HAVE CONFIG (add only if absent)  
+**vite.config.ts** → ensure:  
+```ts
+server: { host:'0.0.0.0', port:5000, allowedHosts:'all', hmr:{overlay:false} }
+.replit →
+
+run = "cd peergos-fixed && pnpm run dev"
+install = "cd peergos-fixed && pnpm install --no-frozen-lockfile"
+════════ 5. BUILD / RUN STEPS
+
+cd peergos-fixed
+pnpm install --no-frozen-lockfile (skip if node_modules good)
+Patch vite.config.ts (allowedHosts:'all') ONLY if missing.
+Copy public/locales → src/locales if absent.
+pnpm run dev → expect Vite on http://localhost:5000/
+════════ 6. VALIDATION CHECKS
+• Navigate Dashboard → CIT → VAT → Accounting → Financials → Calendar with no console errors.
+• CIT test: revenue 400 k → payable 22 500; revenue 250 k → payable 0.
+• Generate sample UBL XML invoice → schema valid & signed.
+• TRN API call for 100123456700003 returns 200 json.
+• Jest + Playwright: all green.
+
+════════ 7. BACKLOG (leave as TODO, don’t implement now)
+• Live Phase 2 clearance API once FTA sandbox opens.
+• Arabic handwriting OCR for receipts.
+• PWA mobile shell Q4 2025.

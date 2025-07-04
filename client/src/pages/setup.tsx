@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UAEComplianceDashboard from '@/components/compliance/uae-compliance-dashboard';
 import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
+import SetupWizard from '@/components/setup/setup-wizard';
+import CitValidator from '@/components/testing/cit-validator';
 import { 
   Settings, 
   Shield, 
@@ -15,12 +17,14 @@ import {
   Palette,
   Globe,
   Bell,
-  Download
+  Download,
+  Calculator,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Setup() {
-  const [activeTab, setActiveTab] = useState('compliance');
+  const [activeTab, setActiveTab] = useState('wizard');
   const { user, company } = useAuth();
   const { language, setLanguage } = useLanguage();
 
@@ -93,13 +97,26 @@ export default function Setup() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="wizard">Setup Wizard</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
             <TabsTrigger value="einvoicing">E-Invoicing</TabsTrigger>
+            <TabsTrigger value="testing">CIT Testing</TabsTrigger>
             <TabsTrigger value="company">Company</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
           </TabsList>
+
+          {/* Setup Wizard */}
+          <TabsContent value="wizard" className="space-y-6">
+            <SetupWizard 
+              onComplete={(data) => {
+                console.log('Setup completed:', data);
+                // Here we would typically save the setup data
+                setActiveTab('compliance');
+              }} 
+            />
+          </TabsContent>
 
           {/* UAE Compliance Dashboard */}
           <TabsContent value="compliance" className="space-y-6">
@@ -122,6 +139,11 @@ export default function Setup() {
                 <UBLInvoiceGenerator invoice={sampleInvoice} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* CIT Testing & Validation */}
+          <TabsContent value="testing" className="space-y-6">
+            <CitValidator />
           </TabsContent>
 
           {/* Company Settings */}

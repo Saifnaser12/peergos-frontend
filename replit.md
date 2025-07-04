@@ -108,10 +108,34 @@ This is Peergos, a comprehensive web-based SaaS platform designed for UAE SME ta
 - **Database Migration**: `drizzle-kit push` → Schema deployment
 - **Asset Optimization**: Automatic compression and caching
 
+## Recent Updates
+
+### July 04, 2025 - Compliance Brief Implementation
+✓ **Setup Wizard** - Auto-detects SME size & tax category with revenue tier classification
+✓ **CIT Calculation Engine** - Small Business Relief (0% ≤ AED 375k), QFZP Free Zone logic
+✓ **UBL 2.1 E-Invoicing** - XML generation with SHA-256 hash and QR codes per FTA spec
+✓ **TRN Verification API** - Live endpoint integration for real-time validation
+✓ **UAE Compliance Dashboard** - Complete regulatory monitoring and submission tracking
+✓ **PostgreSQL Migration** - Full database implementation with proper seeding
+✓ **CIT Testing Suite** - Validates compliance brief requirements (400k→22.5k, 250k→0)
+
+### Core Workflows Implemented
+1. **Setup Wizard Flow** - SME auto-detection, Free Zone toggle, UAE-PASS consent
+2. **Bookkeeping Module** - Revenue/expense tracking with auto financial statements
+3. **CIT Flow** - Revenue→CIT Engine→XML returns→FTA submission ready
+4. **VAT Flow** - Transaction processing→VAT engine→return XML generation
+5. **E-Invoicing Phase 2** - UBL XML + digital signatures + 7-year retention
+
+### FTA Rules Enforced
+- Small Business Relief: 0% CIT on first AED 375,000
+- QFZP (Free Zone): 0% on qualifying income under AED 3M
+- VAT: 5% standard rate with input/output calculations
+- Records retention: 7 years with FTA read-only access via TRN
+
 ## Changelog
 ```
 Changelog:
-- July 04, 2025. Initial setup
+- July 04, 2025. Initial setup with database migration and compliance features
 ```
 
 ## User Preferences
