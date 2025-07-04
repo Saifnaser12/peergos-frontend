@@ -34,9 +34,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Plus, Trash2, Eye } from 'lucide-react';
+import { Plus, Trash2, Eye, FileX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
+import UBLInvoiceGenerator from './ubl-invoice-generator';
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -69,6 +70,7 @@ interface InvoiceFormProps {
 
 export default function InvoiceForm({ isOpen, onClose, invoice }: InvoiceFormProps) {
   const [previewMode, setPreviewMode] = useState(false);
+  const [showUBLGenerator, setShowUBLGenerator] = useState(false);
   const { user, company } = useAuth();
   const { language } = useLanguage();
   const { toast } = useToast();

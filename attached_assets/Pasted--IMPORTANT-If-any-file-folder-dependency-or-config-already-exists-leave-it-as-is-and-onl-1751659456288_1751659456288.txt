@@ -1,0 +1,70 @@
+
+‼️ IMPORTANT: If any file, folder, dependency, or config already exists, **leave it as-is** and only add what’s missing.  Do NOT overwrite working code.
+
+════════ 1. PURPOSE
+Peergos is a SaaS platform for UAE SMEs that handles:
+• Corporate Income Tax (CIT) incl. Small-Business Relief and QFZP logic  
+• VAT 5 %  + FTA e-filing  
+• Phase-2 e-invoicing (UBL 2.1 XML, digital signature, QR/hash)  
+• Simplified book-keeping → auto Income-Statement, Balance-Sheet, Cash-Flow  
+• Dashboard, deadline Calendar, smart notifications  
+• AI Assistant (GPT-4) in EN + AR (RTL)  
+• Roles: Admin, Accountant, Assistant, SME Client  
+• Whitelabel (logo + colors)
+
+════════ 2. REGULATORY MUST-HAVES (FTA)
+• CIT: 0 % if revenue ≤ AED 3 m; 9 % above.  Return due 9 mo after YE.  
+• VAT: register ≥ AED 375 k; quarterly return due 28 days.  
+• E-invoice Phase 2: UBL 2.1 XML, XML-DSig, hash, optional QR.  
+• TRN verification API (live call before filings).  
+• Records retention 7 yrs.  Data residency = UAE cloud.  
+• Free-Zone QFZP logic (0 % on qualifying income).  
+• UAE PASS SSO placeholder.
+
+════════ 3. TECH STACK
+• Vite 5 + React 18 + TS 5, Tailwind 3 + MUI 5 (emotion), pnpm 8  
+• Context API + hooks; react-i18next (EN/AR)  
+• axios, chart.js, jspdf, exceljs, xml-crypto, qrcode, crypto-js  
+• Jest + React-Testing-Library; Playwright for e2e  
+• ESLint 8, Prettier 3
+
+════════ 4. FOLDER STRUCTURE
+Everything under **peergos-fixed/**:
+src/pages (Dashboard, CIT, VAT, Accounting, Financials, TransferPricing, Calendar, Assistant, Setup, SimpleInvoice, Admin)  
+src/components (common/, accounting/, financials/, invoice/, misc/)  
+src/context (AppContext, FinanceContext, TaxContext, NotificationContext, ThemeContext, etc.)  
+src/utils (calculations.ts, ftaPdfExport.ts, invoiceXml.ts, freeZoneComplianceReport.ts, …)  
+src/locales/en.json & ar.json  
+tests/unit + tests/e2e
+
+════════ 5. CRITICAL CONFIG (add only if missing)
+vite.config.ts must include:
+```ts
+server: {
+  host: '0.0.0.0',
+  port: 5000,
+  allowedHosts: 'all',   // allow *.replit.dev
+  hmr: { overlay: false },
+},
+.replit:
+
+run = "cd peergos-fixed && pnpm run dev"
+install = "cd peergos-fixed && pnpm install --no-frozen-lockfile"
+════════ 6. BUILD / RUN STEPS
+
+cd peergos-fixed
+pnpm install --no-frozen-lockfile (skip if node_modules already present)
+Ensure vite.config.ts has allowedHosts: 'all' (add if absent)
+Tailwind RTL variant enabled.
+Copy public/locales/*.json to src/locales if they don’t exist.
+pnpm run dev → expect Vite URL http://localhost:5000/
+════════ 7. VALIDATE
+• Navigate Dashboard → CIT → VAT → Accounting → Financials → Calendar with no console errors.
+• CIT test: revenue 400 k → payable AED 22 500; revenue 250 k → payable 0.
+• Generate sample invoice XML → passes UBL 2.1 schema.
+• TRN API call for 100123456700003 returns 200.
+
+════════ 8. TODO BACKLOG (leave as TODO comments, do not implement now)
+• Live e-invoice clearance API once FTA sandbox is public
+• OCR Arabic handwriting for receipts
+• React-Native PWA shell Q4 2025

@@ -13,6 +13,7 @@ import {
   Bot,
   Settings,
   Home,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -59,6 +60,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       section: 'Support',
       items: [
         { path: '/assistant', icon: Bot, label: t('nav.assistant'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/setup', icon: Shield, label: 'UAE Compliance', roles: ['ADMIN', 'ACCOUNTANT'], badge: 'FTA' },
         { path: '/admin', icon: Settings, label: t('nav.admin'), roles: ['ADMIN'] },
       ],
     },

@@ -17,6 +17,7 @@ import TransferPricing from "./pages/transfer-pricing";
 import Assistant from "./pages/assistant";
 import Calendar from "./pages/calendar";
 import Admin from "./pages/admin";
+import Setup from "./pages/setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/assistant" component={Assistant} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/admin" component={Admin} />
+        <Route path="/setup" component={Setup} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
