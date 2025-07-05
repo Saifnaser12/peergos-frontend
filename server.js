@@ -1,98 +1,74 @@
+// Production server entry point for deployment
+// Ensures PORT environment variable is properly handled for Autoscale
+
 import express from 'express';
-import path from 'path';
+import { createServer } from 'http';
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
-app.use(express.json());
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/* ---------- PUBLIC HEALTH ENDPOINT ---------- */
-app.get('/api/public/demo', (_req, res) => {
-  res.json({
-    ok: true,
-    name: 'Peergos Tax Compliance Hub',
-    version: '1.0.0',
-    vatRate: 0.05,
-    citSmallBusinessReliefAED: 375000,
-    timestamp: new Date().toISOString(),
-    features: [
-      'Corporate Income Tax (CIT) calculations',
-      'VAT calculations and returns (5% UAE rate)',
-      'E-Invoicing with UBL 2.1 XML generation',
-      'Financial statements generation',
-      'Real-time compliance dashboard',
-      'Multi-language support (English/Arabic)',
-      'FTA integration ready'
-    ],
-    demo: {
-      email: 'demo@peergos.test',
-      company: 'Demo Trading LLC',
-      trn: '100000000001'
+// Use PORT environment variable for deployment compatibility
+const port = parseInt(process.env.PORT || '3000', 10);
+
+// Basic health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', port: port, timestamp: new Date().toISOString() });
+});
+
+// Serve static files from dist directory
+const distPath = join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  
+  // Serve the main application
+  app.get('*', (req, res) => {
+    const indexPath = join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).json({ error: 'Application not built. Run build command first.' });
     }
   });
-});
-
-/* ---------- ONE-OFF DEMO SEED (safe to call repeatedly) ---------- */
-let seeded = false;
-app.post('/api/public/seedDemo', async (_req, res) => {
-  if (seeded) {
-    return res.status(200).json({ 
-      already: true, 
-      email: 'demo@peergos.test',
-      password: 'Demo1234!',
-      loginUrl: '/login'
-    });
-  }
-  
+} else {
+  // Fallback if dist doesn't exist - try to start the built server
   try {
-    // Demo seeding - in real implementation this would use actual database
-    const pwd = 'Demo1234!';
-    const demoData = {
-      company: {
-        name: 'Demo Trading LLC',
-        trn: '100000000001',
-        address: 'Dubai Business Bay, UAE',
-        phone: '+971-4-123-4567',
-        email: 'contact@demotradingllc.ae'
-      },
-      user: {
-        email: 'demo@peergos.test',
-        password: pwd,
-        role: 'ACCOUNTANT',
-        firstName: 'Demo',
-        lastName: 'User'
-      }
-    };
-    
-    seeded = true;
-    res.status(201).json({
-      ok: true,
-      email: demoData.user.email,
-      password: pwd,
-      loginUrl: '/login',
-      company: demoData.company.name,
-      trn: demoData.company.trn,
-      note: 'Demo account seeded successfully for external testing'
-    });
+    const builtServerPath = join(__dirname, 'dist', 'index.js');
+    if (fs.existsSync(builtServerPath)) {
+      console.log('Starting built server from dist/index.js...');
+      import('./dist/index.js');
+    } else {
+      app.get('*', (req, res) => {
+        res.status(500).json({ 
+          error: 'Server not built. Run: npm run build', 
+          help: 'Build command creates dist/index.js'
+        });
+      });
+    }
   } catch (error) {
-    res.status(500).json({ error: 'Failed to seed demo account' });
+    console.error('Failed to start built server:', error);
+    app.get('*', (req, res) => {
+      res.status(500).json({ error: 'Server startup failed', details: error.message });
+    });
   }
+}
+
+const server = createServer(app);
+
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Peergos server running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`Health check: http://localhost:${port}/health`);
 });
 
-/* ---------- API ROUTES ---------- */
-// All API routes are handled by the public endpoints above and fallback to 404
-
-/* ---------- SERVE PLAYWRIGHT REPORT --------------- */
-app.use('/playwright-report', express.static(path.join(__dirname, 'playwright-report')));
-
-/* ---------- SERVE BUILT SPA --------------- */
-app.use(express.static(path.join(__dirname, 'dist')));
-app.get('*', (_req, res) =>
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'))
-);
-
-/* ---------- START ------------------------- */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () =>
-  console.log(`Peergos Production Server on http://localhost:${PORT}`)
-);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    process.exit(0);
+  });
+});

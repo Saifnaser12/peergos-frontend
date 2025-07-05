@@ -1,35 +1,29 @@
 #!/bin/bash
-# pnpm compatibility wrapper for deployment environments
-# This script routes pnpm commands to npm when pnpm is not available
+# pnpm compatibility wrapper for deployment
+# Routes pnpm commands to npm for environments where pnpm is not available
 
-# Check if actual pnpm exists
-if command -v pnpm-real &> /dev/null || command -v pnpm.cmd &> /dev/null; then
-    # Use real pnpm if available
-    exec pnpm-real "$@" 2>/dev/null || exec pnpm.cmd "$@" 2>/dev/null
-fi
-
-# Fallback to npm for common pnpm commands
 case "$1" in
-    "run")
-        echo "pnpm not found, using npm fallback..."
-        if [ "$2" = "test:e2e" ]; then
-            # Route test:e2e to package-scripts.js
-            exec node package-scripts.js test:e2e
-        else
-            exec npm run "$2"
-        fi
+  "run")
+    shift
+    case "$1" in
+      "build")
+        echo "Building with npm..."
+        npm run build
         ;;
-    "install")
-        echo "pnpm not found, using npm install..."
-        exec npm install "${@:2}"
+      "test:e2e")
+        echo "Running E2E tests..."
+        node package-scripts.js test:e2e
         ;;
-    "build")
-        echo "pnpm not found, using npm build..."
-        exec npm run build
+      *)
+        npm run "$@"
         ;;
-    *)
-        echo "pnpm command '$1' not supported in fallback mode"
-        echo "Available fallback commands: run, install, build"
-        exit 1
-        ;;
+    esac
+    ;;
+  "install")
+    echo "Installing dependencies with npm..."
+    npm install
+    ;;
+  *)
+    npm "$@"
+    ;;
 esac
