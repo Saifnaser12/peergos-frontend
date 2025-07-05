@@ -7,11 +7,19 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['list'], ['html', { outputFolder: 'playwright-report' }]],
+  reporter: [
+    ['list'], 
+    ['html', { 
+      outputFolder: 'playwright-report',
+      open: 'never'
+    }]
+  ],
   use: {
-    baseURL: 'https://your-deployment-url.replit.app',
+    baseURL: process.env.BASE || 'http://localhost:5000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
   },
   projects: [
     {
@@ -19,9 +27,5 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'node server.js',
-    port: 5000,
-    reuseExistingServer: !process.env.CI,
-  },
+  outputDir: 'test-results/',
 });
