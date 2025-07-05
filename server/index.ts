@@ -60,8 +60,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT environment variable for Cloud Run compatibility, fallback to 5000 for development
-  const port = parseInt(process.env.PORT || "5000", 10);
+  // Use PORT environment variable for deployment compatibility, fallback to 3000 for production or 5000 for development
+  const port = parseInt(process.env.PORT || (process.env.NODE_ENV === "production" ? "3000" : "5000"), 10);
   server.listen({
     port,
     host: "0.0.0.0",

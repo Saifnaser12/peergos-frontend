@@ -1,11 +1,18 @@
 // Package script compatibility layer for deployment
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 const scripts = {
   'test:e2e': () => {
     console.log('Running E2E tests...');
     try {
+      // First ensure deployment compatibility is set up
+      console.log('Setting up deployment compatibility...');
+      execSync('node deploy-compat.js', { stdio: 'inherit' });
+      
+      // Run the actual E2E tests
+      console.log('Running simple smoke tests...');
       execSync('node simple-test.js', { stdio: 'inherit' });
+      
       console.log('E2E tests completed successfully!');
     } catch (error) {
       console.error('E2E tests failed:', error.message);
