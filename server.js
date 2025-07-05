@@ -94,5 +94,5 @@ app.get('*', (_req, res) =>
 /* ---------- START ------------------------- */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () =>
-  console.log(`Peergos External Testing Server on http://localhost:${PORT}`)
+  console.log(`Peergos Production Server on http://localhost:${PORT}`)
 );
