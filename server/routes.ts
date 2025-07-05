@@ -5,6 +5,67 @@ import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, in
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Public demo route for external testing (no auth required)
+  app.get("/api/public/demo", async (req, res) => {
+    try {
+      const demoData = {
+        platform: "Peergos - UAE SME Tax Compliance Platform",
+        description: "Comprehensive web-based SaaS platform for UAE SME tax compliance",
+        features: [
+          "Corporate Income Tax (CIT) calculations with Small Business Relief",
+          "VAT calculations and returns (5% UAE standard rate)",
+          "E-Invoicing with UBL 2.1 XML generation",
+          "Financial statements generation",
+          "Credit and debit notes management",
+          "Real-time compliance dashboard",
+          "Multi-language support (English/Arabic)",
+          "FTA integration ready"
+        ],
+        compliance: {
+          "VAT Rate": "5% (UAE standard)",
+          "CIT Small Business Relief": "0% on first AED 375,000",
+          "Free Zone Rate": "0% on qualifying income under AED 3M",
+          "E-Invoicing": "UBL 2.1 compliant with QR codes"
+        },
+        status: "Production Ready",
+        lastUpdated: new Date().toISOString(),
+        sampleCalculations: {
+          vatExample: {
+            revenue: "AED 100,000",
+            vatRate: "5%",
+            vatDue: "AED 5,000"
+          },
+          citExample: {
+            annualRevenue: "AED 400,000",
+            smallBusinessRelief: "AED 375,000 @ 0%",
+            taxableAmount: "AED 25,000",
+            citRate: "9%",
+            citDue: "AED 2,250"
+          }
+        }
+      };
+      
+      res.json(demoData);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Public info endpoint
+  app.get("/api/public/info", async (req, res) => {
+    res.json({
+      name: "Peergos",
+      version: "2.0",
+      description: "UAE SME Tax Compliance Platform",
+      endpoints: [
+        "GET /api/public/demo - Platform overview and features",
+        "GET /api/public/info - Basic platform information",
+        "POST /api/auth/login - User authentication (requires credentials)"
+      ],
+      note: "Full platform access requires authentication. Demo endpoints show platform capabilities."
+    });
+  });
+  
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
