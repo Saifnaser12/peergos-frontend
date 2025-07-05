@@ -1,29 +1,20 @@
 #!/bin/bash
-# pnpm compatibility wrapper for deployment
-# Routes pnpm commands to npm for environments where pnpm is not available
 
-case "$1" in
-  "run")
-    shift
-    case "$1" in
-      "build")
-        echo "Building with npm..."
-        npm run build
-        ;;
-      "test:e2e")
-        echo "Running E2E tests..."
-        node package-scripts.js test:e2e
-        ;;
-      *)
-        npm run "$@"
-        ;;
-    esac
-    ;;
-  "install")
-    echo "Installing dependencies with npm..."
-    npm install
-    ;;
-  *)
-    npm "$@"
-    ;;
-esac
+# pnpm wrapper script for deployment compatibility
+# Falls back to npm when pnpm is not available
+
+if command -v pnpm >/dev/null 2>&1; then
+    exec pnpm "$@"
+else
+    echo "pnpm not available, falling back to npm"
+    if [ "$1" = "run" ]; then
+        shift
+        if [ "$1" = "test:e2e" ]; then
+            exec node package-scripts.js test:e2e
+        else
+            exec npm run "$@"
+        fi
+    else
+        exec npm "$@"
+    fi
+fi
