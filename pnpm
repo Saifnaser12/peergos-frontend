@@ -1,0 +1,30 @@
+#!/bin/bash
+# pnpm compatibility wrapper for deployment
+# Routes pnpm commands to npm equivalents
+
+case "$1" in
+  "run")
+    case "$2" in
+      "build")
+        echo "Running build via npm..."
+        npm run build
+        ;;
+      "test:e2e")
+        echo "Running E2E tests..."
+        node simple-test.js
+        ;;
+      *)
+        echo "Running npm run $2..."
+        npm run "$2"
+        ;;
+    esac
+    ;;
+  "install")
+    echo "Running npm install..."
+    npm install
+    ;;
+  *)
+    echo "Delegating to npm: $@"
+    npm "$@"
+    ;;
+esac
