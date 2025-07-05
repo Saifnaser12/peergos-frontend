@@ -3,19 +3,23 @@ import { execSync } from 'child_process';
 
 const scripts = {
   'test:e2e': () => {
-    console.log('Running E2E tests...');
+    console.log('Running E2E deployment tests...');
     try {
-      // First ensure deployment compatibility is set up
-      console.log('Setting up deployment compatibility...');
-      execSync('node deploy-compat.js', { stdio: 'inherit' });
-      
-      // Run the actual E2E tests
-      console.log('Running simple smoke tests...');
+      // Run deployment validation tests
       execSync('node simple-test.js', { stdio: 'inherit' });
-      
-      console.log('E2E tests completed successfully!');
+      console.log('E2E deployment tests completed successfully!');
     } catch (error) {
       console.error('E2E tests failed:', error.message);
+      process.exit(1);
+    }
+  },
+  
+  'start': () => {
+    console.log('Starting production server...');
+    try {
+      execSync('node server.js', { stdio: 'inherit' });
+    } catch (error) {
+      console.error('Production server failed:', error.message);
       process.exit(1);
     }
   },
