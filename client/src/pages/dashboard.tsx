@@ -306,65 +306,109 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Smart Recommendations */}
+      {/* Business Intelligence & Smart Recommendations */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap size={20} />
-            Smart Recommendations
+            Business Intelligence & Tax Optimization
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
+          {/* Tax Efficiency Analysis */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-2">Tax Efficiency Score</h4>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-2xl font-bold text-green-700">
+                  {revenue > 0 ? Math.min(Math.round((expenses / revenue) * 100), 100) : 0}%
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-blue-800">
+                  Your expense-to-revenue ratio suggests {revenue > 0 && (expenses / revenue) > 0.6 ? 'excellent' : revenue > 0 && (expenses / revenue) > 0.4 ? 'good' : 'room for improvement in'} tax optimization.
+                </p>
+                {revenue > 0 && (expenses / revenue) < 0.3 && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    💡 Consider reviewing deductible business expenses to optimize your tax position.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Smart Business Insights */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 bg-green-50 rounded border border-green-200">
+              <h5 className="font-medium text-green-900 mb-1">Revenue Trend</h5>
+              <p className="text-sm text-green-700">
+                {revenue > 100000 ? '📈 Strong performance this period' : 
+                 revenue > 50000 ? '📊 Steady growth trajectory' :
+                 revenue > 0 ? '🌱 Building momentum' : '🚀 Ready to launch'}
+              </p>
+            </div>
+            
+            <div className="p-3 bg-amber-50 rounded border border-amber-200">
+              <h5 className="font-medium text-amber-900 mb-1">Cash Flow Health</h5>
+              <p className="text-sm text-amber-700">
+                {revenue - expenses > 50000 ? '💰 Excellent liquidity' :
+                 revenue - expenses > 10000 ? '💵 Healthy cash flow' :
+                 revenue - expenses > 0 ? '⚖️ Balanced operations' : '⚠️ Monitor expenses closely'}
+              </p>
+            </div>
+          </div>
+
+          {/* Actionable Recommendations */}
           {revenue === 0 && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Get Started:</strong> Add your first revenue transaction to begin tracking your tax obligations.
+            <Alert className="border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>Start Your Financial Journey:</strong> Record your first business transaction to unlock personalized tax insights.
                 <Link href="/accounting">
-                  <Button size="sm" className="ml-3">
-                    Add Revenue
+                  <Button size="sm" className="ml-3 bg-blue-600 hover:bg-blue-700">
+                    Record First Transaction
                   </Button>
                 </Link>
               </AlertDescription>
             </Alert>
           )}
 
-          {transactions.length === 0 && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Record Expenses:</strong> Don't forget to track your business expenses to reduce your tax liability.
-                <Link href="/accounting">
-                  <Button size="sm" variant="outline" className="ml-3">
-                    Add Expenses
-                  </Button>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {invoices.length === 0 && revenue > 0 && (
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Create Invoices:</strong> You have revenue but no invoices. Generate professional invoices for better record-keeping.
-                <Link href="/invoicing">
-                  <Button size="sm" variant="outline" className="ml-3">
-                    Create Invoice
-                  </Button>
-                </Link>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {vatDaysLeft <= 7 && vatDaysLeft > 0 && (
+          {revenue > 375000 && vatDue === 0 && (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                <strong>VAT Filing Due Soon:</strong> Your VAT return is due in {vatDaysLeft} days. Review and submit before the deadline.
-                <Link href="/vat">
-                  <Button size="sm" className="ml-3">
-                    File VAT Return
+                <strong>VAT Registration Required:</strong> Your revenue exceeds AED 375k. Ensure VAT registration is completed.
+                <Link href="/setup">
+                  <Button size="sm" variant="outline" className="ml-3">
+                    Check Registration
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {vatDaysLeft <= 10 && vatDaysLeft > 0 && vatDue > 0 && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>Urgent: VAT Filing Due in {vatDaysLeft} days</strong> - Amount due: AED {vatDue.toLocaleString()}
+                <Link href="/workflow">
+                  <Button size="sm" className="ml-3 bg-red-600 hover:bg-red-700">
+                    File Now
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {revenue > 0 && expenses === 0 && (
+            <Alert className="border-purple-200 bg-purple-50">
+              <Info className="h-4 w-4 text-purple-600" />
+              <AlertDescription className="text-purple-800">
+                <strong>Maximize Deductions:</strong> Recording business expenses can significantly reduce your tax liability.
+                <Link href="/accounting">
+                  <Button size="sm" variant="outline" className="ml-3">
+                    Add Business Expenses
                   </Button>
                 </Link>
               </AlertDescription>

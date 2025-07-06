@@ -73,33 +73,22 @@ export default function TransferPricing() {
     documentation: ''
   });
 
-  // Mock data for demonstration (in real app, this would come from API)
-  const relatedPartyTransactions: RelatedPartyTransaction[] = [
-    {
-      id: 1,
-      relatedPartyName: 'Global Tech DMCC',
-      relationship: 'Parent Company',
-      transactionType: 'services',
-      amount: 250000,
-      armLengthPrice: 245000,
-      methodology: 'Comparable Uncontrolled Price (CUP)',
-      documentation: 'Management Service Agreement.pdf',
-      riskLevel: 'low',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      relatedPartyName: 'Tech Solutions Ltd',
-      relationship: 'Subsidiary',
-      transactionType: 'ip',
-      amount: 150000,
-      armLengthPrice: 155000,
-      methodology: 'Profit Split Method',
-      documentation: 'IP License Agreement.pdf',
-      riskLevel: 'medium',
-      createdAt: '2024-02-20'
-    }
-  ];
+  // Transfer pricing data query
+  const { data: relatedPartyTransactions = [] } = useQuery({
+    queryKey: ['/api/transfer-pricing/transactions'],
+    enabled: !!company?.id
+  });
+
+  // Transfer pricing analysis
+  const totalRelatedPartyTransactions = relatedPartyTransactions.reduce((sum: number, txn: any) => sum + (txn.amount || 0), 0);
+  const averageAdjustment = relatedPartyTransactions.length > 0 
+    ? relatedPartyTransactions.reduce((sum: number, txn: any) => sum + Math.abs((txn.amount || 0) - (txn.armLengthPrice || 0)), 0) / relatedPartyTransactions.length
+    : 0;
+  
+  // Calculate compliance score based on documentation and arm's length principle
+  const baseComplianceScore = relatedPartyTransactions.length > 0
+    ? Math.round(relatedPartyTransactions.filter((txn: any) => txn.documentation && Math.abs((txn.amount || 0) - (txn.armLengthPrice || 0)) < (txn.amount || 0) * 0.05).length / relatedPartyTransactions.length * 100)
+    : 100;
 
   // FTA-approved transfer pricing methods
   const transferPricingMethods: TransferPricingMethod[] = [

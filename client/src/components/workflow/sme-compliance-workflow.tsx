@@ -488,11 +488,15 @@ export default function SMEComplianceWorkflow() {
                                   Upload Documents
                                 </Button>
                               </div>
-                              <Alert className="border-green-200 bg-green-50">
-                                <AlertCircle className="h-4 w-4 text-green-600" />
-                                <AlertDescription className="text-green-800">
-                                  <strong>Per PDF Requirements:</strong> All manual entry must be backed with proof evidence. 
-                                  Use your phone to capture receipts, integrate with POS systems (Omnivore), and connect to TAQA/WPS for automated data.
+                              <Alert className="border-blue-200 bg-blue-50">
+                                <AlertCircle className="h-4 w-4 text-blue-600" />
+                                <AlertDescription className="text-blue-800">
+                                  <strong>Data Collection Methods:</strong> Choose the most efficient method for your business:
+                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                    <div className="p-2 bg-white rounded border">📱 Mobile Receipt Capture</div>
+                                    <div className="p-2 bg-white rounded border">🏪 POS System Integration</div>
+                                    <div className="p-2 bg-white rounded border">💳 Bank Feed Connection</div>
+                                  </div>
                                 </AlertDescription>
                               </Alert>
                             </div>
@@ -570,12 +574,56 @@ export default function SMEComplianceWorkflow() {
 
                     <div>
                       <Label htmlFor="category">Category</Label>
-                      <Input
+                      <select
                         id="category"
                         value={newTransaction.category}
                         onChange={(e) => setNewTransaction(prev => ({ ...prev, category: e.target.value }))}
-                        placeholder={newTransaction.type === 'REVENUE' ? 'Service Revenue' : 'Office Supplies'}
-                      />
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Category</option>
+                        {newTransaction.type === 'REVENUE' ? (
+                          <>
+                            <option value="Service Revenue">Service Revenue</option>
+                            <option value="Product Sales">Product Sales</option>
+                            <option value="Consultation Fees">Consultation Fees</option>
+                            <option value="Software Licensing">Software Licensing</option>
+                            <option value="Subscription Revenue">Subscription Revenue</option>
+                            <option value="Commission Income">Commission Income</option>
+                            <option value="Rental Income">Rental Income</option>
+                            <option value="Interest Income">Interest Income</option>
+                            <option value="Other Revenue">Other Revenue</option>
+                          </>
+                        ) : (
+                          <>
+                            <optgroup label="Operating Expenses">
+                              <option value="Office Rent">Office Rent</option>
+                              <option value="Utilities">Utilities (DEWA, Etisalat, etc.)</option>
+                              <option value="Office Supplies">Office Supplies</option>
+                              <option value="Marketing & Advertising">Marketing & Advertising</option>
+                              <option value="Professional Services">Professional Services</option>
+                              <option value="Software & Technology">Software & Technology</option>
+                            </optgroup>
+                            <optgroup label="Staff & HR">
+                              <option value="Salaries & Wages">Salaries & Wages</option>
+                              <option value="Employee Benefits">Employee Benefits</option>
+                              <option value="Training & Development">Training & Development</option>
+                              <option value="Visa & Labor Costs">Visa & Labor Costs</option>
+                            </optgroup>
+                            <optgroup label="Business Operations">
+                              <option value="Travel & Transportation">Travel & Transportation</option>
+                              <option value="Business Insurance">Business Insurance</option>
+                              <option value="License & Permits">License & Permits</option>
+                              <option value="Bank Charges">Bank Charges</option>
+                              <option value="Legal & Compliance">Legal & Compliance</option>
+                            </optgroup>
+                            <optgroup label="Assets & Equipment">
+                              <option value="Equipment Purchase">Equipment Purchase</option>
+                              <option value="Furniture & Fixtures">Furniture & Fixtures</option>
+                              <option value="Depreciation">Depreciation</option>
+                            </optgroup>
+                          </>
+                        )}
+                      </select>
                     </div>
 
                     <div>
@@ -593,11 +641,32 @@ export default function SMEComplianceWorkflow() {
                       <Input
                         id="amount"
                         type="number"
+                        step="0.01"
+                        min="0"
                         value={newTransaction.amount}
                         onChange={(e) => setNewTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
                         placeholder="0.00"
+                        className="text-right"
                       />
-                      <p className="text-xs text-gray-500 mt-1">VAT will be calculated automatically at 5%</p>
+                      {newTransaction.amount > 0 && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                          <div className="flex justify-between">
+                            <span>Amount (Excl. VAT):</span>
+                            <span>AED {(newTransaction.amount / 1.05).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>VAT (5%):</span>
+                            <span>AED {(newTransaction.amount - (newTransaction.amount / 1.05)).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between font-semibold border-t pt-1">
+                            <span>Total (Incl. VAT):</span>
+                            <span>AED {newTransaction.amount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Enter the total amount including VAT. VAT will be calculated automatically.
+                      </p>
                     </div>
 
                     <div>
