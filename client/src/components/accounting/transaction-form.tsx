@@ -52,9 +52,10 @@ interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
   transaction?: any;
+  defaultType?: 'REVENUE' | 'EXPENSE';
 }
 
-export default function TransactionForm({ isOpen, onClose, transaction }: TransactionFormProps) {
+export default function TransactionForm({ isOpen, onClose, transaction, defaultType }: TransactionFormProps) {
   const [includesVat, setIncludesVat] = useState(false);
   const { user, company } = useAuth();
   const { language } = useLanguage();
@@ -64,7 +65,7 @@ export default function TransactionForm({ isOpen, onClose, transaction }: Transa
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: transaction?.type || 'REVENUE',
+      type: transaction?.type || defaultType || 'REVENUE',
       category: transaction?.category || '',
       description: transaction?.description || '',
       amount: transaction?.amount || '',

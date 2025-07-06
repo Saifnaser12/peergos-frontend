@@ -170,10 +170,8 @@ export default function Setup() {
   // Update company mutation
   const updateCompanyMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/companies/${company?.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest('PATCH', `/api/companies/${company?.id}`, data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });

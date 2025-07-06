@@ -65,8 +65,14 @@ export default function SMEComplianceWorkflow() {
   
   const [selectedPeriod, setSelectedPeriod] = useState('2025-07');
   const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [newTransaction, setNewTransaction] = useState({
-    type: 'REVENUE' as const,
+  const [newTransaction, setNewTransaction] = useState<{
+    type: 'REVENUE' | 'EXPENSE';
+    category: string;
+    description: string;
+    amount: number;
+    date: string;
+  }>({
+    type: 'REVENUE',
     category: '',
     description: '',
     amount: 0,
@@ -194,14 +200,12 @@ export default function SMEComplianceWorkflow() {
   // Add transaction mutation
   const addTransactionMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/transactions', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...data,
-          transactionDate: data.date,
-          vatAmount: data.type === 'REVENUE' ? data.amount * 0.05 : data.amount * 0.05
-        }),
+      const response = await apiRequest('POST', '/api/transactions', {
+        ...data,
+        transactionDate: data.date,
+        vatAmount: data.type === 'REVENUE' ? data.amount * 0.05 : data.amount * 0.05
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });

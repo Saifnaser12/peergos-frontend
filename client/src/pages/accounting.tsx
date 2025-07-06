@@ -424,7 +424,7 @@ export default function Accounting() {
       {/* Transaction Form */}
       {showTransactionForm && (
         <TransactionForm 
-          open={showTransactionForm}
+          isOpen={showTransactionForm}
           onClose={() => setShowTransactionForm(false)}
           defaultType={transactionType}
         />
