@@ -2,6 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-First Touch Optimizations */
+@layer base {
+  /* Ensure minimum touch targets for mobile accessibility */
+  button, 
+  a[role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve touch responsiveness on mobile */
+  @media (hover: none) and (pointer: coarse) {
+    button:hover {
+      background-color: inherit;
+    }
+    
+    button:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
+  
+  /* Enhanced mobile form inputs */
+  @media (max-width: 768px) {
+    input, 
+    select, 
+    textarea {
+      font-size: 16px; /* Prevent zoom on iOS */
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .mobile-spacing {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    /* Mobile-optimized cards */
+    .card-mobile {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 12px;
+    }
+  }
+  
+  /* PWA status bar styling */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    .safe-area-top {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    .safe-area-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);

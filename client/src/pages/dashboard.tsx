@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/context/language-context';
 import { useAuth } from '@/hooks/use-auth';
+import UAEFTA2025Alerts from '@/components/compliance/uae-fta-2025-alerts';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -509,6 +510,23 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+      </div>
+
+      {/* UAE FTA 2025 Compliance Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">UAE FTA 2025 Compliance</h2>
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+            Critical Updates
+          </Badge>
+        </div>
+        
+        <UAEFTA2025Alerts 
+          revenue={revenue || 0}
+          isNaturalPerson={user?.role === 'SME_CLIENT'}
+          isMultinational={revenue >= 750000000}
+          isFreeZone={company?.businessType?.includes('Free Zone')}
+        />
       </div>
     </div>
   );

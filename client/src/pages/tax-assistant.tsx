@@ -248,12 +248,27 @@ export default function TaxAssistant() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Smart Insights</TabsTrigger>
-          <TabsTrigger value="health">Health Check</TabsTrigger>
-          <TabsTrigger value="deductions">Tax Optimizer</TabsTrigger>
-          <TabsTrigger value="expenses">Smart Tracking</TabsTrigger>
-          <TabsTrigger value="planning">Tax Planning</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm px-2 md:px-4">
+            <span className="hidden md:inline">Smart Insights</span>
+            <span className="md:hidden">Insights</span>
+          </TabsTrigger>
+          <TabsTrigger value="health" className="text-xs md:text-sm px-2 md:px-4">
+            <span className="hidden md:inline">Health Check</span>
+            <span className="md:hidden">Health</span>
+          </TabsTrigger>
+          <TabsTrigger value="deductions" className="text-xs md:text-sm px-2 md:px-4">
+            <span className="hidden md:inline">Tax Optimizer</span>
+            <span className="md:hidden">Optimizer</span>
+          </TabsTrigger>
+          <TabsTrigger value="expenses" className="text-xs md:text-sm px-2 md:px-4">
+            <span className="hidden md:inline">Smart Tracking</span>
+            <span className="md:hidden">Tracking</span>
+          </TabsTrigger>
+          <TabsTrigger value="planning" className="text-xs md:text-sm px-2 md:px-4 col-span-2 md:col-span-1">
+            <span className="hidden md:inline">Tax Planning</span>
+            <span className="md:hidden">Planning</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
