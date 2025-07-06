@@ -221,6 +221,57 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* AI Tax Assistant Promotion */}
+      <Card className="bg-gradient-to-r from-purple-50 via-blue-50 to-green-50 border-purple-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-6 w-6 text-purple-600" />
+                <h3 className="text-xl font-bold text-gray-900">NEW: AI Tax Assistant</h3>
+                <Badge className="bg-purple-100 text-purple-800 border-purple-300">TurboTax Inspired</Badge>
+              </div>
+              <p className="text-gray-700 mb-3">
+                Maximize your tax savings with our intelligent assistant featuring smart insights, 
+                deduction optimization, and automated expense tracking.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">Tax Health Score (95%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">Smart Expense Categorization</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">UAE-Specific Deductions</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">Annual Tax Planning</span>
+                </div>
+              </div>
+            </div>
+            <div className="ml-6 text-center">
+              <div className="mb-4">
+                <div className="text-3xl font-bold text-green-600">
+                  AED {Math.round(revenue * 0.05).toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600">Potential Annual Savings</div>
+              </div>
+              <Link to="/tax-assistant">
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                  Try AI Assistant
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tax Compliance Progress */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
