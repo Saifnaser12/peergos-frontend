@@ -18,6 +18,7 @@ import Assistant from "./pages/assistant";
 import Calendar from "./pages/calendar";
 import Admin from "./pages/admin";
 import Setup from "./pages/setup";
+import CreditDebitNotes from "./components/financial/credit-debit-notes";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/vat" component={VAT} />
         <Route path="/financials" component={Financials} />
         <Route path="/invoicing" component={Invoicing} />
+        <Route path="/credit-debit-notes" component={CreditDebitNotes} />
         <Route path="/transfer-pricing" component={TransferPricing} />
         <Route path="/assistant" component={Assistant} />
         <Route path="/calendar" component={Calendar} />
