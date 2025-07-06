@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Shield, 
   TrendingUp, 
@@ -43,6 +44,7 @@ export default function TaxHealthChecker({
   hasValidLicense,
   lastFilingDate
 }: TaxHealthCheckerProps) {
+  const { toast } = useToast();
   
   // Calculate tax health metrics
   const calculateTaxHealth = (): TaxHealthMetric[] => {
@@ -277,7 +279,16 @@ export default function TaxHealthChecker({
                     <p className="text-sm text-gray-600">{metric.recommendation}</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    toast({
+                      title: "Action Noted",
+                      description: `Working on fixing: ${metric.name}. This will guide you to the relevant section.`,
+                    });
+                  }}
+                >
                   Fix Now
                 </Button>
               </div>

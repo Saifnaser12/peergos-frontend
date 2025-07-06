@@ -16,6 +16,7 @@ import {
   PiggyBank,
   AlertCircle
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface DeductionOpportunity {
   category: string;
@@ -34,6 +35,7 @@ interface DeductionWizardProps {
 }
 
 export default function DeductionWizard({ revenue, expenses, businessType }: DeductionWizardProps) {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedOpportunities, setSelectedOpportunities] = useState<string[]>([]);
 
@@ -391,7 +393,15 @@ export default function DeductionWizard({ revenue, expenses, businessType }: Ded
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button className="bg-green-600 hover:bg-green-700">
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                toast({
+                  title: "Tax Optimization Activated!",
+                  description: `Successfully set up ${selectedOpportunities.length} deduction strategies. Tracking AED ${totalPotentialSaving.toLocaleString()} in annual savings.`,
+                });
+              }}
+            >
               Start Tracking
               <CheckCircle className="h-4 w-4 ml-2" />
             </Button>

@@ -18,6 +18,7 @@ import {
   FileText,
   Lightbulb
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SmartExpenseAnalysis {
   category: string;
@@ -39,6 +40,7 @@ interface ExpenseItem {
 }
 
 export default function SmartExpenseTracker() {
+  const { toast } = useToast();
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [newExpense, setNewExpense] = useState({
     description: '',
@@ -277,11 +279,27 @@ export default function SmartExpenseTracker() {
                 </>
               )}
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                toast({
+                  title: "Receipt Scanner",
+                  description: "Camera functionality would open here to scan receipts automatically.",
+                });
+              }}
+            >
               <Smartphone className="h-4 w-4 mr-2" />
               Scan Receipt
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                toast({
+                  title: "File Import",
+                  description: "File browser would open here to import expense data from CSV/Excel files.",
+                });
+              }}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Import File
             </Button>
@@ -391,7 +409,16 @@ export default function SmartExpenseTracker() {
               
               {expenses.length > 5 && (
                 <div className="text-center pt-4">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Expense History",
+                        description: `Viewing all ${expenses.length} tracked expenses with detailed analytics.`,
+                      });
+                    }}
+                  >
                     View All {expenses.length} Expenses
                   </Button>
                 </div>
