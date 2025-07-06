@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { MetricCard } from '@/components/ui/metric-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatCurrency } from '@/lib/business-logic';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/context/language-context';
 import { useAuth } from '@/hooks/use-auth';
@@ -25,7 +28,7 @@ import {
   Clock,
   Target
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/i18n';
+import { formatDate } from '@/lib/i18n';
 import { Link } from 'wouter';
 
 export default function Dashboard() {
@@ -54,13 +57,17 @@ export default function Dashboard() {
     enabled: !!company?.id,
   });
 
-  // Calculate real metrics
+  // Calculate real metrics using business logic
   const currentKpi = kpiData.length > 0 ? kpiData[0] : null;
-  const revenue = parseFloat(currentKpi?.revenue || '0');
-  const expenses = parseFloat(currentKpi?.expenses || '0');
-  const netIncome = parseFloat(currentKpi?.netIncome || '0');
-  const vatDue = parseFloat(currentKpi?.vatDue || '0');
-  const citDue = parseFloat(currentKpi?.citDue || '0');
+  
+  // Only show data if we have real transactions, otherwise show empty state
+  const hasData = currentKpi && (parseFloat(currentKpi.revenue || '0') > 0 || parseFloat(currentKpi.expenses || '0') > 0);
+  
+  const revenue = hasData ? parseFloat(currentKpi.revenue || '0') : 0;
+  const expenses = hasData ? parseFloat(currentKpi.expenses || '0') : 0;
+  const netIncome = hasData ? parseFloat(currentKpi.netIncome || '0') : 0;
+  const vatDue = hasData ? parseFloat(currentKpi.vatDue || '0') : 0;
+  const citDue = hasData ? parseFloat(currentKpi.citDue || '0') : 0;
 
   // Calculate completion percentages
   const vatThreshold = 187500; // AED 187,500 quarterly threshold

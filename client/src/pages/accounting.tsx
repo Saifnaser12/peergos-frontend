@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { MetricCard } from '@/components/ui/metric-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatCurrency } from '@/lib/business-logic';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
@@ -27,7 +30,7 @@ import {
   Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatCurrency, formatDate } from '@/lib/i18n';
+import { formatDate } from '@/lib/i18n';
 
 export default function Accounting() {
   const [showTransactionForm, setShowTransactionForm] = useState(false);
@@ -47,13 +50,16 @@ export default function Accounting() {
     enabled: !!company?.id,
   });
 
-  // Calculate metrics from real data
+  // Calculate metrics from real data using business logic
   const typedTransactions = transactions as any[];
-  const revenue = typedTransactions.filter(t => t.type === 'REVENUE').reduce((sum, t) => sum + parseFloat(t.amount), 0);
-  const expenses = typedTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + parseFloat(t.amount), 0);
+  
+  // Only calculate if we have real transactions
+  const hasTransactions = typedTransactions.length > 0;
+  const revenue = hasTransactions ? typedTransactions.filter(t => t.type === 'REVENUE').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0) : 0;
+  const expenses = hasTransactions ? typedTransactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0) : 0;
   const netIncome = revenue - expenses;
   const currentKpi = kpiData.length > 0 ? kpiData[0] : null;
-  const vatDue = parseFloat(currentKpi?.vatDue || '0');
+  const vatDue = hasTransactions && currentKpi ? parseFloat(currentKpi.vatDue || '0') : 0;
 
   // Filter transactions
   const filteredTransactions = typedTransactions.filter(t => {
