@@ -14,6 +14,7 @@ import {
   Settings,
   Home,
   Shield,
+  GitBranch,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,6 +46,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     {
       section: 'Tax Compliance',
       items: [
+        { path: '/workflow', icon: ArrowRightLeft, label: 'SME Workflow', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'], badge: 'FTA' },
         { path: '/cit', icon: Building2, label: t('nav.cit'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/vat', icon: FileText, label: t('nav.vat'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { 
@@ -52,7 +54,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           icon: ArrowRightLeft, 
           label: t('nav.transfer_pricing'), 
           roles: ['ADMIN', 'ACCOUNTANT'],
-          badge: 'Coming Soon',
+          badge: 'SME',
         },
       ],
     },
