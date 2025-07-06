@@ -197,6 +197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invoices", async (req, res) => {
     try {
       console.log('Received invoice data:', req.body);
+      
+      // Auto-generate invoice number if not provided
+      if (!req.body.invoiceNumber) {
+        req.body.invoiceNumber = `INV-${Date.now()}`;
+      }
+      
       const validatedData = insertInvoiceSchema.parse(req.body);
       console.log('Validated invoice data:', validatedData);
       const invoice = await storage.createInvoice(validatedData);
