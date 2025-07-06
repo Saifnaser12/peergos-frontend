@@ -130,6 +130,234 @@
   flex-direction: row-reverse;
 }
 
+/* UAE FTA Branding & Mobile Optimization */
+
+/* UAE Flag Colors & FTA Branding */
+.uae-gradient {
+  background: linear-gradient(135deg, #059669 0%, #dc2626 100%);
+}
+
+.uae-flag-colors {
+  background: linear-gradient(to right, #059669 25%, #ffffff 25% 50%, #dc2626 50% 75%, #000000 75%);
+}
+
+.fta-primary {
+  color: #1e40af;
+}
+
+.fta-secondary {
+  color: #059669;
+}
+
+.fta-accent {
+  color: #dc2626;
+}
+
+.fta-bg-primary {
+  background-color: #1e40af;
+}
+
+.fta-bg-secondary {
+  background-color: #059669;
+}
+
+.fta-bg-accent {
+  background-color: #dc2626;
+}
+
+/* Mobile-First Responsive Design */
+@media (max-width: 640px) {
+  /* Mobile Typography */
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Mobile Spacing */
+  .mobile-padding {
+    padding: 1rem !important;
+  }
+  
+  .mobile-margin {
+    margin: 0.5rem !important;
+  }
+  
+  /* Mobile Cards */
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+  }
+  
+  /* Mobile Navigation */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    padding: 0.5rem;
+  }
+  
+  /* Mobile Buttons */
+  .btn-mobile {
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Mobile Forms */
+  .form-mobile input,
+  .form-mobile textarea,
+  .form-mobile select {
+    padding: 0.75rem !important;
+    font-size: 1rem !important;
+    min-height: 44px;
+  }
+  
+  /* Mobile Tables */
+  .table-mobile {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .table-mobile th,
+  .table-mobile td {
+    min-width: 120px;
+    padding: 0.5rem;
+  }
+  
+  /* Mobile Grid Adjustments */
+  .grid-mobile-1 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-mobile-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Mobile Tabs */
+  .tabs-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tabs-mobile .tabs-list {
+    min-width: max-content;
+  }
+}
+
+/* Tablet Responsive Design */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .tablet-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Touch-Friendly Interactions */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Loading States for Mobile */
+.mobile-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* Sticky Elements for Mobile */
+.mobile-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Mobile-Specific Animations */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-slide-in {
+    animation: slideInFromRight 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-border {
+    border-width: 0.5px;
+  }
+}
+
+/* UAE FTA Compliance Badges */
+.fta-compliant-badge {
+  background: linear-gradient(135deg, #059669, #1e40af);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Mobile-Optimized Dashboard Cards */
+@media (max-width: 640px) {
+  .dashboard-card-mobile {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dashboard-metric-mobile {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  
+  .dashboard-label-mobile {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+}
+
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

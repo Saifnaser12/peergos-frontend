@@ -1,389 +1,835 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import UAEComplianceDashboard from '@/components/compliance/uae-compliance-dashboard';
-import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
-import SetupWizard from '@/components/setup/setup-wizard';
-import CitValidator from '@/components/testing/cit-validator';
-import InvoiceScanner from '@/components/invoice/invoice-scanner';
-import SmartComplianceDashboard from '@/components/compliance/smart-compliance-dashboard';
-import SMESimplifiedDashboard from '@/components/sme/sme-simplified-dashboard';
-import EndToEndTaxWorkflow from '@/components/workflow/end-to-end-tax-workflow';
-import RevenueExpenseCategories from '@/components/financial/revenue-expense-categories';
-import BalanceSheetGenerator from '@/components/financial/balance-sheet-generator';
-import TRNManagement from '@/components/setup/trn-management';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { 
-  Settings, 
-  Shield, 
-  FileX, 
   Building2, 
-  Palette,
-  Globe,
-  Bell,
-  Download,
+  MapPin,
+  Users,
+  DollarSign,
+  CheckCircle,
+  Info,
+  ArrowRight,
+  ArrowLeft,
+  Upload,
+  Star,
+  Flag,
+  Shield,
+  FileText,
   Calculator,
-  Zap
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/i18n';
+import { apiRequest } from '@/lib/queryClient';
+
+interface SetupFormData {
+  // Company Basic Info
+  companyName: string;
+  trn: string;
+  businessLicense: string;
+  address: string;
+  phone: string;
+  email: string;
+  
+  // SME Categorization (per FTA requirements)
+  entityType: 'mainland' | 'freezone' | 'individual';
+  annualRevenue: number;
+  employeeCount: number;
+  isVatRegistered: boolean;
+  
+  // Business Classification
+  industry: string;
+  businessActivities: string[];
+  hasRelatedParties: boolean;
+  
+  // Documents
+  licenseDocument: File | null;
+  auditedFinancials: File | null;
+  
+  // UAE Integration
+  uaePassConsent: boolean;
+  ftaIntegrationConsent: boolean;
+}
 
 export default function Setup() {
-  const [activeTab, setActiveTab] = useState('workflow');
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<SetupFormData>({
+    companyName: '',
+    trn: '',
+    businessLicense: '',
+    address: '',
+    phone: '',
+    email: '',
+    entityType: 'mainland',
+    annualRevenue: 0,
+    employeeCount: 0,
+    isVatRegistered: false,
+    industry: '',
+    businessActivities: [],
+    hasRelatedParties: false,
+    licenseDocument: null,
+    auditedFinancials: null,
+    uaePassConsent: false,
+    ftaIntegrationConsent: false,
+  });
+  
   const { user, company } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const totalSteps = 6;
+  const progress = (currentStep / totalSteps) * 100;
 
-  // Sample invoice for UBL testing
-  const sampleInvoice = {
-    invoiceNumber: 'INV-2024-001',
-    issueDate: new Date().toISOString(),
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    clientName: 'Sample Customer LLC',
-    clientAddress: 'Dubai, UAE',
-    clientTRN: '100987654321001',
-    items: [
-      {
-        description: 'Professional Services',
-        quantity: 1,
-        unitPrice: 10000,
-        vatRate: 0.05
-      }
-    ],
-    subtotal: 10000,
-    vatAmount: 500,
-    total: 10500
+  // SME Categorization based on FTA requirements (from PDF)
+  const getSMECategory = () => {
+    const { annualRevenue, employeeCount, entityType } = formData;
+    
+    if (entityType === 'freezone' && annualRevenue < 3000000) {
+      return {
+        category: 'QFZP (Qualified Free Zone Person)',
+        citRate: '0%',
+        vatRequired: annualRevenue >= 375000,
+        financialStatements: 'Cash Basis',
+        transferPricing: false,
+        color: 'blue'
+      };
+    }
+    
+    if (annualRevenue < 375000) {
+      return {
+        category: 'Micro SME',
+        citRate: '0%',
+        vatRequired: false,
+        financialStatements: 'Cash Basis',
+        transferPricing: false,
+        color: 'green'
+      };
+    }
+    
+    if (annualRevenue >= 375000 && annualRevenue < 3000000) {
+      return {
+        category: 'Small SME',
+        citRate: '0%',
+        vatRequired: true,
+        financialStatements: 'Cash Basis',
+        transferPricing: false,
+        color: 'orange'
+      };
+    }
+    
+    if (employeeCount < 100 && annualRevenue < 25000000) {
+      return {
+        category: 'Small Business',
+        citRate: '9%',
+        vatRequired: true,
+        financialStatements: 'Accrual Basis',
+        transferPricing: true,
+        color: 'purple'
+      };
+    }
+    
+    if (employeeCount < 250 && annualRevenue < 150000000) {
+      return {
+        category: 'Medium Business',
+        citRate: '9%',
+        vatRequired: true,
+        financialStatements: 'Accrual Basis',
+        transferPricing: true,
+        color: 'red'
+      };
+    }
+    
+    return {
+      category: 'Large Business',
+      citRate: '9%',
+      vatRequired: true,
+      financialStatements: 'Accrual Basis',
+      transferPricing: true,
+      color: 'gray'
+    };
   };
 
-  const complianceFeatures = [
-    {
-      title: 'TRN Verification',
-      description: 'Validate Tax Registration Numbers against FTA registry',
-      status: 'Active',
-      icon: Shield
+  const smeCategory = getSMECategory();
+
+  // Update company mutation
+  const updateCompanyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest(`/api/companies/${company?.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
     },
-    {
-      title: 'UBL 2.1 E-Invoicing',
-      description: 'Generate FTA-compliant XML invoices with digital signatures',
-      status: 'Beta',
-      icon: FileX
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+      toast({
+        title: 'Success',
+        description: 'Company setup completed successfully',
+      });
     },
-    {
-      title: 'QFZP Assessment',
-      description: 'Qualified Free Zone Person eligibility evaluation',
-      status: 'Active',
-      icon: Building2
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update company',
+        variant: 'destructive',
+      });
     },
-    {
-      title: 'Automatic Filings',
-      description: 'Submit VAT and CIT returns to FTA portal',
-      status: 'Coming Soon',
-      icon: Download
+  });
+
+  const handleNext = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep(currentStep + 1);
     }
-  ];
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleComplete = () => {
+    const companyData = {
+      name: formData.companyName,
+      trn: formData.trn,
+      address: formData.address,
+      phone: formData.phone,
+      email: formData.email,
+      industry: formData.industry,
+      freeZone: formData.entityType === 'freezone',
+      vatRegistered: formData.isVatRegistered,
+      // Store SME categorization results
+      smeCategory: smeCategory.category,
+      annualRevenue: formData.annualRevenue,
+      employeeCount: formData.employeeCount,
+    };
+    
+    updateCompanyMutation.mutate(companyData);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Setup & Compliance</h1>
-            <p className="text-gray-600 mt-1">
-              Configure UAE tax compliance features and regulatory settings
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-red-50 p-4 md:p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* UAE FTA Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Flag className="h-8 w-8 text-green-600" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-red-600 bg-clip-text text-transparent">
+                UAE FTA
+              </span>
+            </div>
+            <div className="h-8 w-px bg-gray-300" />
+            <div className="flex items-center gap-2">
+              <Shield className="h-8 w-8 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900">Peergos</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1">
-              <Shield size={14} />
-              UAE FTA Certified
-            </Badge>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            SME Tax Compliance Setup
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            FTA's Reliable Partner for Automated Tax Management • Complete UAE Compliance Solution
+          </p>
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11">
-            <TabsTrigger value="workflow">Complete Workflow</TabsTrigger>
-            <TabsTrigger value="sme">SME Hub</TabsTrigger>
-            <TabsTrigger value="wizard">Setup</TabsTrigger>
-            <TabsTrigger value="trn">TRN</TabsTrigger>
-            <TabsTrigger value="smart">Smart Compliance</TabsTrigger>
-            <TabsTrigger value="einvoicing">E-Invoice</TabsTrigger>
-            <TabsTrigger value="scanner">OCR</TabsTrigger>
-            <TabsTrigger value="testing">Testing</TabsTrigger>
-            <TabsTrigger value="company">Company</TabsTrigger>
-            <TabsTrigger value="preferences">Settings</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-          </TabsList>
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <span>Step {currentStep} of {totalSteps}</span>
+            <span>{Math.round(progress)}% Complete</span>
+          </div>
+          <Progress value={progress} className="h-3" />
+        </div>
 
-          {/* Complete End-to-End Workflow */}
-          <TabsContent value="workflow" className="space-y-6">
-            <EndToEndTaxWorkflow />
-          </TabsContent>
+        {/* Step Content */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-6 md:p-8">
+            {/* Step 1: Welcome & Overview */}
+            {currentStep === 1 && (
+              <div className="space-y-6 text-center">
+                <div className="flex justify-center">
+                  <div className="h-24 w-24 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <Building2 className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                    Welcome to UAE FTA Compliance
+                  </h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Peergos will help you set up complete tax compliance for your business according to FTA requirements. 
+                    We'll determine your SME category and configure appropriate tax obligations.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                  <div className="text-center p-4 rounded-lg bg-green-50 border border-green-200">
+                    <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <h3 className="font-semibold text-green-900">Automated Setup</h3>
+                    <p className="text-sm text-green-700">SME category detection & tax configuration</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-blue-50 border border-blue-200">
+                    <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <h3 className="font-semibold text-blue-900">FTA Integration</h3>
+                    <p className="text-sm text-blue-700">Direct connection to FTA systems</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-200">
+                    <Calculator className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                    <h3 className="font-semibold text-purple-900">Real-time Calculations</h3>
+                    <p className="text-sm text-purple-700">Automatic VAT & CIT computations</p>
+                  </div>
+                </div>
 
-          {/* SME Simplified Dashboard */}
-          <TabsContent value="sme" className="space-y-6">
-            <SMESimplifiedDashboard />
-          </TabsContent>
+                <Alert className="border-blue-200 bg-blue-50 text-left">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>FTA Compliance:</strong> This setup ensures your business meets all Federal Tax Authority requirements 
+                    including CIT registration, VAT obligations, and transfer pricing (where applicable).
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
 
-          {/* Setup Wizard */}
-          <TabsContent value="wizard" className="space-y-6">
-            <SetupWizard 
-              onComplete={(data) => {
-                console.log('Setup completed:', data);
-                // Here we would typically save the setup data
-                setActiveTab('compliance');
-              }} 
-            />
-          </TabsContent>
+            {/* Step 2: Company Information */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Company Information</h2>
+                  <p className="text-gray-600">Enter your business details as registered with UAE authorities</p>
+                </div>
 
-          {/* TRN Management */}
-          <TabsContent value="trn" className="space-y-6">
-            <TRNManagement />
-          </TabsContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName" className="flex items-center gap-2">
+                      <Building2 size={16} />
+                      Company Name *
+                    </Label>
+                    <Input
+                      id="companyName"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                      placeholder="Enter company name as per trade license"
+                      className="text-base p-3"
+                    />
+                  </div>
 
-          {/* Smart Compliance Dashboard */}
-          <TabsContent value="smart" className="space-y-6">
-            <SmartComplianceDashboard />
-          </TabsContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="trn" className="flex items-center gap-2">
+                      <Shield size={16} />
+                      Tax Registration Number (TRN)
+                    </Label>
+                    <Input
+                      id="trn"
+                      value={formData.trn}
+                      onChange={(e) => setFormData(prev => ({ ...prev, trn: e.target.value }))}
+                      placeholder="100123456789001"
+                      className="text-base p-3"
+                    />
+                  </div>
 
-          {/* E-Invoicing UBL Generator */}
-          <TabsContent value="einvoicing" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                  <FileX size={20} className="text-primary-500" />
-                  UAE E-Invoicing (Phase 2)
-                </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Test UBL 2.1 XML generation for FTA compliance
-                </p>
-              </CardHeader>
-              <CardContent>
-                <UBLInvoiceGenerator invoice={sampleInvoice} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="businessLicense" className="flex items-center gap-2">
+                      <FileText size={16} />
+                      Business License Number *
+                    </Label>
+                    <Input
+                      id="businessLicense"
+                      value={formData.businessLicense}
+                      onChange={(e) => setFormData(prev => ({ ...prev, businessLicense: e.target.value }))}
+                      placeholder="Enter trade license number"
+                      className="text-base p-3"
+                    />
+                  </div>
 
-          {/* Invoice Scanner & OCR */}
-          <TabsContent value="scanner" className="space-y-6">
-            <InvoiceScanner />
-          </TabsContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Globe size={16} />
+                      Phone Number *
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+971 50 123 4567"
+                      className="text-base p-3"
+                    />
+                  </div>
 
-          {/* CIT Testing & Validation */}
-          <TabsContent value="testing" className="space-y-6">
-            <CitValidator />
-          </TabsContent>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="address" className="flex items-center gap-2">
+                      <MapPin size={16} />
+                      Business Address *
+                    </Label>
+                    <Textarea
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Enter complete business address"
+                      rows={3}
+                      className="text-base p-3"
+                    />
+                  </div>
 
-          {/* Company Settings */}
-          <TabsContent value="company" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Globe size={16} />
+                      Business Email *
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="contact@company.ae"
+                      className="text-base p-3"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="industry" className="flex items-center gap-2">
+                      <Building2 size={16} />
+                      Industry Sector *
+                    </Label>
+                    <Input
+                      id="industry"
+                      value={formData.industry}
+                      onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
+                      placeholder="e.g., Information Technology, Trading, Services"
+                      className="text-base p-3"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: SME Categorization */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">SME Categorization</h2>
+                  <p className="text-gray-600">Help us determine your tax obligations based on FTA requirements</p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <Label className="text-lg font-semibold">Entity Type</Label>
+                    <RadioGroup
+                      value={formData.entityType}
+                      onValueChange={(value: any) => setFormData(prev => ({ ...prev, entityType: value }))}
+                      className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                    >
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                        <RadioGroupItem value="mainland" id="mainland" />
+                        <Label htmlFor="mainland" className="font-medium">UAE Mainland</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                        <RadioGroupItem value="freezone" id="freezone" />
+                        <Label htmlFor="freezone" className="font-medium">Free Zone</Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
+                        <RadioGroupItem value="individual" id="individual" />
+                        <Label htmlFor="individual" className="font-medium">Individual with License</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="annualRevenue" className="flex items-center gap-2">
+                        <DollarSign size={16} />
+                        Annual Revenue (AED) *
+                      </Label>
+                      <Input
+                        id="annualRevenue"
+                        type="number"
+                        value={formData.annualRevenue}
+                        onChange={(e) => setFormData(prev => ({ ...prev, annualRevenue: parseInt(e.target.value) || 0 }))}
+                        placeholder="1000000"
+                        className="text-base p-3"
+                      />
+                      <p className="text-sm text-gray-500">Enter your expected or actual annual revenue</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="employeeCount" className="flex items-center gap-2">
+                        <Users size={16} />
+                        Number of Employees *
+                      </Label>
+                      <Input
+                        id="employeeCount"
+                        type="number"
+                        value={formData.employeeCount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, employeeCount: parseInt(e.target.value) || 0 }))}
+                        placeholder="5"
+                        className="text-base p-3"
+                      />
+                      <p className="text-sm text-gray-500">Full-time equivalent employees</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="vatRegistered"
+                      checked={formData.isVatRegistered}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isVatRegistered: !!checked }))}
+                    />
+                    <Label htmlFor="vatRegistered" className="text-base">
+                      Already registered for VAT
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasRelatedParties"
+                      checked={formData.hasRelatedParties}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasRelatedParties: !!checked }))}
+                    />
+                    <Label htmlFor="hasRelatedParties" className="text-base">
+                      Has related party transactions (affects transfer pricing requirements)
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Live SME Category Preview */}
+                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Your SME Category</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Company Name</label>
-                      <div className="mt-1 p-3 bg-gray-50 rounded border">
-                        {company?.name || 'Not Set'}
+                      <Badge className={`mb-2 ${smeCategory.color === 'green' ? 'bg-green-100 text-green-800' : 
+                        smeCategory.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                        smeCategory.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                        smeCategory.color === 'purple' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'}`}>
+                        {smeCategory.category}
+                      </Badge>
+                      <div className="space-y-2 text-sm">
+                        <p><strong>CIT Rate:</strong> {smeCategory.citRate}</p>
+                        <p><strong>VAT Registration:</strong> {smeCategory.vatRequired ? 'Required' : 'Not Required'}</p>
+                        <p><strong>Financial Statements:</strong> {smeCategory.financialStatements}</p>
+                        <p><strong>Transfer Pricing:</strong> {smeCategory.transferPricing ? 'Required' : 'Not Required'}</p>
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Tax Registration Number (TRN)</label>
-                      <div className="mt-1 p-3 bg-gray-50 rounded border">
-                        {company?.trn || 'Not Set'}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">VAT Registration</label>
-                      <div className="mt-1">
-                        <Badge variant={company?.vatRegistered ? "default" : "secondary"}>
-                          {company?.vatRegistered ? 'Registered' : 'Not Registered'}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Free Zone Status</label>
-                      <div className="mt-1">
-                        <Badge variant={company?.freeZone ? "default" : "secondary"}>
-                          {company?.freeZone ? 'Free Zone Entity' : 'Mainland Entity'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t">
-                    <h4 className="font-medium text-gray-900 mb-2">Address Information</h4>
-                    <div className="p-3 bg-gray-50 rounded border text-sm">
-                      {company?.address || 'Address not specified'}
+                    <div className="text-sm text-gray-600">
+                      <p className="mb-2"><strong>Based on FTA Requirements:</strong></p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Revenue: {formatCurrency(formData.annualRevenue, 'AED', 'en-AE')}</li>
+                        <li>Employees: {formData.employeeCount}</li>
+                        <li>Entity: {formData.entityType}</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          {/* User Preferences */}
-          <TabsContent value="preferences" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe size={18} />
-                    Language & Region
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Interface Language
-                    </label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={language === 'en' ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setLanguage('en')}
-                      >
-                        English
-                      </Button>
-                      <Button
-                        variant={language === 'ar' ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setLanguage('ar')}
-                      >
-                        العربية
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Currency
-                    </label>
-                    <Badge variant="outline">AED (UAE Dirham)</Badge>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Timezone
-                    </label>
-                    <Badge variant="outline">UTC+4 (Gulf Standard Time)</Badge>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Step 4: UAE Integration */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">UAE Government Integration</h2>
+                  <p className="text-gray-600">Connect with UAE Pass and FTA systems for seamless compliance</p>
+                </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell size={18} />
-                    Notifications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Tax deadline reminders</span>
-                      <Badge variant="default">Enabled</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">FTA compliance alerts</span>
-                      <Badge variant="default">Enabled</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Invoice generation</span>
-                      <Badge variant="default">Enabled</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">System updates</span>
-                      <Badge variant="outline">Disabled</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Available Features */}
-          <TabsContent value="features" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>UAE Tax Compliance Features</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Advanced regulatory compliance tools for UAE businesses
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {complianceFeatures.map((feature, index) => {
-                    const Icon = feature.icon;
-                    return (
-                      <div key={index} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-primary-100 rounded-lg">
-                            <Icon size={18} className="text-primary-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium text-gray-900">{feature.title}</h4>
-                              <Badge 
-                                variant={
-                                  feature.status === 'Active' ? "default" : 
-                                  feature.status === 'Beta' ? "secondary" : 
-                                  "outline"
-                                }
-                                className="text-xs"
-                              >
-                                {feature.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">{feature.description}</p>
-                          </div>
+                <div className="space-y-6">
+                  <Card className="border-green-200 bg-green-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-green-800">
+                        <Flag size={20} />
+                        UAE Pass Integration
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="uaePassConsent"
+                          checked={formData.uaePassConsent}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, uaePassConsent: !!checked }))}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="uaePassConsent" className="text-base font-medium text-green-900">
+                            Connect with UAE Pass
+                          </Label>
+                          <p className="text-sm text-green-700 mt-1">
+                            Authorize Peergos to integrate with your UAE Pass account for secure government services access. 
+                            This enables automatic document verification and streamlined compliance processes.
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                    </CardContent>
+                  </Card>
 
-            {/* Regulatory Information */}
-            <Card className="border-info-200 bg-info-50">
-              <CardHeader>
-                <CardTitle className="text-info-900">Regulatory Compliance Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm text-info-800">
-                  <h5 className="font-medium">Current UAE Tax Obligations:</h5>
-                  <ul className="space-y-1 ml-4">
-                    <li>✓ Corporate Income Tax (CIT) - 0% rate with Small Business Relief</li>
-                    <li>✓ Value Added Tax (VAT) - 5% standard rate</li>
-                    <li>✓ E-Invoicing Phase 2 - UBL 2.1 XML compliance</li>
-                    <li>✓ Transfer Pricing documentation requirements</li>
-                    <li>✓ Economic Substance Regulations (ESR)</li>
-                    <li>✓ Country-by-Country Reporting (CbCR)</li>
-                  </ul>
-                  
-                  <div className="pt-3 border-t border-info-200">
-                    <p className="text-xs text-info-700">
-                      Last updated: {new Date().toLocaleDateString()} | 
-                      Compliance framework based on UAE Federal Tax Authority guidelines
-                    </p>
-                  </div>
+                  <Card className="border-blue-200 bg-blue-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-blue-800">
+                        <Shield size={20} />
+                        FTA Direct Integration
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="ftaIntegrationConsent"
+                          checked={formData.ftaIntegrationConsent}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ftaIntegrationConsent: !!checked }))}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="ftaIntegrationConsent" className="text-base font-medium text-blue-900">
+                            Authorize FTA Data Access
+                          </Label>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Grant FTA read-only access to your business data via TRN number. This ensures real-time compliance 
+                            monitoring and automatic filing capabilities as required by UAE tax regulations.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      <strong>Privacy & Security:</strong> All integrations use secure, encrypted connections. 
+                      Your data remains protected and is only shared as required by UAE tax regulations.
+                    </AlertDescription>
+                  </Alert>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            )}
+
+            {/* Step 5: Document Upload */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Supporting Documents</h2>
+                  <p className="text-gray-600">Upload required documents for compliance verification</p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-dashed border-2 border-gray-300 hover:border-blue-400 transition-colors">
+                      <CardContent className="p-6 text-center">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="font-semibold text-gray-900 mb-2">Trade License</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Upload your business trade license (required for verification)
+                        </p>
+                        <Button variant="outline" className="w-full">
+                          Choose File
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-dashed border-2 border-gray-300 hover:border-blue-400 transition-colors">
+                      <CardContent className="p-6 text-center">
+                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="font-semibold text-gray-900 mb-2">Financial Statements</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Upload recent financial statements (optional but recommended)
+                        </p>
+                        <Button variant="outline" className="w-full">
+                          Choose File
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      <strong>Document Security:</strong> All uploaded documents are encrypted and stored securely in UAE cloud infrastructure. 
+                      FTA will have access as required by regulations for compliance verification.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+            )}
+
+            {/* Step 6: Review & Complete */}
+            {currentStep === 6 && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <div className="flex justify-center mb-4">
+                    <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-8 w-8 text-green-600" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Setup Complete</h2>
+                  <p className="text-gray-600">Review your configuration before finalizing</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Company Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600">Company Name</p>
+                        <p className="font-medium">{formData.companyName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">TRN</p>
+                        <p className="font-medium">{formData.trn || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Entity Type</p>
+                        <p className="font-medium capitalize">{formData.entityType}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Industry</p>
+                        <p className="font-medium">{formData.industry}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Tax Configuration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600">SME Category</p>
+                        <Badge className={`${smeCategory.color === 'green' ? 'bg-green-100 text-green-800' : 
+                          smeCategory.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                          smeCategory.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                          smeCategory.color === 'purple' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'}`}>
+                          {smeCategory.category}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">CIT Rate</p>
+                        <p className="font-medium">{smeCategory.citRate}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">VAT Registration</p>
+                        <p className="font-medium">{smeCategory.vatRequired ? 'Required' : 'Not Required'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Transfer Pricing</p>
+                        <p className="font-medium">{smeCategory.transferPricing ? 'Required' : 'Not Required'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">UAE Integration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className={formData.uaePassConsent ? "text-green-600" : "text-gray-400"} />
+                        <span className={formData.uaePassConsent ? "text-green-900" : "text-gray-600"}>
+                          UAE Pass Integration
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className={formData.ftaIntegrationConsent ? "text-green-600" : "text-gray-400"} />
+                        <span className={formData.ftaIntegrationConsent ? "text-green-900" : "text-gray-600"}>
+                          FTA Data Access
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Next Steps</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star size={16} className="text-yellow-500" />
+                        <span>Automatic CIT registration setup</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star size={16} className="text-yellow-500" />
+                        <span>VAT invoicing system activation</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star size={16} className="text-yellow-500" />
+                        <span>Financial statements automation</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Star size={16} className="text-yellow-500" />
+                        <span>FTA compliance monitoring</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>Ready for Launch:</strong> Your Peergos system is configured according to FTA requirements. 
+                    Click "Complete Setup" to activate your automated tax compliance solution.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={handlePrev}
+                disabled={currentStep === 1}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft size={16} />
+                Previous
+              </Button>
+
+              <div className="flex gap-3">
+                {currentStep < totalSteps ? (
+                  <Button
+                    onClick={handleNext}
+                    disabled={
+                      (currentStep === 2 && (!formData.companyName || !formData.businessLicense)) ||
+                      (currentStep === 3 && !formData.annualRevenue)
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    Next
+                    <ArrowRight size={16} />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleComplete}
+                    disabled={updateCompanyMutation.isPending}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    {updateCompanyMutation.isPending ? 'Setting up...' : 'Complete Setup'}
+                    <CheckCircle size={16} />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-sm text-gray-500">
+          <p>© 2024 Peergos Solutions • FTA's Reliable Partner for Tax Management</p>
+          <p className="mt-1">Fully compliant with UAE Federal Tax Authority requirements</p>
+        </div>
       </div>
     </div>
   );
