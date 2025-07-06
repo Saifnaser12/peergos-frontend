@@ -32,6 +32,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       section: 'Main',
       items: [
         { path: '/', icon: Home, label: t('nav.dashboard'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/setup', icon: Shield, label: 'SME Setup & Categorization', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'], badge: 'FTA' },
         { path: '/calendar', icon: Calendar, label: t('nav.calendar'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
       ],
     },
@@ -62,7 +63,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       section: 'Support',
       items: [
         { path: '/assistant', icon: Bot, label: t('nav.assistant'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
-        { path: '/setup', icon: Shield, label: 'UAE Compliance', roles: ['ADMIN', 'ACCOUNTANT'], badge: 'FTA' },
         { path: '/admin', icon: Settings, label: t('nav.admin'), roles: ['ADMIN'] },
       ],
     },

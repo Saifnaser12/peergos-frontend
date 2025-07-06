@@ -29,7 +29,10 @@ import {
   Shield,
   FileText,
   Calculator,
-  Globe
+  Globe,
+  TrendingUp,
+  Building,
+  Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -94,71 +97,70 @@ export default function Setup() {
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
-  // SME Categorization based on FTA requirements (from PDF)
+  // SME Categorization based on exact PDF workflow flowchart
   const getSMECategory = () => {
     const { annualRevenue, employeeCount, entityType } = formData;
     
-    if (entityType === 'freezone' && annualRevenue < 3000000) {
-      return {
-        category: 'QFZP (Qualified Free Zone Person)',
-        citRate: '0%',
-        vatRequired: annualRevenue >= 375000,
-        financialStatements: 'Cash Basis',
-        transferPricing: false,
-        color: 'blue'
-      };
-    }
-    
-    if (annualRevenue < 375000) {
-      return {
-        category: 'Micro SME',
-        citRate: '0%',
-        vatRequired: false,
-        financialStatements: 'Cash Basis',
-        transferPricing: false,
-        color: 'green'
-      };
-    }
-    
-    if (annualRevenue >= 375000 && annualRevenue < 3000000) {
-      return {
-        category: 'Small SME',
-        citRate: '0%',
-        vatRequired: true,
-        financialStatements: 'Cash Basis',
-        transferPricing: false,
-        color: 'orange'
-      };
-    }
-    
-    if (employeeCount < 100 && annualRevenue < 25000000) {
-      return {
-        category: 'Small Business',
-        citRate: '9%',
-        vatRequired: true,
-        financialStatements: 'Accrual Basis',
-        transferPricing: true,
-        color: 'purple'
-      };
-    }
-    
-    if (employeeCount < 250 && annualRevenue < 150000000) {
-      return {
-        category: 'Medium Business',
-        citRate: '9%',
-        vatRequired: true,
-        financialStatements: 'Accrual Basis',
-        transferPricing: true,
-        color: 'red'
-      };
+    // PDF Workflow: SMEs Decision Tree
+    if (annualRevenue < 3000000) {
+      if (annualRevenue < 375000) {
+        return {
+          category: 'SME - Micro (< AED 375k)',
+          citRate: '0%',
+          vatRequired: false,
+          citRegistration: 'Required',
+          financialStatements: 'Cash basis F.S (with notes)',
+          transferPricing: false,
+          obligations: ['No VAT invoices and submissions', 'Required CIT Registration and filing 0% tax', 'Cash basis F.S (with notes)'],
+          color: 'green'
+        };
+      } else {
+        return {
+          category: 'SME - Small (> AED 375k, < AED 3m)',
+          citRate: '0%',
+          vatRequired: true,
+          citRegistration: 'Required',
+          financialStatements: 'Cash basis F.S (with notes)',
+          transferPricing: false,
+          obligations: ['Required VAT invoices and submissions', 'Required CIT Registration and filing 0% tax', 'Cash basis F.S (with notes)'],
+          color: 'orange'
+        };
+      }
+    } else {
+      // Revenue > AED 3m
+      if (employeeCount < 100 && annualRevenue < 25000000) {
+        return {
+          category: 'Small Business (> AED 3m, < 100 FTE, < 25m Rev)',
+          citRate: '9%',
+          vatRequired: true,
+          citRegistration: 'Required',
+          financialStatements: 'Accrual basis F.S (with notes)',
+          transferPricing: true,
+          obligations: ['Required VAT invoices and submissions', 'Required CIT Registration and filing', 'Accrual basis F.S (with notes)', 'Transfer pricing requirements'],
+          color: 'purple'
+        };
+      } else if (employeeCount < 250 && annualRevenue < 150000000) {
+        return {
+          category: 'Medium Business (< 250 FTE, < 150m Rev)',
+          citRate: '9%',
+          vatRequired: true,
+          citRegistration: 'Required',
+          financialStatements: 'Accrual basis F.S (with notes)',
+          transferPricing: true,
+          obligations: ['Required VAT invoices and submissions', 'Required CIT Registration and filing', 'Accrual basis F.S (with notes)', 'Transfer pricing requirements'],
+          color: 'red'
+        };
+      }
     }
     
     return {
       category: 'Large Business',
       citRate: '9%',
       vatRequired: true,
-      financialStatements: 'Accrual Basis',
+      citRegistration: 'Required',
+      financialStatements: 'Accrual basis F.S (with notes)',
       transferPricing: true,
+      obligations: ['Full compliance requirements'],
       color: 'gray'
     };
   };
@@ -504,32 +506,120 @@ export default function Setup() {
                   </div>
                 </div>
 
-                {/* Live SME Category Preview */}
-                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Your SME Category</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Badge className={`mb-2 ${smeCategory.color === 'green' ? 'bg-green-100 text-green-800' : 
-                        smeCategory.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                        smeCategory.color === 'orange' ? 'bg-orange-100 text-orange-800' :
-                        smeCategory.color === 'purple' ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'}`}>
-                        {smeCategory.category}
-                      </Badge>
-                      <div className="space-y-2 text-sm">
-                        <p><strong>CIT Rate:</strong> {smeCategory.citRate}</p>
-                        <p><strong>VAT Registration:</strong> {smeCategory.vatRequired ? 'Required' : 'Not Required'}</p>
-                        <p><strong>Financial Statements:</strong> {smeCategory.financialStatements}</p>
-                        <p><strong>Transfer Pricing:</strong> {smeCategory.transferPricing ? 'Required' : 'Not Required'}</p>
+                {/* PDF Workflow Visualization */}
+                <div className="mt-8 p-6 bg-white rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Setup Workflow (From PDF Requirements)</h3>
+                  <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6 mb-6">
+                    <div className="text-center">
+                      <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                        <Building className="h-10 w-10 text-blue-600" />
+                      </div>
+                      <p className="text-sm font-medium text-blue-900">SMEs</p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center">
+                      <ArrowRight className="h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-xs text-gray-500 text-center">Revenue<br/>Check</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                        <TrendingUp className="h-10 w-10 text-green-600" />
+                      </div>
+                      <p className="text-sm font-medium text-green-900">Revenue Thresholds</p>
+                      <div className="mt-2 space-y-1">
+                        <div className="text-xs bg-green-200 px-2 py-1 rounded">Under 375k AED</div>
+                        <div className="text-xs bg-orange-200 px-2 py-1 rounded">Over 375k AED</div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <p className="mb-2"><strong>Based on FTA Requirements:</strong></p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Revenue: {formatCurrency(formData.annualRevenue, 'AED', 'en-AE')}</li>
-                        <li>Employees: {formData.employeeCount}</li>
-                        <li>Entity: {formData.entityType}</li>
+                    
+                    <div className="flex flex-col items-center">
+                      <ArrowRight className="h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-xs text-gray-500 text-center">Tax<br/>Category</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="w-20 h-20 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                        <Shield className="h-10 w-10 text-purple-600" />
+                      </div>
+                      <p className="text-sm font-medium text-purple-900">Classification</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live SME Category Preview */}
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Your SME Category & Tax Obligations</h3>
+                  
+                  <div className="mb-4">
+                    <Badge className={`text-base px-4 py-2 ${smeCategory.color === 'green' ? 'bg-green-100 text-green-800 border-green-300' : 
+                      smeCategory.color === 'blue' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                      smeCategory.color === 'orange' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                      smeCategory.color === 'purple' ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                      'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                      {smeCategory.category}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calculator className="h-5 w-5 text-blue-600" />
+                        <span className="font-semibold">CIT Rate</span>
+                      </div>
+                      <span className="text-xl font-bold text-blue-700">{smeCategory.citRate}</span>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="h-5 w-5 text-green-600" />
+                        <span className="font-semibold">VAT Required</span>
+                      </div>
+                      <span className={`text-xl font-bold ${smeCategory.vatRequired ? 'text-red-600' : 'text-green-600'}`}>
+                        {smeCategory.vatRequired ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Building className="h-5 w-5 text-purple-600" />
+                        <span className="font-semibold">Registration</span>
+                      </div>
+                      <span className="text-xl font-bold text-purple-700">{smeCategory.citRegistration}</span>
+                    </div>
+                  </div>
+
+                  {smeCategory.obligations && (
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+                      <h4 className="font-semibold text-gray-900 mb-3">Tax Obligations (Per PDF Requirements):</h4>
+                      <ul className="space-y-2">
+                        {smeCategory.obligations.map((obligation, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-gray-700">{obligation}</span>
+                          </li>
+                        ))}
                       </ul>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-2">Financial Statements</h4>
+                      <p className="text-sm text-gray-700">{smeCategory.financialStatements}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-2">Transfer Pricing</h4>
+                      <p className="text-sm text-gray-700">{smeCategory.transferPricing ? 'Required' : 'Not Required'}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    <p className="mb-2"><strong>Classification Based On:</strong></p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <span>Revenue: {formatCurrency(formData.annualRevenue, 'AED', 'en-AE')}</span>
+                      <span>Employees: {formData.employeeCount}</span>
+                      <span>Entity: {formData.entityType}</span>
                     </div>
                   </div>
                 </div>
