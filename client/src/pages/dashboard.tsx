@@ -1,123 +1,419 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/context/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Calculator, FileText, UserCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  TrendingUp, 
+  Calculator, 
+  FileText, 
+  UserCheck, 
+  Plus, 
+  ArrowRight, 
+  DollarSign, 
+  Calendar, 
+  CheckCircle, 
+  AlertTriangle,
+  Info,
+  Zap,
+  Clock,
+  Target
+} from 'lucide-react';
+import { formatCurrency, formatDate } from '@/lib/i18n';
+import { Link } from 'wouter';
 
 export default function Dashboard() {
   const { language } = useLanguage();
-  const { company } = useAuth();
+  const { company, user } = useAuth();
+  const [selectedPeriod, setSelectedPeriod] = useState('2025-07');
+
+  // Fetch real data
+  const { data: kpiData = [] } = useQuery({
+    queryKey: ['/api/kpi-data', { companyId: company?.id }],
+    enabled: !!company?.id,
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['/api/transactions', { companyId: company?.id }],
+    enabled: !!company?.id,
+  });
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['/api/invoices', { companyId: company?.id }],
+    enabled: !!company?.id,
+  });
+
+  const { data: taxFilings = [] } = useQuery({
+    queryKey: ['/api/tax-filings', { companyId: company?.id }],
+    enabled: !!company?.id,
+  });
+
+  // Calculate real metrics
+  const currentKpi = kpiData.length > 0 ? kpiData[0] : null;
+  const revenue = parseFloat(currentKpi?.revenue || '0');
+  const expenses = parseFloat(currentKpi?.expenses || '0');
+  const netIncome = parseFloat(currentKpi?.netIncome || '0');
+  const vatDue = parseFloat(currentKpi?.vatDue || '0');
+  const citDue = parseFloat(currentKpi?.citDue || '0');
+
+  // Calculate completion percentages
+  const vatThreshold = 187500; // AED 187,500 quarterly threshold
+  const citThreshold = 375000; // AED 375,000 annual threshold
+  const vatProgress = Math.min((revenue / vatThreshold) * 100, 100);
+  const citProgress = Math.min((revenue / citThreshold) * 100, 100);
+
+  // Determine next actions needed
+  const nextVatDue = new Date('2025-07-28');
+  const nextCitDue = new Date('2025-09-30');
+  const today = new Date();
+  const vatDaysLeft = Math.ceil((nextVatDue.getTime() - today.getTime()) / (1000 * 3600 * 24));
+  const citDaysLeft = Math.ceil((nextCitDue.getTime() - today.getTime()) / (1000 * 3600 * 24));
 
   return (
-    <div className={cn("space-y-8", language === 'ar' && "rtl:text-right")}>
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
-        <h1 className="text-3xl font-bold mb-2">Welcome to Peergos</h1>
-        <p className="text-lg opacity-90">
-          Complete UAE Tax Compliance Platform for {company?.name || 'Your Business'}
-        </p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">VAT Returns</p>
-                <p className="text-2xl font-bold">0</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
+    <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
+      {/* Welcome Header with Quick Actions */}
+      <div className="bg-gradient-to-r from-emerald-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
+            <p className="text-lg opacity-90 mb-4">
+              Managing tax compliance for {company?.name || 'Your Business'}
+            </p>
+            <div className="flex gap-2">
+              <Badge variant="secondary" className="bg-white/20 text-white">
+                {company?.freeZone ? 'Free Zone Entity' : 'Mainland Entity'}
+              </Badge>
+              <Badge variant="secondary" className="bg-white/20 text-white">
+                {company?.vatRegistered ? 'VAT Registered' : 'VAT Exempt'}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">CIT Filings</p>
-                <p className="text-2xl font-bold">0</p>
-              </div>
-              <Calculator className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Invoices</p>
-                <p className="text-2xl font-bold">0</p>
-              </div>
-              <FileText className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Compliance</p>
-                <p className="text-2xl font-bold">100%</p>
-              </div>
-              <UserCheck className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button className="h-20 flex flex-col space-y-2">
-              <Calculator className="h-6 w-6" />
-              <span>Calculate VAT</span>
-            </Button>
-            <Button className="h-20 flex flex-col space-y-2" variant="outline">
-              <FileText className="h-6 w-6" />
-              <span>Generate Invoice</span>
-            </Button>
-            <Button className="h-20 flex flex-col space-y-2" variant="outline">
-              <TrendingUp className="h-6 w-6" />
-              <span>View Reports</span>
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+          <div className="hidden md:flex gap-3">
+            <Link href="/accounting">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                <Plus size={16} />
+                Add Transaction
+              </Button>
+            </Link>
+            <Link href="/invoicing">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2">
+                <FileText size={16} />
+                Create Invoice
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
 
-      {/* Features Overview */}
+      {/* Quick Actions - Mobile */}
+      <div className="md:hidden grid grid-cols-2 gap-3">
+        <Link href="/accounting">
+          <Button className="w-full flex items-center gap-2">
+            <Plus size={16} />
+            Add Transaction
+          </Button>
+        </Link>
+        <Link href="/invoicing">
+          <Button variant="outline" className="w-full flex items-center gap-2">
+            <FileText size={16} />
+            Create Invoice
+          </Button>
+        </Link>
+      </div>
+
+      {/* Key Financial Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(revenue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">This period</p>
+              </div>
+              <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-100">
+              <div 
+                className="h-full bg-green-500 transition-all duration-500"
+                style={{ width: `${Math.min((revenue / 200000) * 100, 100)}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Expenses</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(expenses, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">This period</p>
+              </div>
+              <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-100">
+              <div 
+                className="h-full bg-orange-500 transition-all duration-500"
+                style={{ width: `${Math.min((expenses / 50000) * 100, 100)}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">VAT Due</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(vatDue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Current quarter</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Calculator className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-100">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${vatProgress}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="relative overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Net Income</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(netIncome, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">After expenses</p>
+              </div>
+              <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                <Target className="h-6 w-6 text-emerald-600" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-100">
+              <div 
+                className="h-full bg-emerald-500 transition-all duration-500"
+                style={{ width: `${Math.min((netIncome / 100000) * 100, 100)}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tax Compliance Progress */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>End-to-End Tax Workflow</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator size={20} />
+              VAT Compliance Status
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">
-              Complete 8-step process from expense scanning to FTA submission
-            </p>
-            <Button>Start Workflow</Button>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Quarterly Revenue Progress</span>
+                <span>{vatProgress.toFixed(1)}% of threshold</span>
+              </div>
+              <Progress value={vatProgress} className="h-2" />
+              <p className="text-xs text-gray-500 mt-1">
+                Threshold: {formatCurrency(vatThreshold, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-blue-600" />
+                <span className="text-sm font-medium">Next VAT Filing</span>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-blue-600">{vatDaysLeft} days left</p>
+                <p className="text-xs text-gray-500">Due: July 28, 2025</p>
+              </div>
+            </div>
+
+            <Link href="/vat">
+              <Button className="w-full">
+                Review VAT Return
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
-            <CardTitle>UAE Compliance Dashboard</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FileText size={20} />
+              CIT Compliance Status
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">
-              Real-time compliance monitoring with FTA integration
-            </p>
-            <Button variant="outline">View Compliance</Button>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Annual Revenue Progress</span>
+                <span>{citProgress.toFixed(1)}% of threshold</span>
+              </div>
+              <Progress value={citProgress} className="h-2" />
+              <p className="text-xs text-gray-500 mt-1">
+                Small Business Relief: {formatCurrency(citThreshold, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={16} className="text-green-600" />
+                <span className="text-sm font-medium">
+                  {citDue === 0 ? 'No CIT Due' : 'CIT Calculation Ready'}
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-green-600">
+                  {formatCurrency(citDue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
+                </p>
+                <p className="text-xs text-gray-500">Current year</p>
+              </div>
+            </div>
+
+            <Link href="/cit">
+              <Button variant="outline" className="w-full">
+                Review CIT Calculation
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Smart Recommendations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap size={20} />
+            Smart Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {revenue === 0 && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Get Started:</strong> Add your first revenue transaction to begin tracking your tax obligations.
+                <Link href="/accounting">
+                  <Button size="sm" className="ml-3">
+                    Add Revenue
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {transactions.length === 0 && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Record Expenses:</strong> Don't forget to track your business expenses to reduce your tax liability.
+                <Link href="/accounting">
+                  <Button size="sm" variant="outline" className="ml-3">
+                    Add Expenses
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {invoices.length === 0 && revenue > 0 && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Create Invoices:</strong> You have revenue but no invoices. Generate professional invoices for better record-keeping.
+                <Link href="/invoicing">
+                  <Button size="sm" variant="outline" className="ml-3">
+                    Create Invoice
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {vatDaysLeft <= 7 && vatDaysLeft > 0 && (
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>VAT Filing Due Soon:</strong> Your VAT return is due in {vatDaysLeft} days. Review and submit before the deadline.
+                <Link href="/vat">
+                  <Button size="sm" className="ml-3">
+                    File VAT Return
+                  </Button>
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Access Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Link href="/accounting">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 text-center">
+              <Plus className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+              <p className="font-medium">Add Transaction</p>
+              <p className="text-xs text-gray-500">Record income/expenses</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/invoicing">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 text-center">
+              <FileText className="h-8 w-8 mx-auto mb-2 text-green-600" />
+              <p className="font-medium">Create Invoice</p>
+              <p className="text-xs text-gray-500">Generate UAE compliant invoices</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/credit-debit-notes">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 text-center">
+              <UserCheck className="h-8 w-8 mx-auto mb-2 text-orange-600" />
+              <p className="font-medium">Credit/Debit Notes</p>
+              <p className="text-xs text-gray-500">Invoice adjustments</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/financials">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4 text-center">
+              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+              <p className="font-medium">Financial Reports</p>
+              <p className="text-xs text-gray-500">Income statements & balance sheets</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

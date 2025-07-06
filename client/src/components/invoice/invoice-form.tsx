@@ -34,9 +34,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Plus, Trash2, Eye, FileX } from 'lucide-react';
+import { Plus, Trash2, Eye, FileX, Calculator, HelpCircle, CheckCircle, User, Mail, MapPin, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import UBLInvoiceGenerator from './ubl-invoice-generator';
 
 const invoiceItemSchema = z.object({
