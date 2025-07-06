@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/hooks/use-toast';
+import TransferPricingCalculator from '@/components/compliance/transfer-pricing-calculator';
+import DMTTCalculator from '@/components/compliance/dmtt-calculator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -604,9 +606,35 @@ export default function TransferPricing() {
           </TabsContent>
         </Tabs>
 
+        {/* UAE FTA 2025 Enhanced Compliance Section */}
+        <div className="mt-12 space-y-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">UAE FTA 2025 Advanced Compliance</h2>
+            <p className="text-gray-600 max-w-3xl mx-auto">
+              Complete OECD-aligned transfer pricing and DMTT compliance tools designed for UAE FTA requirements. 
+              Built for SMEs with enterprise-grade accuracy and automation.
+            </p>
+          </div>
+
+          <Tabs value={activeTab.startsWith('advanced-') ? activeTab : 'advanced-transfer-pricing'} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="advanced-transfer-pricing">UAE Transfer Pricing Calculator</TabsTrigger>
+              <TabsTrigger value="advanced-dmtt">DMTT Calculator (2025)</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="advanced-transfer-pricing" className="space-y-6">
+              <TransferPricingCalculator />
+            </TabsContent>
+
+            <TabsContent value="advanced-dmtt" className="space-y-6">
+              <DMTTCalculator />
+            </TabsContent>
+          </Tabs>
+        </div>
+
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 Peergos Solutions • FTA Transfer Pricing Compliance • SME Focused Solution</p>
+          <p>© 2025 Peergos Solutions • UAE FTA 2025 Compliance • Complete SME Tax Solution</p>
         </div>
       </div>
     </div>
