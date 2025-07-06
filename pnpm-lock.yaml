@@ -1,8 +1,0 @@
-# This is a placeholder pnpm lock file to satisfy deployment requirements
-# The actual project uses npm, but deployment expects pnpm compatibility
-
-lockfileVersion: '6.0'
-
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
