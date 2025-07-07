@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VatCalculator from '@/components/tax/vat-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
+import TaxFilingStatus from '@/components/tax/tax-filing-status';
 import { FileText, Receipt, Calculator, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -300,36 +301,17 @@ export default function VAT() {
                     <Button className="mt-4">File Your First Return</Button>
                   </div>
                 ) : (
-                  taxFilings.map((filing) => (
-                    <Card key={filing.id} className="border">
-                      <CardContent className="p-4">
-                        <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
-                          <div>
-                            <h4 className="font-medium">{filing.period}</h4>
-                            <p className="text-sm text-gray-500">
-                              Due: {new Date(filing.dueDate).toLocaleDateString()}
-                            </p>
-                            {filing.ftaReference && (
-                              <p className="text-xs text-gray-400">Ref: {filing.ftaReference}</p>
-                            )}
-                          </div>
-                          <div className={cn("text-right", language === 'ar' && "rtl:text-left")}>
-                            <p className="font-medium">
-                              {formatCurrency(parseFloat(filing.totalTax), 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
-                            </p>
-                            <span className={cn(
-                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                              filing.status === 'SUBMITTED' ? "bg-success-100 text-success-800" :
-                              filing.status === 'APPROVED' ? "bg-primary-100 text-primary-800" :
-                              filing.status === 'DRAFT' ? "bg-warning-100 text-warning-800" :
-                              "bg-gray-100 text-gray-800"
-                            )}>
-                              {filing.status}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  taxFilings.filter(filing => filing.type === 'VAT').map((filing) => (
+                    <TaxFilingStatus
+                      key={filing.id}
+                      filing={{
+                        ...filing,
+                        taxAgentName: filing.metadata ? JSON.parse(filing.metadata)?.taxAgentName : undefined,
+                        reference: filing.metadata ? JSON.parse(filing.metadata)?.reference : undefined,
+                        attachments: filing.metadata ? JSON.parse(filing.metadata)?.attachments : undefined,
+                      }}
+                      canResubmit={new Date(filing.dueDate) > new Date() && filing.status !== 'ACCEPTED'}
+                    />
                   ))
                 )}
               </div>

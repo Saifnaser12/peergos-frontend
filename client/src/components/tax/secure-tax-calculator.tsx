@@ -16,8 +16,10 @@ import {
   AlertTriangle,
   FileText,
   DollarSign,
-  Building2
+  Building2,
+  Upload
 } from 'lucide-react';
+import TaxSubmissionModal from './tax-submission-modal';
 import { formatCurrency } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -307,6 +309,23 @@ export default function SecureTaxCalculator({
                 Print Results
               </Button>
             </div>
+
+            {/* Submit Return Button */}
+            <TaxSubmissionModal 
+              type={type}
+              calculationData={{
+                totalRevenue: result.totalRevenue,
+                totalExpenses: result.totalExpenses,
+                netIncome: result.netIncome,
+                taxOwed: result.taxOwed,
+                period: result.period
+              }}
+            >
+              <Button className="w-full" size="lg">
+                <Upload className="h-4 w-4 mr-2" />
+                Submit {type} Return
+              </Button>
+            </TaxSubmissionModal>
           </>
         )}
 

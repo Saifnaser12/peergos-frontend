@@ -465,6 +465,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tax return submission route
+  app.post("/api/submit-return", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      // Handle multipart form data for file uploads
+      const { type, period, totalRevenue, totalExpenses, netIncome, taxOwed, taxAgentName } = req.body;
+      
+      if (!type || !['CIT', 'VAT'].includes(type)) {
+        return res.status(400).json({ error: "Invalid tax type. Must be 'CIT' or 'VAT'" });
+      }
+
+      if (!period || !taxAgentName) {
+        return res.status(400).json({ error: "Period and tax agent name are required" });
+      }
+
+      // Get company and verify ownership
+      const company = await storage.getCompany(req.user.companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      // Calculate due date based on type
+      const now = new Date();
+      let dueDate: Date;
+      
+      if (type === 'VAT') {
+        // VAT due by 28th of following month
+        dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 28);
+      } else {
+        // CIT due within 9 months of financial year-end (assume Dec 31)
+        const currentYear = now.getFullYear();
+        dueDate = new Date(currentYear + 1, 8, 30); // September 30 of following year
+      }
+
+      // Generate reference number
+      const reference = `${type}_${Date.now()}_${req.user.companyId}`;
+
+      // Create tax filing record
+      const filing = await storage.createTaxFiling({
+        companyId: req.user.companyId,
+        type,
+        period,
+        status: 'SUBMITTED',
+        totalTax: taxOwed?.toString() || '0',
+        dueDate: dueDate.toISOString(),
+        submittedAt: now.toISOString(),
+        metadata: JSON.stringify({
+          totalRevenue: parseFloat(totalRevenue || '0'),
+          totalExpenses: parseFloat(totalExpenses || '0'),
+          netIncome: parseFloat(netIncome || '0'),
+          taxOwed: parseFloat(taxOwed || '0'),
+          taxAgentName,
+          reference,
+          submittedBy: req.user.username,
+          // In production, this would include file paths/URLs
+          attachments: {
+            taxAgentCertificate: req.body.taxAgentCertificate ? 'uploaded' : null,
+            paymentProof: req.body.paymentProof ? 'uploaded' : null,
+          }
+        })
+      });
+
+      res.json({
+        success: true,
+        reference,
+        filingId: filing.id,
+        status: 'SUBMITTED',
+        submittedAt: now.toISOString(),
+        dueDate: dueDate.toISOString(),
+        message: `${type} return submitted successfully`
+      });
+
+    } catch (error) {
+      console.error("Tax return submission failed:", error);
+      res.status(500).json({ error: "Tax return submission failed" });
+    }
+  });
+
   // FTA Integration mock routes
   app.get("/api/fta/trn-lookup/:trn", async (req, res) => {
     const { trn } = req.params;
