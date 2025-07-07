@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./context/auth-context";
 import { LanguageProvider } from "./context/language-context";
 import { NotificationProvider } from "./context/notification-context";
+import { TaxClassificationProvider } from "./context/tax-classification-context";
 import MainLayout from "./components/layout/main-layout";
 import Dashboard from "./pages/dashboard";
 import Accounting from "./pages/accounting";
@@ -55,8 +56,10 @@ function App() {
         <AuthProvider>
           <LanguageProvider>
             <NotificationProvider>
-              <Toaster />
-              <Router />
+              <TaxClassificationProvider>
+                <Toaster />
+                <Router />
+              </TaxClassificationProvider>
             </NotificationProvider>
           </LanguageProvider>
         </AuthProvider>

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import { useTaxClassification } from '@/context/tax-classification-context';
 import { useToast } from '@/hooks/use-toast';
+import TaxCategoryDetector from '@/components/setup/tax-category-detector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +93,7 @@ export default function Setup() {
   
   const { user, company } = useAuth();
   const { language } = useLanguage();
+  const { classification, setClassification } = useTaxClassification();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -416,13 +419,27 @@ export default function Setup() {
               </div>
             )}
 
-            {/* Step 3: SME Categorization */}
+            {/* Step 3: Automated Tax Category Detection */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">SME Categorization</h2>
-                  <p className="text-gray-600">Help us determine your tax obligations based on FTA requirements</p>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Automated Tax Classification</h2>
+                  <p className="text-gray-600">FTA-compliant categorization based on your business revenue</p>
                 </div>
+
+                <TaxCategoryDetector
+                  initialRevenue={formData.annualRevenue}
+                  onClassificationChange={(newClassification) => {
+                    setClassification(newClassification);
+                    if (newClassification) {
+                      setFormData(prev => ({
+                        ...prev,
+                        annualRevenue: newClassification.annualRevenue,
+                        isVatRegistered: newClassification.vatRequired
+                      }));
+                    }
+                  }}
+                />
 
                 <div className="space-y-6">
                   <div className="space-y-4">
