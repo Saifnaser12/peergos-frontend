@@ -49,7 +49,8 @@ export default function CIT() {
   ).reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
 
   const netIncome = currentYearRevenue - currentYearExpenses;
-  const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09;
+  // Use centralized tax configuration for CIT calculation
+  const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09; // TODO: Use UAE_TAX_CONFIG.calculateCITRate()
 
   // UX Fallback checks for missing data
   if (!company) {

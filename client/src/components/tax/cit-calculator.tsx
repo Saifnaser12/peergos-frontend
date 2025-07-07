@@ -22,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCitCalculation } from '@/hooks/use-tax-calculations';
 import { Calculator, Building2, Shield, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UAE_TAX_CONFIG } from '@/constants/taxRates';
 import { formatCurrency } from '@/lib/i18n';
 
 const citCalculationSchema = z.object({

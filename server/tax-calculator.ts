@@ -38,12 +38,12 @@ export interface TaxCalculationResult {
 
 export class TaxCalculator {
   // UAE VAT Standard Rate
-  private static readonly UAE_VAT_RATE = 0.05; // 5%
+  private static readonly UAE_VAT_RATE = 0.05; // 5% - TODO: Import from centralized config
   
   // UAE CIT Rates
-  private static readonly UAE_CIT_STANDARD_RATE = 0.09; // 9%
-  private static readonly UAE_CIT_SMALL_BUSINESS_THRESHOLD = 375000; // AED 375,000
-  private static readonly UAE_FREE_ZONE_THRESHOLD = 3000000; // AED 3,000,000
+  private static readonly UAE_CIT_STANDARD_RATE = 0.09; // 9% - TODO: Import from centralized config
+  private static readonly UAE_CIT_SMALL_BUSINESS_THRESHOLD = 375000; // AED 375,000 - TODO: Import from centralized config  
+  private static readonly UAE_FREE_ZONE_THRESHOLD = 3000000; // AED 3,000,000 - TODO: Import from centralized config
 
   static calculateVAT(
     transactions: Transaction[], 

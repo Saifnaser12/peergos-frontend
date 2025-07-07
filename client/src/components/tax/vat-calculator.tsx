@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { useVatCalculation } from '@/hooks/use-tax-calculations';
 import { Calculator, Receipt, AlertCircle, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UAE_TAX_CONFIG } from '@/constants/taxRates';
 import { formatCurrency } from '@/lib/i18n';
 
 const vatCalculationSchema = z.object({
