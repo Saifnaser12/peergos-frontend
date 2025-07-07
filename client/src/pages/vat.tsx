@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VatCalculator from '@/components/tax/vat-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
+import FilingHistoryTable from '@/components/tax/filing-history-table';
 import { FileText, Receipt, Calculator, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -266,6 +267,7 @@ export default function VAT() {
               <TabsTrigger value="calculator">VAT Calculator</TabsTrigger>
               <TabsTrigger value="secure">Secure API</TabsTrigger>
               <TabsTrigger value="returns">Filed Returns</TabsTrigger>
+              <TabsTrigger value="history">Filing History</TabsTrigger>
               <TabsTrigger value="registration">Registration Info</TabsTrigger>
             </TabsList>
             
@@ -315,6 +317,13 @@ export default function VAT() {
                   ))
                 )}
               </div>
+            </TabsContent>
+            
+            <TabsContent value="history" className="mt-6">
+              <FilingHistoryTable 
+                taxType="VAT" 
+                companyId={company?.id || 1} 
+              />
             </TabsContent>
             
             <TabsContent value="registration" className="mt-6">

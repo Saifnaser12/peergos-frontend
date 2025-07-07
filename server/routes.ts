@@ -465,6 +465,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download tax filing endpoint
+  app.get('/api/tax-filings/:id/download', async (req: Request, res: Response) => {
+    try {
+      const filingId = parseInt(req.params.id);
+      if (isNaN(filingId)) {
+        return res.status(400).json({ error: 'Invalid filing ID' });
+      }
+
+      // Verify user authentication
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Get the filing
+      const filing = await storage.getTaxFilings(req.user.companyId).then(filings => 
+        filings.find(f => f.id === filingId)
+      );
+
+      if (!filing) {
+        return res.status(404).json({ error: 'Filing not found' });
+      }
+
+      // Generate PDF content (in a real implementation, this would fetch the actual PDF)
+      const pdfContent = `
+TAX RETURN DOCUMENT
+===================
+
+Filing ID: ${filing.id}
+Type: ${filing.type}
+Period: ${filing.period}
+Due Date: ${new Date(filing.dueDate).toLocaleDateString()}
+Submitted: ${filing.submittedAt ? new Date(filing.submittedAt).toLocaleDateString() : 'Not submitted'}
+Status: ${filing.status}
+Total Tax: AED ${filing.totalTax}
+
+${filing.ftaReference ? `FTA Reference: ${filing.ftaReference}` : ''}
+
+This is a system-generated document for filing ${filing.id}.
+For official purposes, please contact the Federal Tax Authority.
+
+Generated on: ${new Date().toLocaleDateString()}
+Company ID: ${req.user.companyId}
+      `;
+
+      // Set headers for text download (in production this would be a proper PDF)
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="${filing.type}_Return_${filing.period}_${filing.id}.txt"`);
+      
+      res.send(pdfContent);
+
+    } catch (error) {
+      console.error('Download filing error:', error);
+      res.status(500).json({ error: 'Failed to download filing' });
+    }
+  });
+
   // Tax return submission route
   app.post("/api/submit-return", async (req, res) => {
     if (!req.user) {

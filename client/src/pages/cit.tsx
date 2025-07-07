@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CitCalculator from '@/components/tax/cit-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
+import FilingHistoryTable from '@/components/tax/filing-history-table';
 import { Building2, Calculator, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -161,6 +162,7 @@ export default function CIT() {
               <TabsTrigger value="calculator">CIT Calculator</TabsTrigger>
               <TabsTrigger value="secure">Secure API</TabsTrigger>
               <TabsTrigger value="filings">Past Filings</TabsTrigger>
+              <TabsTrigger value="history">Filing History</TabsTrigger>
               <TabsTrigger value="compliance">Compliance Status</TabsTrigger>
             </TabsList>
             
@@ -199,6 +201,13 @@ export default function CIT() {
                   ))
                 )}
               </div>
+            </TabsContent>
+            
+            <TabsContent value="history" className="mt-6">
+              <FilingHistoryTable 
+                taxType="CIT" 
+                companyId={company?.id || 1} 
+              />
             </TabsContent>
             
             <TabsContent value="compliance" className="mt-6">
