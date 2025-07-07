@@ -25,6 +25,9 @@ import {
 import { formatCurrency } from '@/lib/business-logic';
 import { VAT201Data, VAT201Calculator } from '@/lib/vat-calculations';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
+import AgentSelectionWidget from '@/components/tax-agent/agent-selection-widget';
+import CertificateUploader from '@/components/tax-agent/certificate-uploader';
+import { TaxAgent } from '@/lib/tax-agents';
 import { cn } from '@/lib/utils';
 
 const vat201Schema = z.object({
@@ -56,7 +59,7 @@ type VAT201FormData = z.infer<typeof vat201Schema>;
 
 interface VAT201FormProps {
   initialData?: Partial<VAT201Data>;
-  onSubmit: (data: VAT201Data) => void;
+  onSubmit: (data: VAT201Data, selectedAgent?: TaxAgent, certificates?: any[]) => void;
   onSaveDraft: (data: VAT201Data) => void;
   onExport: (format: 'pdf' | 'xml') => void;
   isSubmitting?: boolean;
@@ -75,6 +78,9 @@ export default function VAT201Form({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [showRefundFlow, setShowRefundFlow] = useState(false);
   const [showPaymentFlow, setShowPaymentFlow] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<TaxAgent | null>(null);
+  const [agentCertificates, setAgentCertificates] = useState<any[]>([]);
+  const [bankTransferSlips, setBankTransferSlips] = useState<any[]>([]);
 
   const form = useForm<VAT201FormData>({
     resolver: zodResolver(vat201Schema),
@@ -165,7 +171,21 @@ export default function VAT201Form({
 
   const handleSubmit = (data: VAT201FormData) => {
     if (calculatedData) {
-      onSubmit(calculatedData);
+      // Validate required documents
+      const requiredDocs = [];
+      if (selectedAgent && agentCertificates.length === 0) {
+        requiredDocs.push('Tax Agent Certificate');
+      }
+      if (calculatedData.netVATPayable > 0 && bankTransferSlips.length === 0) {
+        requiredDocs.push('Bank Transfer Slip');
+      }
+
+      if (requiredDocs.length > 0) {
+        alert(`Please upload the following required documents: ${requiredDocs.join(', ')}`);
+        return;
+      }
+
+      onSubmit(calculatedData, selectedAgent || undefined, [...agentCertificates, ...bankTransferSlips]);
     }
   };
 
@@ -518,7 +538,40 @@ export default function VAT201Form({
             </Card>
           )}
 
-          {/* File attachments */}
+          {/* Tax Agent Selection */}
+          <AgentSelectionWidget
+            selectedAgentId={selectedAgent?.id}
+            onAgentSelected={setSelectedAgent}
+            onAgentRemoved={() => setSelectedAgent(null)}
+            filterBySpecialty="VAT"
+            showComplianceWarnings={true}
+          />
+
+          {/* Tax Agent Certificate Upload */}
+          {selectedAgent && (
+            <CertificateUploader
+              title="Tax Agent Certificate"
+              description="Upload the FTA certificate for your selected tax agent"
+              onFileUploaded={(file) => setAgentCertificates(prev => [...prev, file])}
+              onFileRemoved={(fileId) => setAgentCertificates(prev => prev.filter(f => f.id !== fileId))}
+              uploadedFiles={agentCertificates}
+              required={true}
+            />
+          )}
+
+          {/* Bank Transfer Slip Upload */}
+          {showPaymentFlow && (
+            <CertificateUploader
+              title="Bank Transfer Slip"
+              description="Upload proof of VAT payment to FTA account"
+              onFileUploaded={(file) => setBankTransferSlips(prev => [...prev, file])}
+              onFileRemoved={(fileId) => setBankTransferSlips(prev => prev.filter(f => f.id !== fileId))}
+              uploadedFiles={bankTransferSlips}
+              required={true}
+            />
+          )}
+
+          {/* Optional Supporting Documents */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
