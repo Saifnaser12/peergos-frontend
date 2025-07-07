@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinancialStatements from '@/components/accounting/financial-statements';
+import FinancialNotesEditor from '@/components/financials/financial-notes-editor';
+import ReportPackGenerator from '@/components/financials/report-pack-generator';
+import { FinancialNote } from '@/lib/financial-reports';
 import { BarChart3, Download, FileText, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -17,6 +20,10 @@ import { formatCurrency } from '@/lib/i18n';
 export default function Financials() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState('2024');
+  const [incomeStatementNotes, setIncomeStatementNotes] = useState<FinancialNote[]>([]);
+  const [balanceSheetNotes, setBalanceSheetNotes] = useState<FinancialNote[]>([]);
+  const [cashFlowNotes, setCashFlowNotes] = useState<FinancialNote[]>([]);
+  const [taxSummaryNotes, setTaxSummaryNotes] = useState<FinancialNote[]>([]);
   const { company } = useAuth();
   const { language, t } = useLanguage();
 
@@ -240,11 +247,13 @@ export default function Financials() {
           )}
           
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="income">Income Statement</TabsTrigger>
               <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
               <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="reportpack">Report Pack</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="mt-6">
@@ -311,6 +320,39 @@ export default function Financials() {
             
             <TabsContent value="cashflow" className="mt-6">
               <FinancialStatements showStatements={true} statementType="cashflow" />
+            </TabsContent>
+
+            <TabsContent value="notes" className="mt-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <FinancialNotesEditor
+                    reportType="INCOME_STATEMENT"
+                    notes={incomeStatementNotes}
+                    onNotesChange={setIncomeStatementNotes}
+                  />
+                  <FinancialNotesEditor
+                    reportType="BALANCE_SHEET"
+                    notes={balanceSheetNotes}
+                    onNotesChange={setBalanceSheetNotes}
+                  />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <FinancialNotesEditor
+                    reportType="CASH_FLOW"
+                    notes={cashFlowNotes}
+                    onNotesChange={setCashFlowNotes}
+                  />
+                  <FinancialNotesEditor
+                    reportType="TAX_SUMMARY"
+                    notes={taxSummaryNotes}
+                    onNotesChange={setTaxSummaryNotes}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="reportpack" className="mt-6">
+              <ReportPackGenerator />
             </TabsContent>
           </Tabs>
         </CardContent>
