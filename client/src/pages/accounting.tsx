@@ -5,6 +5,8 @@ import { formatCurrency } from '@/lib/business-logic';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import ExpenseScanner, { ProcessedExpenseData } from '@/components/expense/expense-scanner';
+import ExpenseAuditTrail from '@/components/expense/expense-audit-trail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +38,8 @@ export default function Accounting() {
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [transactionType, setTransactionType] = useState<'REVENUE' | 'EXPENSE'>('REVENUE');
   const [activeTab, setActiveTab] = useState('overview');
+  const [scannedExpenses, setScannedExpenses] = useState<ProcessedExpenseData[]>([]);
+  const [selectedExpense, setSelectedExpense] = useState<ProcessedExpenseData | null>(null);
   const [filter, setFilter] = useState('all');
   const { company, user } = useAuth();
   const { language, t } = useLanguage();
@@ -70,6 +74,18 @@ export default function Accounting() {
   const openAddTransaction = (type: 'REVENUE' | 'EXPENSE') => {
     setTransactionType(type);
     setShowTransactionForm(true);
+  };
+
+  // Handle expense scanner events
+  const handleExpenseExtracted = (expense: ProcessedExpenseData) => {
+    setScannedExpenses(prev => [...prev, expense]);
+    console.log('New expense scanned:', expense);
+  };
+
+  const handleViewOriginal = (expense: ProcessedExpenseData) => {
+    setSelectedExpense(expense);
+    const imageUrl = URL.createObjectURL(expense.originalFile);
+    window.open(imageUrl, '_blank');
   };
 
   return (
@@ -197,7 +213,7 @@ export default function Accounting() {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Eye size={16} />
             Overview
@@ -205,6 +221,14 @@ export default function Accounting() {
           <TabsTrigger value="transactions" className="flex items-center gap-2">
             <FileText size={16} />
             Transactions
+          </TabsTrigger>
+          <TabsTrigger value="scanner" className="flex items-center gap-2">
+            <Receipt size={16} />
+            AI Scanner
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-2">
+            <Filter size={16} />
+            Audit Trail
           </TabsTrigger>
           <TabsTrigger value="statements" className="flex items-center gap-2">
             <Receipt size={16} />
@@ -215,6 +239,21 @@ export default function Accounting() {
             Categories
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="scanner" className="mt-6">
+          <ExpenseScanner
+            onExpenseExtracted={handleExpenseExtracted}
+            className="max-w-4xl mx-auto"
+          />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-6">
+          <ExpenseAuditTrail
+            expenses={scannedExpenses}
+            onViewOriginal={handleViewOriginal}
+            className="max-w-6xl mx-auto"
+          />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           {/* Transaction Overview */}

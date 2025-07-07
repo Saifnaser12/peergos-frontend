@@ -100,9 +100,9 @@ export default function VAT201Form({
   useEffect(() => {
     const standardVAT = watchedValues.standardRatedValue * 0.05; // 5% UAE VAT rate
     
-    // Auto-update standard VAT if supply value changes
+    // Auto-update standard VAT if supply value changes (only if significant difference)
     if (Math.abs(watchedValues.standardRatedVAT - standardVAT) > 1) {
-      form.setValue('standardRatedVAT', Math.round(standardVAT * 100) / 100);
+      form.setValue('standardRatedVAT', Math.round(standardVAT * 100) / 100, { shouldValidate: false });
     }
 
     // Calculate totals
