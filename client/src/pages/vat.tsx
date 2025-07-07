@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { useNavigation } from '@/context/navigation-context';
 import { useToast } from '@/hooks/use-toast';
+import { useTaxCalculation, TaxCalculationResult } from '@/hooks/use-tax-calculation';
 import { VAT201Data, VAT201Calculator } from '@/lib/vat-calculations';
 import VAT201Form from '@/components/vat/vat201-form';
 import { exportToPDF, exportToXML } from '@/lib/export-utils';
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VatCalculator from '@/components/tax/vat-calculator';
+import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import { FileText, Receipt, Calculator, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -18,11 +20,13 @@ import { formatCurrency } from '@/lib/i18n';
 export default function VAT() {
   const [activeTab, setActiveTab] = useState('vat201');
   const [currentVAT201, setCurrentVAT201] = useState<VAT201Data | null>(null);
+  const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
   const { company } = useAuth();
   const { language, t } = useLanguage();
   const navigation = useNavigation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const taxCalculation = useTaxCalculation();
 
   const { data: taxFilings = [] } = useQuery({
     queryKey: ['/api/tax-filings', { companyId: company?.id, type: 'VAT' }],
@@ -259,6 +263,7 @@ export default function VAT() {
             <TabsList>
               <TabsTrigger value="vat201">VAT201 Return</TabsTrigger>
               <TabsTrigger value="calculator">VAT Calculator</TabsTrigger>
+              <TabsTrigger value="secure">Secure API</TabsTrigger>
               <TabsTrigger value="returns">Filed Returns</TabsTrigger>
               <TabsTrigger value="registration">Registration Info</TabsTrigger>
             </TabsList>
@@ -275,6 +280,14 @@ export default function VAT() {
             
             <TabsContent value="calculator" className="mt-6">
               <VatCalculator />
+            </TabsContent>
+            
+            <TabsContent value="secure" className="mt-6">
+              <SecureTaxCalculator 
+                type="VAT"
+                onResultUpdate={setTaxResult}
+                className="max-w-4xl mx-auto"
+              />
             </TabsContent>
             
             <TabsContent value="returns" className="mt-6">

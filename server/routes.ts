@@ -412,6 +412,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tax calculation route
+  app.post("/api/calculate-tax", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { type, startDate, endDate, period } = req.body;
+      
+      if (!type || !['CIT', 'VAT'].includes(type)) {
+        return res.status(400).json({ error: "Invalid tax type. Must be 'CIT' or 'VAT'" });
+      }
+
+      // Get company and verify TRN matches user account
+      const company = await storage.getCompany(req.user.companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      // Fetch transactions for the company
+      const transactions = await storage.getTransactions(req.user.companyId, {
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined
+      });
+
+      const { TaxCalculator } = await import('./tax-calculator');
+      
+      let result;
+      if (type === 'VAT') {
+        result = TaxCalculator.calculateVAT(transactions, company, { 
+          companyId: req.user.companyId, 
+          type, 
+          startDate, 
+          endDate, 
+          period 
+        });
+      } else {
+        result = TaxCalculator.calculateCIT(transactions, company, { 
+          companyId: req.user.companyId, 
+          type, 
+          startDate, 
+          endDate, 
+          period 
+        });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Tax calculation failed:", error);
+      res.status(500).json({ error: "Tax calculation failed" });
+    }
+  });
+
   // FTA Integration mock routes
   app.get("/api/fta/trn-lookup/:trn", async (req, res) => {
     const { trn } = req.params;

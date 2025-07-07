@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { useNavigation, useFormNavigation } from '@/context/navigation-context';
+import { useTaxCalculation, TaxCalculationResult } from '@/hooks/use-tax-calculation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import ProgressTracker from '@/components/ui/progress-tracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CitCalculator from '@/components/tax/cit-calculator';
+import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import { Building2, Calculator, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -16,8 +18,10 @@ import { formatCurrency } from '@/lib/i18n';
 export default function CIT() {
   const [activeTab, setActiveTab] = useState('calculator');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
   const { company } = useAuth();
   const { language, t } = useLanguage();
+  const taxCalculation = useTaxCalculation();
   const navigation = useNavigation();
   const { submitWithNavigation } = useFormNavigation();
 
@@ -154,12 +158,21 @@ export default function CIT() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="calculator">CIT Calculator</TabsTrigger>
+              <TabsTrigger value="secure">Secure API</TabsTrigger>
               <TabsTrigger value="filings">Past Filings</TabsTrigger>
               <TabsTrigger value="compliance">Compliance Status</TabsTrigger>
             </TabsList>
             
             <TabsContent value="calculator" className="mt-6">
               <CitCalculator />
+            </TabsContent>
+            
+            <TabsContent value="secure" className="mt-6">
+              <SecureTaxCalculator 
+                type="CIT"
+                onResultUpdate={setTaxResult}
+                className="max-w-4xl mx-auto"
+              />
             </TabsContent>
             
             <TabsContent value="filings" className="mt-6">
