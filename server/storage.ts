@@ -55,6 +55,8 @@ export interface IStorage {
   getNotifications(companyId: number, userId?: number): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<boolean>;
+  updateNotification(id: number, updates: Partial<InsertNotification>): Promise<Notification | undefined>;
+  deleteNotification(id: number): Promise<boolean>;
   
   // KPI Data
   getKpiData(companyId: number, period?: string): Promise<KpiData[]>;
@@ -301,6 +303,32 @@ export class DatabaseStorage implements IStorage {
       .set({ isRead: true })
       .where(eq(notifications.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  async updateNotification(id: number, updates: Partial<InsertNotification>): Promise<Notification | undefined> {
+    try {
+      const [updated] = await db
+        .update(notifications)
+        .set(updates)
+        .where(eq(notifications.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      return undefined;
+    }
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    try {
+      await db
+        .delete(notifications)
+        .where(eq(notifications.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
   }
 
   async getKpiData(companyId: number, period?: string): Promise<KpiData[]> {

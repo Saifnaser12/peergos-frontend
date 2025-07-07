@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import LanguageSwitcher from '../common/language-switcher';
-import NotificationBell from '../common/notification-bell';
+import NotificationBell from '../notifications/notification-bell';
 import UserMenu from '../common/user-menu';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
