@@ -9,12 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import InvoiceForm from '@/components/invoice/invoice-form';
 import UBLInvoiceGenerator from '@/components/invoice/ubl-invoice-generator';
+import FTACompliantInvoice from '@/components/invoice/fta-compliant-invoice';
 import { Plus, Receipt, Search, Download, Eye, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/i18n';
 
 export default function Invoicing() {
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [showFTAInvoice, setShowFTAInvoice] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -141,13 +143,23 @@ export default function Invoicing() {
           <h1 className="text-3xl font-bold text-gray-900">Invoicing</h1>
           <p className="text-gray-600">Create and manage your invoices</p>
         </div>
-        <Button 
-          onClick={() => setShowInvoiceForm(true)}
-          className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}
-        >
-          <Plus size={16} />
-          New Invoice
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setShowFTAInvoice(true)}
+            className={cn("flex items-center gap-2 bg-green-600 hover:bg-green-700", language === 'ar' && "rtl:flex-row-reverse")}
+          >
+            <Plus size={16} />
+            FTA E-Invoice
+          </Button>
+          <Button 
+            onClick={() => setShowInvoiceForm(true)}
+            variant="outline"
+            className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}
+          >
+            <Plus size={16} />
+            New Invoice
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -332,6 +344,21 @@ export default function Invoicing() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* FTA Compliant Invoice Modal */}
+      {showFTAInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-7xl w-full max-h-[95vh] overflow-hidden">
+            <FTACompliantInvoice 
+              onClose={() => setShowFTAInvoice(false)}
+              onSave={(data) => {
+                console.log('FTA Invoice saved:', data);
+                setShowFTAInvoice(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Invoice Form Modal */}
       {showInvoiceForm && (
