@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import { FinancialStatementsGenerator, CompanyInfo, OpeningBalance } from '@/lib/financial-statements';
+import FinancialStatementViewer from '@/components/financial/financial-statement-viewer';
+import { exportToPDF, exportToExcel, exportToJSON, exportToXML } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,14 +30,80 @@ export default function Financials() {
     enabled: !!company?.id,
   });
 
+  // Generate financial statements
+  const financialStatements = useMemo(() => {
+    if (!transactions || !company) return null;
+
+    const companyInfo: CompanyInfo = {
+      name: company.name || 'Company Name',
+      trn: company.trn || '',
+      licenseNumber: company.businessLicense || '',
+      address: company.address || '',
+      isFreeZone: company.freeZone || false,
+      freeZoneName: company.freeZone ? 'DIFC' : undefined,
+      accountingBasis: company.annualRevenue && company.annualRevenue < 3000000 ? 'cash' : 'accrual',
+      fiscalYearEnd: '12-31',
+    };
+
+    // Sample opening balances - in production, this would come from user input
+    const openingBalances: OpeningBalance[] = [
+      { account: 'CASH', category: 'ASSET', amount: 50000, description: 'Opening cash balance' },
+      { account: 'SHARE_CAPITAL', category: 'EQUITY', amount: 100000, description: 'Initial share capital' },
+      { account: 'RETAINED_EARNINGS', category: 'EQUITY', amount: 25000, description: 'Previous year profits' },
+    ];
+
+    const generator = new FinancialStatementsGenerator(
+      transactions,
+      openingBalances,
+      companyInfo
+    );
+
+    const currentYear = new Date().getFullYear();
+    const startDate = `${currentYear}-01-01`;
+    const endDate = `${currentYear}-12-31`;
+
+    return {
+      companyInfo,
+      period: { startDate, endDate },
+      incomeStatement: generator.generateIncomeStatement(startDate, endDate),
+      balanceSheet: generator.generateBalanceSheet(endDate),
+      cashFlow: generator.generateCashFlow(startDate, endDate),
+      notes: generator.generateStandardNotes(),
+      generationDate: new Date().toISOString(),
+    };
+  }, [transactions, company]);
+
   const currentKpi = kpiData?.[0];
   const revenue = parseFloat(currentKpi?.revenue || '0');
   const expenses = parseFloat(currentKpi?.expenses || '0');
   const netIncome = parseFloat(currentKpi?.netIncome || '0');
 
-  const downloadReport = (format: 'pdf' | 'excel') => {
-    // Implementation would generate and download the report
-    console.log(`Downloading ${format} report for period ${selectedPeriod}`);
+  const handleExport = async (format: 'pdf' | 'excel' | 'json' | 'xml') => {
+    if (!financialStatements) return;
+
+    try {
+      switch (format) {
+        case 'pdf':
+          await exportToPDF(financialStatements);
+          break;
+        case 'excel':
+          await exportToExcel(financialStatements);
+          break;
+        case 'json':
+          await exportToJSON(financialStatements);
+          break;
+        case 'xml':
+          await exportToXML(financialStatements);
+          break;
+      }
+    } catch (error) {
+      console.error(`Export failed:`, error);
+    }
+  };
+
+  const handleEdit = () => {
+    // This would open an editing interface
+    console.log('Edit financial statements');
   };
 
   return (
@@ -57,7 +126,7 @@ export default function Financials() {
               <SelectItem value="q3-2024">Q3 2024</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => downloadReport('excel')}>
+          <Button variant="outline" onClick={() => handleExport('pdf')}>
             <Download size={16} className={cn("mr-2", language === 'ar' && "rtl:mr-0 rtl:ml-2")} />
             Export
           </Button>
@@ -147,11 +216,11 @@ export default function Financials() {
           <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
             <CardTitle>Financial Statements</CardTitle>
             <div className={cn("flex gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-              <Button variant="outline" size="sm" onClick={() => downloadReport('pdf')}>
+              <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}>
                 <Download size={14} className={cn("mr-1", language === 'ar' && "rtl:mr-0 rtl:ml-1")} />
                 PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadReport('excel')}>
+              <Button variant="outline" size="sm" onClick={() => handleExport('excel')}>
                 <Download size={14} className={cn("mr-1", language === 'ar' && "rtl:mr-0 rtl:ml-1")} />
                 Excel
               </Button>
@@ -159,6 +228,17 @@ export default function Financials() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Financial Statements Viewer */}
+          {financialStatements && (
+            <div className="mb-6">
+              <FinancialStatementViewer
+                statements={financialStatements}
+                onExport={handleExport}
+                onEdit={handleEdit}
+              />
+            </div>
+          )}
+          
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
