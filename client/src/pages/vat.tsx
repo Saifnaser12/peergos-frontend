@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import { useNavigation } from '@/context/navigation-context';
+import { useToast } from '@/hooks/use-toast';
+import { VAT201Data, VAT201Calculator } from '@/lib/vat-calculations';
+import VAT201Form from '@/components/vat/vat201-form';
+import { exportToPDF, exportToXML } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,9 +16,13 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
 
 export default function VAT() {
-  const [activeTab, setActiveTab] = useState('calculator');
+  const [activeTab, setActiveTab] = useState('vat201');
+  const [currentVAT201, setCurrentVAT201] = useState<VAT201Data | null>(null);
   const { company } = useAuth();
   const { language, t } = useLanguage();
+  const navigation = useNavigation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: taxFilings = [] } = useQuery({
     queryKey: ['/api/tax-filings', { companyId: company?.id, type: 'VAT' }],
@@ -39,9 +48,114 @@ export default function VAT() {
   const monthlyPurchases = monthlyTransactions.filter(t => t.type === 'EXPENSE')
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
+  // VAT201 submission mutation
+  const submitVAT201Mutation = useMutation({
+    mutationFn: async (data: VAT201Data) => {
+      // Simulate API call to submit VAT201
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return { success: true, returnNumber: 'VAT201-2025-Q1-001' };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: 'VAT201 Submitted',
+        description: `Return ${result.returnNumber} submitted successfully to FTA.`,
+      });
+      navigation.markStepCompleted('/vat');
+      navigation.navigateTo('/financials', { showToast: true });
+      queryClient.invalidateQueries({ queryKey: ['/api/tax-filings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Submission Failed',
+        description: error.message || 'Failed to submit VAT201 return.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const saveDraftMutation = useMutation({
+    mutationFn: async (data: VAT201Data) => {
+      // Simulate saving draft
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Draft Saved',
+        description: 'VAT201 return saved as draft.',
+      });
+    },
+  });
+
   const outputVat = monthlySales * 0.05;
   const inputVat = monthlyPurchases * 0.05;
   const netVatDue = Math.max(0, outputVat - inputVat);
+
+  // Handle VAT201 operations
+  const handleVAT201Submit = (data: VAT201Data) => {
+    submitVAT201Mutation.mutate(data);
+  };
+
+  const handleSaveDraft = (data: VAT201Data) => {
+    setCurrentVAT201(data);
+    saveDraftMutation.mutate(data);
+  };
+
+  const handleExport = async (format: 'pdf' | 'xml') => {
+    if (!currentVAT201) {
+      toast({
+        title: 'No Data',
+        description: 'Please complete the VAT201 form first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      if (format === 'pdf') {
+        // Generate PDF-friendly content for VAT201
+        const pdfContent = generateVAT201PDF(currentVAT201);
+        await exportToPDF(pdfContent as any);
+      } else if (format === 'xml') {
+        const xmlContent = VAT201Calculator.generateVAT201XML(currentVAT201, company);
+        const blob = new Blob([xmlContent], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `VAT201_${currentVAT201.period.returnPeriod}.xml`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: 'Export Successful',
+        description: `VAT201 exported as ${format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export VAT201 return.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Generate PDF content for VAT201
+  const generateVAT201PDF = (data: VAT201Data) => {
+    return {
+      companyInfo: company,
+      period: data.period,
+      incomeStatement: {
+        revenue: { totalRevenue: data.totalOutputVAT },
+        expenses: { totalExpenses: data.totalInputVAT },
+        netIncome: data.netVATPayable,
+      },
+      balanceSheet: { assets: { totalAssets: 0 }, liabilities: { totalLiabilities: 0 }, equity: { totalEquity: 0 } },
+      cashFlow: { netCashFlow: 0, openingCash: 0, closingCash: 0 },
+      notes: [`VAT201 Return - ${data.period.returnPeriod}`],
+      generationDate: new Date().toISOString(),
+    };
+  };
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
@@ -143,10 +257,21 @@ export default function VAT() {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
+              <TabsTrigger value="vat201">VAT201 Return</TabsTrigger>
               <TabsTrigger value="calculator">VAT Calculator</TabsTrigger>
               <TabsTrigger value="returns">Filed Returns</TabsTrigger>
               <TabsTrigger value="registration">Registration Info</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="vat201" className="mt-6">
+              <VAT201Form
+                initialData={currentVAT201 || undefined}
+                onSubmit={handleVAT201Submit}
+                onSaveDraft={handleSaveDraft}
+                onExport={handleExport}
+                isSubmitting={submitVAT201Mutation.isPending}
+              />
+            </TabsContent>
             
             <TabsContent value="calculator" className="mt-6">
               <VatCalculator />
