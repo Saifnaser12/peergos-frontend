@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import ExpenseScanner, { ProcessedExpenseData } from '@/components/expense/expense-scanner';
 import ExpenseAuditTrail from '@/components/expense/expense-audit-trail';
+import POSIntegrationPanel from '@/components/integrations/pos-integration-panel';
+import BankFeedPanel from '@/components/integrations/bank-feed-panel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -213,7 +215,7 @@ export default function Accounting() {
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Eye size={16} />
             Overview
@@ -229,6 +231,14 @@ export default function Accounting() {
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <Filter size={16} />
             Audit Trail
+          </TabsTrigger>
+          <TabsTrigger value="pos" className="flex items-center gap-2">
+            <Receipt size={16} />
+            POS
+          </TabsTrigger>
+          <TabsTrigger value="bank" className="flex items-center gap-2">
+            <Filter size={16} />
+            Bank Feed
           </TabsTrigger>
           <TabsTrigger value="statements" className="flex items-center gap-2">
             <Receipt size={16} />
@@ -253,6 +263,14 @@ export default function Accounting() {
             onViewOriginal={handleViewOriginal}
             className="max-w-6xl mx-auto"
           />
+        </TabsContent>
+
+        <TabsContent value="pos" className="mt-6">
+          <POSIntegrationPanel className="max-w-4xl mx-auto" />
+        </TabsContent>
+
+        <TabsContent value="bank" className="mt-6">
+          <BankFeedPanel className="max-w-6xl mx-auto" />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
