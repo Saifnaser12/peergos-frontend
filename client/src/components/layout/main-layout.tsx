@@ -4,6 +4,7 @@ import { useNavigation } from '@/context/navigation-context';
 import Sidebar from './sidebar';
 import TopBar from './topbar';
 import ProgressTracker from '@/components/ui/progress-tracker';
+import ChatBubble from '@/components/chat/chat-bubble';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -50,6 +51,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
         </main>
       </div>
+      
+      {/* AI Chat Assistant */}
+      <ChatBubble />
     </div>
   );
 }
