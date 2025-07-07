@@ -1,231 +1,189 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { z } from 'zod';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { BusinessInfo, RevenueDeclaration, FreeZoneLicense, TRNUpload, CompleteSetup } from '@/lib/setup-validation';
 
-// Setup form validation schema
-export const setupSchema = z.object({
-  // Business Information
-  businessInfo: z.object({
-    companyName: z.string().min(2, 'Company name must be at least 2 characters'),
-    trn: z.string().regex(/^[0-9]{15}$/, 'TRN must be exactly 15 digits'),
-    businessLicense: z.string().min(1, 'Business license number is required'),
-    address: z.string().min(10, 'Address must be at least 10 characters'),
-    phone: z.string().regex(/^\+971[0-9]{8,9}$/, 'Phone must be valid UAE number (+971xxxxxxxx)'),
-    email: z.string().email('Invalid email address'),
-    industry: z.string().min(1, 'Industry is required'),
-  }),
-
-  // Revenue and Classification
-  revenueInfo: z.object({
-    annualRevenue: z.number().min(0, 'Revenue cannot be negative'),
-    employees: z.number().min(1, 'Must have at least 1 employee').max(10000, 'Employee count seems too high'),
-    financialYearEnd: z.string().min(1, 'Financial year end is required'),
-  }),
-
-  // License and Entity Type
-  licenseInfo: z.object({
-    licenseType: z.enum(['mainland', 'freezone', 'individual'], {
-      required_error: 'License type is required',
-    }),
-    emirate: z.string().min(1, 'Emirate is required'),
-    authority: z.string().min(1, 'Licensing authority is required'),
-  }),
-
-  // Free Zone Status
-  freeZoneInfo: z.object({
-    isFreeZone: z.boolean(),
-    freeZoneName: z.string().optional(),
-    freeZoneAuthority: z.string().optional(),
-    qfzpEligible: z.boolean().optional(),
-  }).refine((data) => {
-    if (data.isFreeZone) {
-      return data.freeZoneName && data.freeZoneName.length > 0;
-    }
-    return true;
-  }, {
-    message: 'Free Zone name is required when Free Zone is selected',
-    path: ['freeZoneName'],
-  }),
-
-  // UAE Integration
-  uaeIntegration: z.object({
-    hasUAEPass: z.boolean(),
-    uaePassId: z.string().optional(),
-    ftaIntegrationConsent: z.boolean(),
-    dataProcessingConsent: z.boolean(),
-  }),
-
-  // File Uploads
-  documents: z.object({
-    tradeLicense: z.instanceof(File).optional(),
-    memorandum: z.instanceof(File).optional(),
-    freeZoneDeclaration: z.instanceof(File).optional(),
-    transferPricingDeclaration: z.instanceof(File).optional(),
-    auditedFinancials: z.instanceof(File).optional(),
-  }),
-
-  // Additional Compliance
-  compliance: z.object({
-    vatRequired: z.boolean(),
-    vatNumber: z.string().optional(),
-    transferPricingRequired: z.boolean(),
-    hasRelatedParties: z.boolean(),
-    auditRequired: z.boolean(),
-  }),
-});
-
-export type SetupFormData = z.infer<typeof setupSchema>;
-
-export interface SetupContextType {
-  formData: Partial<SetupFormData>;
-  updateFormData: (section: keyof SetupFormData, data: any) => void;
-  validateSection: (section: keyof SetupFormData) => { isValid: boolean; errors: any };
+interface SetupContextType {
   currentStep: number;
+  businessInfo: Partial<BusinessInfo>;
+  revenueDeclaration: Partial<RevenueDeclaration>;
+  freeZoneLicense: Partial<FreeZoneLicense>;
+  trnUpload: Partial<TRNUpload>;
+  
+  // Navigation
   setCurrentStep: (step: number) => void;
-  isStepValid: (step: number) => boolean;
-  totalSteps: number;
-  completedSteps: Set<number>;
-  markStepCompleted: (step: number) => void;
-  resetForm: () => void;
+  nextStep: () => void;
+  prevStep: () => void;
+  
+  // Data updates
+  updateBusinessInfo: (data: Partial<BusinessInfo>) => void;
+  updateRevenueDeclaration: (data: Partial<RevenueDeclaration>) => void;
+  updateFreeZoneLicense: (data: Partial<FreeZoneLicense>) => void;
+  updateTRNUpload: (data: Partial<TRNUpload>) => void;
+  
+  // Utility
+  resetSetup: () => void;
+  getCompleteSetup: () => CompleteSetup | null;
+  saveProgress: () => void;
+  loadProgress: () => void;
+  
+  // Validation state
+  stepValidation: Record<number, boolean>;
+  updateStepValidation: (step: number, isValid: boolean) => void;
 }
 
 const SetupContext = createContext<SetupContextType | undefined>(undefined);
 
-const initialFormData: Partial<SetupFormData> = {
-  businessInfo: {
-    companyName: '',
-    trn: '',
-    businessLicense: '',
-    address: '',
-    phone: '+971',
-    email: '',
-    industry: '',
-  },
-  revenueInfo: {
-    annualRevenue: 0,
-    employees: 1,
-    financialYearEnd: '',
-  },
-  licenseInfo: {
-    licenseType: 'mainland',
-    emirate: '',
-    authority: '',
-  },
-  freeZoneInfo: {
-    isFreeZone: false,
-    freeZoneName: '',
-    freeZoneAuthority: '',
-    qfzpEligible: false,
-  },
-  uaeIntegration: {
-    hasUAEPass: false,
-    uaePassId: '',
-    ftaIntegrationConsent: false,
-    dataProcessingConsent: false,
-  },
-  documents: {},
-  compliance: {
-    vatRequired: false,
-    vatNumber: '',
-    transferPricingRequired: false,
-    hasRelatedParties: false,
-    auditRequired: false,
-  },
-};
+const STORAGE_KEY = 'peergos_setup_progress';
+const VALIDATION_KEY = 'peergos_setup_validation';
 
-interface SetupProviderProps {
-  children: ReactNode;
-}
-
-export function SetupProvider({ children }: SetupProviderProps) {
-  const [formData, setFormData] = useState<Partial<SetupFormData>>(initialFormData);
+export function SetupProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [businessInfo, setBusinessInfo] = useState<Partial<BusinessInfo>>({});
+  const [revenueDeclaration, setRevenueDeclaration] = useState<Partial<RevenueDeclaration>>({
+    hasInternationalSales: false,
+  });
+  const [freeZoneLicense, setFreeZoneLicense] = useState<Partial<FreeZoneLicense>>({
+    isFreeZone: false,
+    isQFZP: false,
+    hasRelatedParties: false,
+  });
+  const [trnUpload, setTRNUpload] = useState<Partial<TRNUpload>>({
+    hasTRN: false,
+    citRegistrationRequired: true,
+    taxAgentAppointed: false,
+  });
+  const [stepValidation, setStepValidation] = useState<Record<number, boolean>>({
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+  });
 
-  const totalSteps = 6;
+  // Auto-save progress to localStorage
+  useEffect(() => {
+    saveProgress();
+  }, [businessInfo, revenueDeclaration, freeZoneLicense, trnUpload, currentStep]);
 
-  const updateFormData = (section: keyof SetupFormData, data: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        ...data,
-      },
-    }));
+  const updateBusinessInfo = (data: Partial<BusinessInfo>) => {
+    setBusinessInfo(prev => ({ ...prev, ...data }));
   };
 
-  const validateSection = (section: keyof SetupFormData) => {
-    try {
-      const sectionSchema = setupSchema.shape[section];
-      const sectionData = formData[section];
-      sectionSchema.parse(sectionData);
-      return { isValid: true, errors: null };
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return { isValid: false, errors: error.errors };
-      }
-      return { isValid: false, errors: ['Unknown validation error'] };
+  const updateRevenueDeclaration = (data: Partial<RevenueDeclaration>) => {
+    setRevenueDeclaration(prev => ({ ...prev, ...data }));
+  };
+
+  const updateFreeZoneLicense = (data: Partial<FreeZoneLicense>) => {
+    setFreeZoneLicense(prev => ({ ...prev, ...data }));
+  };
+
+  const updateTRNUpload = (data: Partial<TRNUpload>) => {
+    setTRNUpload(prev => ({ ...prev, ...data }));
+  };
+
+  const updateStepValidation = (step: number, isValid: boolean) => {
+    setStepValidation(prev => ({ ...prev, [step]: isValid }));
+    // Save validation state to localStorage
+    localStorage.setItem(VALIDATION_KEY, JSON.stringify({ ...stepValidation, [step]: isValid }));
+  };
+
+  const nextStep = () => {
+    if (currentStep < 5 && stepValidation[currentStep]) {
+      setCurrentStep(prev => prev + 1);
     }
   };
 
-  const isStepValid = (step: number): boolean => {
-    switch (step) {
-      case 1: // Business Info
-        return validateSection('businessInfo').isValid;
-      case 2: // Revenue Info
-        return validateSection('revenueInfo').isValid;
-      case 3: // License Info
-        return validateSection('licenseInfo').isValid;
-      case 4: // Free Zone Info
-        return validateSection('freeZoneInfo').isValid;
-      case 5: // UAE Integration
-        return validateSection('uaeIntegration').isValid;
-      case 6: // Documents and Review
-        // Custom validation for required documents
-        const revenue = formData.revenueInfo?.annualRevenue || 0;
-        const isFreeZone = formData.freeZoneInfo?.isFreeZone || false;
-        const hasRequiredDocs = formData.documents?.tradeLicense !== undefined;
-        
-        let requiredDocsValid = hasRequiredDocs;
-        
-        if (isFreeZone && !formData.documents?.freeZoneDeclaration) {
-          requiredDocsValid = false;
-        }
-        
-        if (revenue > 3000000 && !formData.documents?.transferPricingDeclaration) {
-          requiredDocsValid = false;
-        }
-        
-        return requiredDocsValid;
-      default:
-        return false;
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
     }
   };
 
-  const markStepCompleted = (step: number) => {
-    setCompletedSteps(prev => new Set([...prev, step]));
-  };
-
-  const resetForm = () => {
-    setFormData(initialFormData);
+  const resetSetup = () => {
     setCurrentStep(1);
-    setCompletedSteps(new Set());
+    setBusinessInfo({});
+    setRevenueDeclaration({ hasInternationalSales: false });
+    setFreeZoneLicense({ isFreeZone: false, isQFZP: false, hasRelatedParties: false });
+    setTRNUpload({ hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
+    setStepValidation({ 1: false, 2: false, 3: false, 4: false });
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(VALIDATION_KEY);
+  };
+
+  const saveProgress = () => {
+    const progressData = {
+      currentStep,
+      businessInfo,
+      revenueDeclaration,
+      freeZoneLicense,
+      trnUpload,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+  };
+
+  const loadProgress = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const savedValidation = localStorage.getItem(VALIDATION_KEY);
+      
+      if (saved) {
+        const progressData = JSON.parse(saved);
+        setCurrentStep(progressData.currentStep || 1);
+        setBusinessInfo(progressData.businessInfo || {});
+        setRevenueDeclaration(progressData.revenueDeclaration || { hasInternationalSales: false });
+        setFreeZoneLicense(progressData.freeZoneLicense || { isFreeZone: false, isQFZP: false, hasRelatedParties: false });
+        setTRNUpload(progressData.trnUpload || { hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
+      }
+      
+      if (savedValidation) {
+        const validationData = JSON.parse(savedValidation);
+        setStepValidation(validationData);
+      }
+    } catch (error) {
+      console.warn('Failed to load setup progress:', error);
+    }
+  };
+
+  const getCompleteSetup = (): CompleteSetup | null => {
+    try {
+      return {
+        businessInfo: businessInfo as BusinessInfo,
+        revenueDeclaration: revenueDeclaration as RevenueDeclaration,
+        freeZoneLicense: freeZoneLicense as FreeZoneLicense,
+        trnUpload: trnUpload as TRNUpload,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  // Load progress on mount
+  useEffect(() => {
+    loadProgress();
+  }, []);
+
+  const value: SetupContextType = {
+    currentStep,
+    businessInfo,
+    revenueDeclaration,
+    freeZoneLicense,
+    trnUpload,
+    setCurrentStep,
+    nextStep,
+    prevStep,
+    updateBusinessInfo,
+    updateRevenueDeclaration,
+    updateFreeZoneLicense,
+    updateTRNUpload,
+    resetSetup,
+    getCompleteSetup,
+    saveProgress,
+    loadProgress,
+    stepValidation,
+    updateStepValidation,
   };
 
   return (
-    <SetupContext.Provider
-      value={{
-        formData,
-        updateFormData,
-        validateSection,
-        currentStep,
-        setCurrentStep,
-        isStepValid,
-        totalSteps,
-        completedSteps,
-        markStepCompleted,
-        resetForm,
-      }}
-    >
+    <SetupContext.Provider value={value}>
       {children}
     </SetupContext.Provider>
   );
@@ -238,21 +196,3 @@ export function useSetup() {
   }
   return context;
 }
-
-// Utility functions for conditional logic
-export const getConditionalRequirements = (formData: Partial<SetupFormData>) => {
-  const revenue = formData.revenueInfo?.annualRevenue || 0;
-  const isFreeZone = formData.freeZoneInfo?.isFreeZone || false;
-  const licenseType = formData.licenseInfo?.licenseType;
-
-  return {
-    requiresVAT: revenue >= 375000,
-    requiresCIT: true, // Always required in UAE
-    requiresTransferPricing: revenue > 3000000,
-    requiresFreeZoneDeclaration: isFreeZone,
-    requiresIndividualCITFlag: licenseType === 'individual',
-    smallBusinessRelief: revenue <= 375000,
-    cashBasisEligible: revenue < 3000000,
-    qfzpEligible: isFreeZone && revenue <= 3000000,
-  };
-};
