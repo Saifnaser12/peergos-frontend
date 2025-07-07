@@ -7,6 +7,8 @@ import { AuthProvider } from "./context/auth-context";
 import { LanguageProvider } from "./context/language-context";
 import { NotificationProvider } from "./context/notification-context";
 import { TaxClassificationProvider } from "./context/tax-classification-context";
+import { NavigationProvider } from "./context/navigation-context";
+import { ErrorBoundary } from "./components/ui/error-boundary";
 import MainLayout from "./components/layout/main-layout";
 import Dashboard from "./pages/dashboard";
 import Accounting from "./pages/accounting";
@@ -51,20 +53,24 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <LanguageProvider>
-            <NotificationProvider>
-              <TaxClassificationProvider>
-                <Toaster />
-                <Router />
-              </TaxClassificationProvider>
-            </NotificationProvider>
-          </LanguageProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <NotificationProvider>
+                <TaxClassificationProvider>
+                  <NavigationProvider>
+                    <Toaster />
+                    <Router />
+                  </NavigationProvider>
+                </TaxClassificationProvider>
+              </NotificationProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

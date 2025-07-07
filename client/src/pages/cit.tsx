@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
+import { useNavigation, useFormNavigation } from '@/context/navigation-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import ProgressTracker from '@/components/ui/progress-tracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CitCalculator from '@/components/tax/cit-calculator';
 import { Building2, Calculator, FileText, Download } from 'lucide-react';
@@ -12,8 +15,11 @@ import { formatCurrency } from '@/lib/i18n';
 
 export default function CIT() {
   const [activeTab, setActiveTab] = useState('calculator');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { company } = useAuth();
   const { language, t } = useLanguage();
+  const navigation = useNavigation();
+  const { submitWithNavigation } = useFormNavigation();
 
   const { data: taxFilings } = useQuery({
     queryKey: ['/api/tax-filings', { companyId: company?.id, type: 'CIT' }],
@@ -40,16 +46,41 @@ export default function CIT() {
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
+      {/* Progress Tracker */}
+      <ProgressTracker variant="header" showNavigation={true} />
+      
       {/* Header */}
       <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Corporate Income Tax</h1>
           <p className="text-gray-600">Calculate and file your CIT returns</p>
         </div>
-        <Button className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
+        <EnhancedButton 
+          navigationType="submit"
+          loading={isSubmitting}
+          requiresValidation={true}
+          validationFn={() => {
+            // Validate that required data exists for CIT filing
+            return netIncome >= 0 && transactions && transactions.length > 0;
+          }}
+          onClick={async () => {
+            setIsSubmitting(true);
+            try {
+              // Simulate CIT filing submission
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              navigation.markStepCompleted('/cit');
+              await navigation.navigateTo('/vat', { showToast: true });
+            } catch (error) {
+              console.error('CIT submission failed:', error);
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+          className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}
+        >
           <FileText size={16} />
-          New Filing
-        </Button>
+          Submit to FTA
+        </EnhancedButton>
       </div>
 
       {/* Overview Cards */}

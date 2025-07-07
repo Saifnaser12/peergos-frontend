@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useSetup } from '@/context/setup-context';
 import { useTaxClassification } from '@/context/tax-classification-context';
+import { useNavigation } from '@/context/navigation-context';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { cn } from '@/lib/utils';
 
 // Step Components
@@ -87,30 +89,53 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     completedSteps,
     markStepCompleted,
     formData,
+    validateSection,
   } = useSetup();
 
   const { classification } = useTaxClassification();
+  const navigation = useNavigation();
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const progress = (currentStep / totalSteps) * 100;
   const currentStepConfig = stepConfig.find(step => step.id === currentStep);
   const CurrentStepComponent = currentStepConfig?.component;
 
-  const handleNext = () => {
-    if (isStepValid(currentStep)) {
+  const handleNext = async () => {
+    const stepValid = isStepValid(currentStep);
+    
+    if (stepValid) {
       markStepCompleted(currentStep);
       setShowValidationErrors(false);
+      
+      // Track progress in navigation context
+      navigation.markStepCompleted(`/setup-step-${currentStep}`);
       
       if (currentStep < totalSteps) {
         setCurrentStep(currentStep + 1);
       } else {
         // Final step - complete setup
-        if (onComplete) {
-          onComplete();
+        setIsSubmitting(true);
+        try {
+          if (onComplete) {
+            await onComplete();
+          }
+          // Navigate to dashboard on successful completion
+          await navigation.navigateTo('/', { showToast: true });
+        } catch (error) {
+          console.error('Setup completion failed:', error);
+        } finally {
+          setIsSubmitting(false);
         }
       }
     } else {
       setShowValidationErrors(true);
+      
+      // Scroll to first error
+      const firstErrorElement = document.querySelector('[data-error="true"]');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
@@ -258,15 +283,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between pt-6">
-          <Button
+          <EnhancedButton
             variant="outline"
+            navigationType="previous"
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className="flex items-center gap-2"
+            showIcon={true}
           >
-            <ArrowLeft className="h-4 w-4" />
             Previous
-          </Button>
+          </EnhancedButton>
 
           <div className="flex items-center gap-3">
             {currentStep === totalSteps && (
@@ -280,23 +305,18 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </Button>
             )}
             
-            <Button
+            <EnhancedButton
+              navigationType={currentStep === totalSteps ? "submit" : "next"}
               onClick={handleNext}
               disabled={!isStepValid(currentStep)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              loading={isSubmitting}
+              requiresValidation={true}
+              validationFn={() => isStepValid(currentStep)}
+              loadingText={currentStep === totalSteps ? "Completing Setup..." : "Validating..."}
+              showIcon={true}
             >
-              {currentStep === totalSteps ? (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  Complete Setup
-                </>
-              ) : (
-                <>
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
+              {currentStep === totalSteps ? "Complete Setup" : "Next"}
+            </EnhancedButton>
           </div>
         </div>
 

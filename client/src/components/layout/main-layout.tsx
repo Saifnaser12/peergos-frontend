@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useNavigation } from '@/context/navigation-context';
 import Sidebar from './sidebar';
 import TopBar from './topbar';
+import ProgressTracker from '@/components/ui/progress-tracker';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -31,8 +33,21 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50">
+          <div className="flex h-full">
+            <div className="flex-1 p-6">
+              {children}
+            </div>
+            {/* Right sidebar with progress tracker - only show on main pages */}
+            <div className="w-80 border-l border-gray-200 bg-white hidden xl:block">
+              <ProgressTracker 
+                variant="sidebar" 
+                showDetails={true} 
+                showNavigation={true}
+                className="h-full"
+              />
+            </div>
+          </div>
         </main>
       </div>
     </div>
