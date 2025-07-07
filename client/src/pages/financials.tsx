@@ -6,6 +6,7 @@ import { FinancialStatementsGenerator, CompanyInfo, OpeningBalance } from '@/lib
 import FinancialStatementViewer from '@/components/financial/financial-statement-viewer';
 import { exportToPDF, exportToExcel, exportToJSON, exportToXML } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +14,7 @@ import FinancialStatements from '@/components/accounting/financial-statements';
 import FinancialNotesEditor from '@/components/financials/financial-notes-editor';
 import ReportPackGenerator from '@/components/financials/report-pack-generator';
 import { FinancialNote } from '@/lib/financial-reports';
-import { BarChart3, Download, FileText, TrendingUp } from 'lucide-react';
+import { BarChart3, Download, FileText, TrendingUp, AlertTriangle, Info, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
 
@@ -36,6 +37,57 @@ export default function Financials() {
     queryKey: ['/api/kpi-data', { companyId: company?.id }],
     enabled: !!company?.id,
   });
+
+  // UX Fallback checks for missing data
+  if (!company) {
+    console.warn('[Financials Page] Company data missing - user needs to complete setup');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Company Setup Required</strong><br />
+            Please complete your company profile setup to access financial reports and statements.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Complete Your Setup</h3>
+            <p className="text-gray-600 mb-4">Set up your company profile to generate financial statements</p>
+            <Button onClick={() => window.location.href = '/setup'}>
+              Go to Setup
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    console.warn('[Financials Page] No transactions found - user needs to add financial data');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>No Financial Data Found</strong><br />
+            Add transactions to your account to generate meaningful financial statements and reports.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Add Financial Data</h3>
+            <p className="text-gray-600 mb-4">Record your business transactions to generate comprehensive financial reports</p>
+            <Button onClick={() => window.location.href = '/transactions'}>
+              Add Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Generate financial statements
   const financialStatements = useMemo(() => {

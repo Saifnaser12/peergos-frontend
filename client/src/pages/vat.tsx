@@ -9,13 +9,14 @@ import { VAT201Data, VAT201Calculator } from '@/lib/vat-calculations';
 import VAT201Form from '@/components/vat/vat201-form';
 import { exportToPDF, exportToXML } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VatCalculator from '@/components/tax/vat-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
 import FilingHistoryTable from '@/components/tax/filing-history-table';
-import { FileText, Receipt, Calculator, Download } from 'lucide-react';
+import { FileText, Receipt, Calculator, Download, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
 
@@ -162,6 +163,83 @@ export default function VAT() {
       generationDate: new Date().toISOString(),
     };
   };
+
+  // UX Fallback checks for missing data
+  if (!company) {
+    console.warn('[VAT Page] Company data missing - user needs to complete setup');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Company Setup Required</strong><br />
+            Please complete your company profile setup to access VAT management features.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Complete Your Setup</h3>
+            <p className="text-gray-600 mb-4">Set up your company profile to start managing VAT returns</p>
+            <Button onClick={() => window.location.href = '/setup'}>
+              Go to Setup
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    console.warn('[VAT Page] No transactions found - user needs to add financial data');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>No Financial Data Found</strong><br />
+            Add at least one transaction to begin VAT calculations and filing.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Add Your First Transaction</h3>
+            <p className="text-gray-600 mb-4">Record sales and purchases to start calculating your VAT liability</p>
+            <Button onClick={() => window.location.href = '/transactions'}>
+              Add Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if VAT registration is required but missing
+  if (currentMonthRevenue > 31250 && !company.vatRegistered) { // AED 375k annually = ~31.25k monthly
+    console.warn('[VAT Page] Revenue exceeds VAT threshold but company not registered');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <strong>VAT Registration Required</strong><br />
+            Your monthly revenue suggests you may need to register for VAT. Contact the FTA for guidance.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">VAT Registration Required</h3>
+            <p className="text-gray-600 mb-4">Update your company profile to reflect VAT registration status</p>
+            <Button onClick={() => window.location.href = '/setup'}>
+              Update Company Profile
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>

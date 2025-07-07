@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/language-context';
 import { useNavigation, useFormNavigation } from '@/context/navigation-context';
 import { useTaxCalculation, TaxCalculationResult } from '@/hooks/use-tax-calculation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import ProgressTracker from '@/components/ui/progress-tracker';
@@ -13,7 +14,7 @@ import CitCalculator from '@/components/tax/cit-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
 import FilingHistoryTable from '@/components/tax/filing-history-table';
-import { Building2, Calculator, FileText, Download } from 'lucide-react';
+import { Building2, Calculator, FileText, Download, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
 
@@ -49,6 +50,83 @@ export default function CIT() {
 
   const netIncome = currentYearRevenue - currentYearExpenses;
   const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09;
+
+  // UX Fallback checks for missing data
+  if (!company) {
+    console.warn('[CIT Page] Company data missing - user needs to complete setup');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Company Setup Required</strong><br />
+            Please complete your company profile setup to access CIT management features.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Complete Your Setup</h3>
+            <p className="text-gray-600 mb-4">Set up your company profile to start managing CIT returns</p>
+            <Button onClick={() => window.location.href = '/setup'}>
+              Go to Setup
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    console.warn('[CIT Page] No transactions found - user needs to add financial data');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>No Financial Data Found</strong><br />
+            Add at least one transaction to begin CIT calculations and filing.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Add Your First Transaction</h3>
+            <p className="text-gray-600 mb-4">Record revenue and expenses to start calculating your CIT liability</p>
+            <Button onClick={() => window.location.href = '/transactions'}>
+              Add Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check for minimal data requirements
+  if (currentYearRevenue === 0 && currentYearExpenses === 0) {
+    console.warn('[CIT Page] No current year financial activity found');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            <strong>No Current Year Activity</strong><br />
+            No revenue or expenses found for {new Date().getFullYear()}. CIT filing may not be required.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Record Current Year Activity</h3>
+            <p className="text-gray-600 mb-4">Add {new Date().getFullYear()} transactions to determine CIT obligations</p>
+            <Button onClick={() => window.location.href = '/transactions'}>
+              Add {new Date().getFullYear()} Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
