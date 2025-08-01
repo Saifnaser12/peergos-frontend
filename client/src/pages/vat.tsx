@@ -341,12 +341,9 @@ export default function VAT() {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="vat201">VAT201 Return</TabsTrigger>
-              <TabsTrigger value="calculator">VAT Calculator</TabsTrigger>
-              <TabsTrigger value="secure">Secure API</TabsTrigger>
-              <TabsTrigger value="returns">Filed Returns</TabsTrigger>
+              <TabsTrigger value="vat201">VAT Return</TabsTrigger>
+              <TabsTrigger value="calculator">Calculator</TabsTrigger>
               <TabsTrigger value="history">Filing History</TabsTrigger>
-              <TabsTrigger value="registration">Registration Info</TabsTrigger>
             </TabsList>
             
             <TabsContent value="vat201" className="mt-6">
@@ -360,10 +357,6 @@ export default function VAT() {
             </TabsContent>
             
             <TabsContent value="calculator" className="mt-6">
-              <VatCalculator />
-            </TabsContent>
-            
-            <TabsContent value="secure" className="mt-6">
               <SecureTaxCalculator 
                 type="VAT"
                 onResultUpdate={setTaxResult}
@@ -371,81 +364,12 @@ export default function VAT() {
               />
             </TabsContent>
             
-            <TabsContent value="returns" className="mt-6">
-              <div className="space-y-4">
-                {taxFilings?.length === 0 || !taxFilings ? (
-                  <div className="text-center py-8">
-                    <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No VAT Returns Filed</h3>
-                    <p className="text-gray-500">Your VAT returns will appear here once you file them.</p>
-                    <Button className="mt-4">File Your First Return</Button>
-                  </div>
-                ) : (
-                  taxFilings.filter(filing => filing.type === 'VAT').map((filing) => (
-                    <TaxFilingStatus
-                      key={filing.id}
-                      filing={{
-                        ...filing,
-                        taxAgentName: filing.metadata ? JSON.parse(filing.metadata)?.taxAgentName : undefined,
-                        reference: filing.metadata ? JSON.parse(filing.metadata)?.reference : undefined,
-                        attachments: filing.metadata ? JSON.parse(filing.metadata)?.attachments : undefined,
-                      }}
-                      canResubmit={new Date(filing.dueDate) > new Date() && filing.status !== 'ACCEPTED'}
-                    />
-                  ))
-                )}
-              </div>
-            </TabsContent>
             
             <TabsContent value="history" className="mt-6">
               <FilingHistoryTable 
                 taxType="VAT" 
                 companyId={company?.id || 1} 
               />
-            </TabsContent>
-            
-            <TabsContent value="registration" className="mt-6">
-              <div className="space-y-4">
-                <Card className="border">
-                  <CardContent className="p-6">
-                    <h4 className="font-medium mb-4">VAT Registration Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Tax Registration Number (TRN)</label>
-                        <p className="text-sm text-gray-900">{company?.trn || 'Not registered'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">VAT Rate</label>
-                        <p className="text-sm text-gray-900">5% (Standard Rate)</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Filing Frequency</label>
-                        <p className="text-sm text-gray-900">Monthly</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Registration Status</label>
-                        <p className={cn("text-sm font-medium", 
-                          company?.vatRegistered ? "text-success-600" : "text-warning-600"
-                        )}>
-                          {company?.vatRegistered ? 'Active' : 'Not Registered'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-primary-200 bg-primary-50">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium text-primary-900 mb-2">VAT Registration Requirements</h4>
-                    <ul className="text-sm text-primary-700 space-y-1">
-                      <li>• Mandatory registration for businesses with taxable supplies {'>'}= AED 375,000</li>
-                      <li>• Voluntary registration available for businesses with taxable supplies {'>'}= AED 187,500</li>
-                      <li>• Monthly VAT returns due by 28th of following month</li>
-                      <li>• Keep detailed records of all transactions for 5 years</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

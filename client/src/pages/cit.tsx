@@ -238,18 +238,12 @@ export default function CIT() {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="calculator">CIT Calculator</TabsTrigger>
-              <TabsTrigger value="secure">Secure API</TabsTrigger>
-              <TabsTrigger value="filings">Past Filings</TabsTrigger>
-              <TabsTrigger value="history">Filing History</TabsTrigger>
-              <TabsTrigger value="compliance">Compliance Status</TabsTrigger>
+              <TabsTrigger value="calculator">Calculate CIT</TabsTrigger>
+              <TabsTrigger value="filings">Filing History</TabsTrigger>
+              <TabsTrigger value="compliance">Compliance</TabsTrigger>
             </TabsList>
             
             <TabsContent value="calculator" className="mt-6">
-              <CitCalculator />
-            </TabsContent>
-            
-            <TabsContent value="secure" className="mt-6">
               <SecureTaxCalculator 
                 type="CIT"
                 onResultUpdate={setTaxResult}
@@ -258,31 +252,6 @@ export default function CIT() {
             </TabsContent>
             
             <TabsContent value="filings" className="mt-6">
-              <div className="space-y-4">
-                {taxFilings?.length === 0 || !taxFilings ? (
-                  <div className="text-center py-8">
-                    <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No CIT Filings Yet</h3>
-                    <p className="text-gray-500">Your CIT filings will appear here once you create them.</p>
-                  </div>
-                ) : (
-                  taxFilings.filter(filing => filing.type === 'CIT').map((filing) => (
-                    <TaxFilingStatus
-                      key={filing.id}
-                      filing={{
-                        ...filing,
-                        taxAgentName: filing.metadata ? JSON.parse(filing.metadata)?.taxAgentName : undefined,
-                        reference: filing.metadata ? JSON.parse(filing.metadata)?.reference : undefined,
-                        attachments: filing.metadata ? JSON.parse(filing.metadata)?.attachments : undefined,
-                      }}
-                      canResubmit={new Date(filing.dueDate) > new Date() && filing.status !== 'ACCEPTED'}
-                    />
-                  ))
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="history" className="mt-6">
               <FilingHistoryTable 
                 taxType="CIT" 
                 companyId={company?.id || 1} 
