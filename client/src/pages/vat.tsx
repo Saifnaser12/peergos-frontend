@@ -44,16 +44,18 @@ export default function VAT() {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
-  const monthlyTransactions = transactions?.filter(t => {
+  const monthlyTransactions = Array.isArray(transactions) ? transactions.filter((t: any) => {
     const date = new Date(t.transactionDate);
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-  }) || [];
+  }) : [];
 
-  const monthlySales = monthlyTransactions.filter(t => t.type === 'REVENUE')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+  const monthlySales = monthlyTransactions.filter((t: any) => t.type === 'REVENUE')
+    .reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0);
   
-  const monthlyPurchases = monthlyTransactions.filter(t => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+  const monthlyPurchases = monthlyTransactions.filter((t: any) => t.type === 'EXPENSE')
+    .reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0);
+
+  const currentMonthRevenue = monthlySales;
 
   // VAT201 submission mutation
   const submitVAT201Mutation = useMutation({
@@ -190,7 +192,7 @@ export default function VAT() {
     );
   }
 
-  if (!transactions || transactions.length === 0) {
+  if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
     console.warn('[VAT Page] No transactions found - user needs to add financial data');
     return (
       <div className="space-y-6">

@@ -74,7 +74,7 @@ export default function VAT201Form({
   isSubmitting = false,
   className = '',
 }: VAT201FormProps) {
-  const [calculatedData, setCalculatedData] = useState<VAT201Data | null>(null);
+
   const [attachments, setAttachments] = useState<File[]>([]);
   const [showRefundFlow, setShowRefundFlow] = useState(false);
   const [showPaymentFlow, setShowPaymentFlow] = useState(false);
@@ -85,98 +85,84 @@ export default function VAT201Form({
   const form = useForm<VAT201FormData>({
     resolver: zodResolver(vat201Schema),
     defaultValues: {
-      standardRatedValue: initialData?.standardRatedSupplies.totalValue || 0,
-      standardRatedVAT: initialData?.standardRatedSupplies.vatAmount || 0,
-      zeroRatedValue: initialData?.zeroRatedSupplies.totalValue || 0,
-      exemptValue: initialData?.exemptSupplies.totalValue || 0,
-      reverseChargeValue: initialData?.reverseChargeSupplies.totalValue || 0,
-      reverseChargeVAT: initialData?.reverseChargeSupplies.vatAmount || 0,
-      increaseInVAT: initialData?.adjustments.increaseInVAT || 0,
-      decreaseInVAT: initialData?.adjustments.decreaseInVAT || 0,
-      inputVATStandard: initialData?.inputVAT.standardRatedPurchases || 0,
-      inputVATCapital: initialData?.inputVAT.capitalGoods || 0,
-      inputVATCorrections: initialData?.inputVAT.corrections || 0,
+      standardRatedValue: initialData?.standardRatedSupplies?.totalValue || 0,
+      standardRatedVAT: initialData?.standardRatedSupplies?.vatAmount || 0,
+      zeroRatedValue: initialData?.zeroRatedSupplies?.totalValue || 0,
+      exemptValue: initialData?.exemptSupplies?.totalValue || 0,
+      reverseChargeValue: initialData?.reverseChargeSupplies?.totalValue || 0,
+      reverseChargeVAT: initialData?.reverseChargeSupplies?.vatAmount || 0,
+      increaseInVAT: initialData?.adjustments?.increaseInVAT || 0,
+      decreaseInVAT: initialData?.adjustments?.decreaseInVAT || 0,
+      inputVATStandard: initialData?.inputVAT?.standardRatedPurchases || 0,
+      inputVATCapital: initialData?.inputVAT?.capitalGoods || 0,
+      inputVATCorrections: initialData?.inputVAT?.corrections || 0,
     },
   });
 
   const { watch, formState: { errors } } = form;
   const watchedValues = watch();
 
-  // Auto-calculate VAT amounts and totals
-  useEffect(() => {
-    const standardVAT = watchedValues.standardRatedValue * 0.05; // 5% UAE VAT rate
-    
-    // Auto-update standard VAT if supply value changes (only if significant difference)
-    if (Math.abs(watchedValues.standardRatedVAT - standardVAT) > 1) {
-      form.setValue('standardRatedVAT', Math.round(standardVAT * 100) / 100, { shouldValidate: false });
-    }
+  // Calculate totals on demand (no useEffect to prevent loops)
+  const totalOutputVAT = 
+    watchedValues.standardRatedVAT + 
+    watchedValues.reverseChargeVAT + 
+    watchedValues.increaseInVAT - 
+    watchedValues.decreaseInVAT;
 
-    // Calculate totals
-    const totalOutputVAT = 
-      watchedValues.standardRatedVAT + 
-      watchedValues.reverseChargeVAT + 
-      watchedValues.increaseInVAT - 
-      watchedValues.decreaseInVAT;
+  const totalInputVAT = 
+    watchedValues.inputVATStandard + 
+    watchedValues.inputVATCapital + 
+    watchedValues.inputVATCorrections;
 
-    const totalInputVAT = 
-      watchedValues.inputVATStandard + 
-      watchedValues.inputVATCapital + 
-      watchedValues.inputVATCorrections;
+  const netVATPayable = totalOutputVAT - totalInputVAT;
 
-    const netVATPayable = totalOutputVAT - totalInputVAT;
-
-    const data: VAT201Data = {
-      standardRatedSupplies: {
-        totalValue: watchedValues.standardRatedValue,
-        vatAmount: watchedValues.standardRatedVAT,
-      },
-      zeroRatedSupplies: {
-        totalValue: watchedValues.zeroRatedValue,
-        vatAmount: 0,
-      },
-      exemptSupplies: {
-        totalValue: watchedValues.exemptValue,
-        vatAmount: 0,
-      },
-      reverseChargeSupplies: {
-        totalValue: watchedValues.reverseChargeValue,
-        vatAmount: watchedValues.reverseChargeVAT,
-      },
-      adjustments: {
-        increaseInVAT: watchedValues.increaseInVAT,
-        decreaseInVAT: watchedValues.decreaseInVAT,
-        netAdjustment: watchedValues.increaseInVAT - watchedValues.decreaseInVAT,
-      },
-      inputVAT: {
-        standardRatedPurchases: watchedValues.inputVATStandard,
-        capitalGoods: watchedValues.inputVATCapital,
-        corrections: watchedValues.inputVATCorrections,
-        totalClaimable: totalInputVAT,
-      },
-      totalOutputVAT,
-      totalInputVAT,
-      netVATPayable,
-      period: {
-        startDate: initialData?.period.startDate || new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().split('T')[0],
-        endDate: initialData?.period.endDate || new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0],
-        returnPeriod: initialData?.period.returnPeriod || '2025-Q1',
-      },
-      status: initialData?.status || 'draft',
-    };
-
-    setCalculatedData(data);
-    setShowRefundFlow(netVATPayable < 0);
-    setShowPaymentFlow(netVATPayable > 0);
-  }, [watchedValues, form, initialData]);
+  const currentData: VAT201Data = {
+    standardRatedSupplies: {
+      totalValue: watchedValues.standardRatedValue,
+      vatAmount: watchedValues.standardRatedVAT,
+    },
+    zeroRatedSupplies: {
+      totalValue: watchedValues.zeroRatedValue,
+      vatAmount: 0,
+    },
+    exemptSupplies: {
+      totalValue: watchedValues.exemptValue,
+      vatAmount: 0,
+    },
+    reverseChargeSupplies: {
+      totalValue: watchedValues.reverseChargeValue,
+      vatAmount: watchedValues.reverseChargeVAT,
+    },
+    adjustments: {
+      increaseInVAT: watchedValues.increaseInVAT,
+      decreaseInVAT: watchedValues.decreaseInVAT,
+      netAdjustment: watchedValues.increaseInVAT - watchedValues.decreaseInVAT,
+    },
+    inputVAT: {
+      standardRatedPurchases: watchedValues.inputVATStandard,
+      capitalGoods: watchedValues.inputVATCapital,
+      corrections: watchedValues.inputVATCorrections,
+      totalClaimable: totalInputVAT,
+    },
+    totalOutputVAT,
+    totalInputVAT,
+    netVATPayable,
+    period: {
+      startDate: initialData?.period?.startDate || new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().split('T')[0],
+      endDate: initialData?.period?.endDate || new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0],
+      returnPeriod: initialData?.period?.returnPeriod || '2025-Q1',
+    },
+    status: initialData?.status || 'draft',
+  };
 
   const handleSubmit = (data: VAT201FormData) => {
-    if (calculatedData) {
+    if (currentData) {
       // Validate required documents
       const requiredDocs = [];
       if (selectedAgent && agentCertificates.length === 0) {
         requiredDocs.push('Tax Agent Certificate');
       }
-      if (calculatedData.netVATPayable > 0 && bankTransferSlips.length === 0) {
+      if (currentData.netVATPayable > 0 && bankTransferSlips.length === 0) {
         requiredDocs.push('Bank Transfer Slip');
       }
 
@@ -185,13 +171,13 @@ export default function VAT201Form({
         return;
       }
 
-      onSubmit(calculatedData, selectedAgent || undefined, [...agentCertificates, ...bankTransferSlips]);
+      onSubmit(currentData, selectedAgent || undefined, [...agentCertificates, ...bankTransferSlips]);
     }
   };
 
   const handleSaveDraft = () => {
-    if (calculatedData) {
-      onSaveDraft(calculatedData);
+    if (currentData) {
+      onSaveDraft(currentData);
     }
   };
 
@@ -229,13 +215,13 @@ export default function VAT201Form({
             <div>
               <CardTitle>VAT201 Return</CardTitle>
               <p className="text-sm text-gray-600">
-                Period: {calculatedData?.period.returnPeriod || 'Current Quarter'}
+                Period: {currentData?.period.returnPeriod || 'Current Quarter'}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            {calculatedData && getStatusBadge(calculatedData.status)}
+            {currentData && getStatusBadge(currentData.status)}
             <Button variant="outline" size="sm" onClick={() => onExport('pdf')}>
               <Download className="h-4 w-4 mr-1" />
               PDF
@@ -479,7 +465,7 @@ export default function VAT201Form({
           </Card>
 
           {/* Calculations Summary */}
-          {calculatedData && (
+          {currentData && (
             <Card className="border-2 border-blue-500 bg-blue-50/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -491,25 +477,25 @@ export default function VAT201Form({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(calculatedData.totalOutputVAT)}
+                      {formatCurrency(currentData.totalOutputVAT)}
                     </div>
                     <div className="text-sm text-gray-600">Total Output VAT</div>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(calculatedData.totalInputVAT)}
+                      {formatCurrency(currentData.totalInputVAT)}
                     </div>
                     <div className="text-sm text-gray-600">Total Input VAT</div>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className={cn(
                       "text-2xl font-bold",
-                      calculatedData.netVATPayable >= 0 ? "text-red-600" : "text-green-600"
+                      currentData.netVATPayable >= 0 ? "text-red-600" : "text-green-600"
                     )}>
-                      {formatCurrency(Math.abs(calculatedData.netVATPayable))}
+                      {formatCurrency(Math.abs(currentData.netVATPayable))}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {calculatedData.netVATPayable >= 0 ? "VAT Payable" : "VAT Refund"}
+                      {currentData.netVATPayable >= 0 ? "VAT Payable" : "VAT Refund"}
                     </div>
                   </div>
                 </div>
@@ -629,7 +615,7 @@ export default function VAT201Form({
               loading={isSubmitting}
               requiresValidation={true}
               validationFn={() => {
-                const validation = VAT201Calculator.validateVAT201(calculatedData!);
+                const validation = VAT201Calculator.validateVAT201(currentData!);
                 return validation.isValid;
               }}
               loadingText="Submitting to FTA..."
