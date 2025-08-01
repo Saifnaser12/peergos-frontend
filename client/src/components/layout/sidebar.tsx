@@ -63,7 +63,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       section: 'Support',
       items: [
         { path: '/tax-assistant', icon: Bot, label: 'AI Tax Assistant', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'], badge: 'AI' },
-        { path: '/assistant', icon: Bot, label: t('nav.assistant'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/admin', icon: Settings, label: t('nav.admin'), roles: ['ADMIN'] },
       ],
     },

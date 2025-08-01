@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import DeductionWizard from '@/components/tax-optimization/deduction-wizard';
 import SmartExpenseTracker from '@/components/tax-optimization/smart-expense-tracker';
 import TaxHealthChecker from '@/components/tax-optimization/tax-health-checker';
@@ -24,7 +25,11 @@ import {
   Calendar,
   Zap,
   Star,
-  Shield
+  Shield,
+  Bot,
+  Send,
+  MessageCircle,
+  Info
 } from 'lucide-react';
 
 interface TaxInsight {
@@ -36,9 +41,26 @@ interface TaxInsight {
   actionRequired: boolean;
 }
 
+interface ChatMessage {
+  id: number;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 export default function TaxAssistant() {
   const { user, company } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      type: 'assistant',
+      content: 'Hello! I\'m your UAE Tax Assistant. I can help you with questions about VAT, Corporate Income Tax, and general tax compliance in the UAE. How can I assist you today?',
+      timestamp: new Date(),
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch business data for analysis
   const { data: kpiData } = useQuery({
@@ -141,6 +163,63 @@ export default function TaxAssistant() {
   const taxInsights = generateTaxInsights();
   const highPriorityInsights = taxInsights.filter(insight => insight.priority === 'high');
   const totalPotentialSavings = taxInsights.reduce((sum, insight) => sum + insight.impact, 0);
+
+  // Handle AI chat functionality
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: ChatMessage = {
+      id: chatMessages.length + 1,
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date(),
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    // Simulate AI response (replace with actual API call)
+    setTimeout(() => {
+      const aiResponse: ChatMessage = {
+        id: chatMessages.length + 2,
+        type: 'assistant',
+        content: getAIResponse(inputMessage),
+        timestamp: new Date(),
+      };
+      setChatMessages(prev => [...prev, aiResponse]);
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const getAIResponse = (question: string): string => {
+    const lowerQ = question.toLowerCase();
+    
+    if (lowerQ.includes('vat rate') || lowerQ.includes('vat percentage')) {
+      return 'The UAE VAT rate is 5% on most goods and services. Some items are zero-rated (like basic food items) or exempt (like healthcare and education).';
+    }
+    
+    if (lowerQ.includes('vat registration') || lowerQ.includes('register for vat')) {
+      return 'You must register for VAT if your annual taxable supplies exceed AED 375,000. You can voluntarily register if your supplies are between AED 187,500 and AED 375,000.';
+    }
+    
+    if (lowerQ.includes('cit') || lowerQ.includes('corporate income tax')) {
+      return 'UAE Corporate Income Tax rate is 9% for businesses with profits above AED 375,000. Small Business Relief provides 0% rate for the first AED 375,000 of profits.';
+    }
+    
+    if (lowerQ.includes('deadline') || lowerQ.includes('filing')) {
+      return 'VAT returns are due 28 days after the end of each tax period. CIT returns are due within 9 months of your financial year-end.';
+    }
+    
+    return 'Thank you for your question about UAE tax matters. For specific advice tailored to your situation, I recommend consulting with a qualified tax professional or reviewing the official FTA guidelines. Is there a particular aspect of UAE taxation you\'d like to know more about?';
+  };
+
+  const quickQuestions = [
+    'What is the VAT rate in UAE?',
+    'When do I need to register for VAT?', 
+    'What is the CIT small business relief?',
+    'What are the CIT filing deadlines?',
+  ];
 
   return (
     <div className="space-y-6">
@@ -248,7 +327,7 @@ export default function TaxAssistant() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1">
           <TabsTrigger value="overview" className="text-xs md:text-sm px-2 md:px-4">
             <span className="hidden md:inline">Smart Insights</span>
             <span className="md:hidden">Insights</span>
@@ -256,6 +335,10 @@ export default function TaxAssistant() {
           <TabsTrigger value="health" className="text-xs md:text-sm px-2 md:px-4">
             <span className="hidden md:inline">Health Check</span>
             <span className="md:hidden">Health</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="text-xs md:text-sm px-2 md:px-4">
+            <span className="hidden md:inline">Ask AI</span>
+            <span className="md:hidden">Chat</span>
           </TabsTrigger>
           <TabsTrigger value="deductions" className="text-xs md:text-sm px-2 md:px-4">
             <span className="hidden md:inline">Tax Optimizer</span>
@@ -265,7 +348,7 @@ export default function TaxAssistant() {
             <span className="hidden md:inline">Smart Tracking</span>
             <span className="md:hidden">Tracking</span>
           </TabsTrigger>
-          <TabsTrigger value="planning" className="text-xs md:text-sm px-2 md:px-4 col-span-2 md:col-span-1">
+          <TabsTrigger value="planning" className="text-xs md:text-sm px-2 md:px-4">
             <span className="hidden md:inline">Tax Planning</span>
             <span className="md:hidden">Planning</span>
           </TabsTrigger>
@@ -355,6 +438,97 @@ export default function TaxAssistant() {
             hasValidLicense={true}
             lastFilingDate={new Date().toISOString()}
           />
+        </TabsContent>
+
+        <TabsContent value="chat" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-blue-500" />
+                Ask AI Tax Assistant
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Quick Questions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {quickQuestions.map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInputMessage(question)}
+                      className="text-left justify-start h-auto p-3 text-wrap"
+                    >
+                      {question}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Chat Messages */}
+                <div className="border rounded-lg p-4 h-64 overflow-y-auto space-y-3">
+                  {chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.type === 'user'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {message.type === 'assistant' && <Bot className="h-4 w-4" />}
+                          <span className="text-xs opacity-70">
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-sm">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 text-gray-900 max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Bot className="h-4 w-4" />
+                          <span className="text-xs opacity-70">Thinking...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Message Input */}
+                <div className="flex gap-2">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Ask about UAE tax regulations..."
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    disabled={isLoading}
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Disclaimer */}
+                <Alert className="border-amber-200 bg-amber-50">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-amber-700">
+                    This AI assistant provides general information only. For specific tax advice, 
+                    please consult with a qualified tax professional or refer to official FTA guidelines.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="deductions">

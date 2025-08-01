@@ -17,7 +17,6 @@ import VAT from "./pages/vat";
 import Financials from "./pages/financials";
 import Invoicing from "./pages/invoicing";
 import TransferPricing from "./pages/transfer-pricing";
-import Assistant from "./pages/assistant";
 import TaxAssistant from "./pages/tax-assistant";
 import Calendar from "./pages/calendar";
 import Admin from "./pages/admin";
@@ -40,7 +39,7 @@ function Router() {
         <Route path="/credit-debit-notes" component={CreditDebitNotes} />
         <Route path="/transfer-pricing" component={TransferPricing} />
         <Route path="/tax-assistant" component={TaxAssistant} />
-        <Route path="/assistant" component={Assistant} />
+        <Route path="/assistant" component={TaxAssistant} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/admin" component={Admin} />
         <Route path="/setup" component={Setup} />
