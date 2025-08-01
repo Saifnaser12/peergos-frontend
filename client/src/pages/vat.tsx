@@ -364,7 +364,6 @@ export default function VAT() {
               />
             </TabsContent>
             
-            
             <TabsContent value="history" className="mt-6">
               <FilingHistoryTable 
                 taxType="VAT" 
