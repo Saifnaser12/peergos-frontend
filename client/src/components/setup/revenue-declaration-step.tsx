@@ -176,6 +176,11 @@ export default function RevenueDeclarationStep() {
             {...register('mainRevenueSource')}
             placeholder={language === 'ar' ? 'مثال: بيع المنتجات، تقديم الخدمات' : 'e.g., Product sales, Service provision'}
             className={cn(errors.mainRevenueSource && "border-red-500")}
+            onChange={(e) => {
+              setValue('mainRevenueSource', e.target.value);
+              form.trigger('mainRevenueSource');
+            }}
+            autoComplete="off"
           />
           {errors.mainRevenueSource && (
             <p className="text-sm text-red-600">{errors.mainRevenueSource.message}</p>
@@ -197,7 +202,10 @@ export default function RevenueDeclarationStep() {
                     ? "border-blue-500 bg-blue-50" 
                     : "border-gray-200 hover:border-gray-300"
                 )}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Business model clicked:', model.value);
                   setValue('businessModel', model.value as 'B2B' | 'B2C' | 'MIXED');
                   form.trigger('businessModel');
                 }}
@@ -241,7 +249,10 @@ export default function RevenueDeclarationStep() {
               <Checkbox 
                 id="hasInternationalSales"
                 checked={watchedData.hasInternationalSales || false}
-                onChange={(e) => setValue('hasInternationalSales', e.target.checked)}
+                onCheckedChange={(checked) => {
+                  setValue('hasInternationalSales', !!checked);
+                  form.trigger('hasInternationalSales');
+                }}
               />
               <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />
