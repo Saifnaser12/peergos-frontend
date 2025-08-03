@@ -11,12 +11,7 @@ import { cn } from '@/lib/utils';
 // Placeholder components for remaining steps
 import FreeZoneLicenseStep from './free-zone-license-step';
 
-const TRNUploadStep = () => (
-  <div className="text-center py-8">
-    <h3 className="text-lg font-medium">TRN Upload Step</h3>
-    <p className="text-gray-600">Coming soon...</p>
-  </div>
-);
+import TRNUploadStep from './trn-upload-step';
 
 const SummaryStep = () => (
   <div className="text-center py-8">

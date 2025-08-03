@@ -105,7 +105,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     setCurrentStep(1);
     setBusinessInfo({});
     setRevenueDeclaration({ hasInternationalSales: false });
-    setFreeZoneLicense({ isFreeZone: false, isQFZP: false, hasRelatedParties: false });
+    setFreeZoneLicense({ licenseType: 'Mainland', freeZoneName: '', licenseNumber: '', licenseIssueDate: '', licenseExpiryDate: '', isQFZP: false, docs: [] });
     setTRNUpload({ hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
     setStepValidation({ 1: false, 2: false, 3: false, 4: false });
     localStorage.removeItem(STORAGE_KEY);
@@ -134,7 +134,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
         setCurrentStep(progressData.currentStep || 1);
         setBusinessInfo(progressData.businessInfo || {});
         setRevenueDeclaration(progressData.revenueDeclaration || { hasInternationalSales: false });
-        setFreeZoneLicense(progressData.freeZoneLicense || { isFreeZone: false, isQFZP: false, hasRelatedParties: false });
+        setFreeZoneLicense(progressData.freeZoneLicense || { licenseType: 'Mainland', freeZoneName: '', licenseNumber: '', licenseIssueDate: '', licenseExpiryDate: '', isQFZP: false, docs: [] });
         setTRNUpload(progressData.trnUpload || { hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
       }
       

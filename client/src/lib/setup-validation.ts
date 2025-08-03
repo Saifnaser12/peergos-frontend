@@ -185,7 +185,7 @@ export const calculateTaxCategory = (setupData: CompleteSetup) => {
   let requirements: string[] = [];
 
   // Determine CIT rate based on revenue and Free Zone status
-  if (freeZoneLicense.isFreeZone && freeZoneLicense.isQFZP && revenueDeclaration.expectedAnnualRevenue <= 3000000) {
+  if (freeZoneLicense.licenseType === 'FreeZone' && freeZoneLicense.isQFZP && revenueDeclaration.expectedAnnualRevenue <= 3000000) {
     citRate = '0%';
     category = 'Qualifying Free Zone Person (QFZP)';
     benefits.push('0% CIT on qualifying income');
@@ -224,7 +224,7 @@ export const calculateTaxCategory = (setupData: CompleteSetup) => {
 };
 
 const calculateEstimatedCIT = (revenue: number, freeZone: FreeZoneLicense): number => {
-  if (freeZone.isFreeZone && freeZone.isQFZP && revenue <= 3000000) {
+  if (freeZone.licenseType === 'FreeZone' && freeZone.isQFZP && revenue <= 3000000) {
     return 0; // QFZP exemption
   }
   
