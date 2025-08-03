@@ -150,11 +150,22 @@ export interface IStorage {
   updateSyncConfig(id: number, updates: any): Promise<any>;
   deleteSyncConfig(id: number): Promise<boolean>;
   getSyncConfig(id: number): Promise<any>;
+  
+  // Document management methods
+  getDocuments(filters: { companyId: number; category?: string; search?: string; sortBy?: string; sortOrder?: string }): Promise<Document[]>;
+  createDocument(insertDocument: InsertDocument): Promise<Document>;
+  updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined>;
+  deleteDocument(id: number): Promise<boolean>;
+  archiveDocument(id: number): Promise<Document | undefined>;
   getDocumentStats(companyId: number): Promise<{
-    totalDocuments: number;
-    totalSize: number;
-    byCategory: Record<string, number>;
-    compliance: {
+    total?: number;
+    required?: number;
+    expiringSoon?: number;
+    storageUsed?: number;
+    totalDocuments?: number;
+    totalSize?: number;
+    byCategory?: Record<string, number>;
+    compliance?: {
       requiredDocuments: string[];
       missingDocuments: string[];
       completionRate: number;
@@ -547,26 +558,28 @@ export class DatabaseStorage implements IStorage {
 
   // Document Management Methods
   async getDocuments(filters: { companyId: number; category?: string; search?: string; sortBy?: string; sortOrder?: string }): Promise<Document[]> {
-    const { desc, asc, like, ilike } = await import("drizzle-orm");
+    const { desc, asc, like, ilike, and } = await import("drizzle-orm");
     
-    let query = db.select().from(documentsTable).where(eq(documentsTable.companyId, filters.companyId));
+    const conditions = [eq(documentsTable.companyId, filters.companyId)];
     
     if (filters.category) {
-      query = query.where(eq(documentsTable.category, filters.category));
+      conditions.push(eq(documentsTable.category, filters.category));
     }
     
     if (filters.search) {
-      query = query.where(ilike(documentsTable.name, `%${filters.search}%`));
+      conditions.push(ilike(documentsTable.name, `%${filters.search}%`));
     }
+    
+    let query = db.select().from(documentsTable).where(and(...conditions));
     
     // Sort by specified field and order
     const sortField = filters.sortBy || 'uploadedAt';
     const sortOrder = filters.sortOrder || 'desc';
     
     if (sortOrder === 'desc') {
-      query = query.orderBy(desc(documentsTable[sortField as keyof typeof documentsTable]));
+      query = query.orderBy(desc(documentsTable.uploadedAt));
     } else {
-      query = query.orderBy(asc(documentsTable[sortField as keyof typeof documentsTable]));
+      query = query.orderBy(asc(documentsTable.uploadedAt));
     }
     
     return await query;
@@ -599,7 +612,16 @@ export class DatabaseStorage implements IStorage {
       .update(documentsTable)
       .set({ status: 'DELETED', updatedAt: new Date() })
       .where(eq(documentsTable.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
+  }
+
+  async archiveDocument(id: number): Promise<Document | undefined> {
+    const [document] = await db
+      .update(documentsTable)
+      .set({ status: 'ARCHIVED', updatedAt: new Date() })
+      .where(eq(documentsTable.id, id))
+      .returning();
+    return document || undefined;
   }
 
   async getDocumentStats(companyId: number): Promise<{
@@ -663,6 +685,7 @@ export class MemStorage implements IStorage {
   private invoices: Map<number, Invoice> = new Map();
   private notifications: Map<number, Notification> = new Map();
   private kpiData: Map<number, KpiData> = new Map();
+  private documents: Map<number, Document> = new Map();
   
   private currentId = 1;
 
@@ -1399,6 +1422,197 @@ export class MemStorage implements IStorage {
   async getSyncConfig(id: number): Promise<any> {
     return { id, companyId: 1, integrationId: 1 };
   }
+
+  // Document Management Methods for MemStorage
+  async getDocuments(filters: { companyId: number; category?: string; search?: string; sortBy?: string; sortOrder?: string }): Promise<Document[]> {
+    const companyDocs = Array.from(this.documents.values()).filter(doc => 
+      doc.companyId === filters.companyId && doc.status === 'ACTIVE'
+    );
+    
+    let filtered = companyDocs;
+    
+    if (filters.category) {
+      filtered = filtered.filter(doc => doc.category === filters.category);
+    }
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(doc => 
+        doc.name.toLowerCase().includes(searchLower) ||
+        doc.originalName.toLowerCase().includes(searchLower) ||
+        doc.description?.toLowerCase().includes(searchLower) ||
+        doc.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Sort documents
+    const sortBy = filters.sortBy || 'uploadedAt';
+    const sortOrder = filters.sortOrder || 'desc';
+    
+    filtered.sort((a, b) => {
+      const aVal = a[sortBy as keyof Document] as any;
+      const bVal = b[sortBy as keyof Document] as any;
+      
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return filtered;
+  }
+
+  async getDocument(id: number): Promise<Document | undefined> {
+    return this.documents.get(id);
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const id = this.currentId++;
+    const newDocument: Document = {
+      id,
+      ...document,
+      status: 'ACTIVE',
+      uploadedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.documents.set(id, newDocument);
+    return newDocument;
+  }
+
+  async updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined> {
+    const doc = this.documents.get(id);
+    if (!doc) return undefined;
+    
+    const updated = { ...doc, ...updates, updatedAt: new Date() };
+    this.documents.set(id, updated);
+    return updated;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const doc = this.documents.get(id);
+    if (!doc) return false;
+    
+    doc.status = 'DELETED';
+    doc.updatedAt = new Date();
+    this.documents.set(id, doc);
+    return true;
+  }
+
+  async archiveDocument(id: number): Promise<Document | undefined> {
+    const doc = this.documents.get(id);
+    if (!doc) return undefined;
+    
+    doc.status = 'ARCHIVED';
+    doc.updatedAt = new Date();
+    this.documents.set(id, doc);
+    return doc;
+  }
+
+  async getDocumentStats(companyId: number): Promise<{
+    total?: number;
+    required?: number;
+    expiringSoon?: number;
+    storageUsed?: number;
+    totalDocuments?: number;
+    totalSize?: number;
+    byCategory?: Record<string, number>;
+    compliance?: {
+      requiredDocuments: string[];
+      missingDocuments: string[];
+      completionRate: number;
+    };
+  }> {
+    const companyDocs = Array.from(this.documents.values()).filter(doc => 
+      doc.companyId === companyId && doc.status === 'ACTIVE'
+    );
+    
+    const totalDocuments = companyDocs.length;
+    const totalSize = companyDocs.reduce((sum, doc) => sum + doc.size, 0);
+    
+    // Group by category
+    const byCategory: Record<string, number> = {};
+    companyDocs.forEach(doc => {
+      byCategory[doc.category] = (byCategory[doc.category] || 0) + 1;
+    });
+    
+    // Check for expiring documents
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+    const expiringSoon = companyDocs.filter(doc => 
+      doc.expiryDate && new Date(doc.expiryDate) <= thirtyDaysFromNow
+    ).length;
+    
+    // Compliance tracking
+    const requiredDocuments = ['TRN_CERTIFICATE', 'LICENSES_PERMITS'];
+    const presentCategories = Object.keys(byCategory);
+    const missingDocuments = requiredDocuments.filter(req => !presentCategories.includes(req));
+    const completionRate = ((requiredDocuments.length - missingDocuments.length) / requiredDocuments.length) * 100;
+    
+    return {
+      total: totalDocuments,
+      required: requiredDocuments.filter(req => presentCategories.includes(req)).length,
+      expiringSoon,
+      storageUsed: totalSize,
+      totalDocuments,
+      totalSize,
+      byCategory,
+      compliance: {
+        requiredDocuments,
+        missingDocuments,
+        completionRate: Math.round(completionRate)
+      }
+    };
+  }
+
+  // Add stub methods for other missing interface methods
+  async getCreditNotes(): Promise<CreditNote[]> { return []; }
+  async getCreditNote(): Promise<CreditNote | undefined> { return undefined; }
+  async createCreditNote(): Promise<CreditNote> { return {} as CreditNote; }
+  async updateCreditNote(): Promise<CreditNote | undefined> { return undefined; }
+  
+  async getDebitNotes(): Promise<any[]> { return []; }
+  async getDebitNote(): Promise<any> { return undefined; }
+  async createDebitNote(): Promise<any> { return {}; }
+  async updateDebitNote(): Promise<any> { return undefined; }
+  
+  async getIntegrations(): Promise<any[]> { return []; }
+  async getIntegration(): Promise<any> { return undefined; }
+  async createIntegration(): Promise<any> { return { id: 1 }; }
+  async updateIntegration(): Promise<any> { return { id: 1 }; }
+  
+  async createSyncJob(): Promise<any> { return { id: 1 }; }
+  async getSyncJob(): Promise<any> { return undefined; }
+  async updateSyncJob(): Promise<any> { return { id: 1 }; }
+  async getSyncHistory(): Promise<any> { return { jobs: [], total: 0 }; }
+  async getSyncStats(): Promise<any> { return {}; }
+  
+  async createExportJob(): Promise<any> { return { id: 1 }; }
+  async updateExportJob(): Promise<any> { return { id: 1 }; }
+  async getExportHistory(): Promise<any> { return { jobs: [], total: 0 }; }
+  
+  async createImportJob(): Promise<any> { return { id: 1 }; }
+  async getImportJob(): Promise<any> { return undefined; }
+  async updateImportJob(): Promise<any> { return { id: 1 }; }
+  async getImportHistory(): Promise<any> { return { jobs: [], total: 0 }; }
+  
+  async getWebhooks(): Promise<any[]> { return []; }
+  async getWebhook(): Promise<any> { return undefined; }
+  async createWebhook(): Promise<any> { return { id: 1 }; }
+  async updateWebhook(): Promise<any> { return { id: 1 }; }
+  async deleteWebhook(): Promise<boolean> { return true; }
+  async getWebhooksByEvent(): Promise<any[]> { return []; }
+  
+  async createWebhookDelivery(): Promise<any> { return { id: 1 }; }
+  async getWebhookDelivery(): Promise<any> { return undefined; }
+  async updateWebhookDelivery(): Promise<any> { return { id: 1 }; }
+  async getWebhookDeliveries(): Promise<any> { return { deliveries: [], total: 0 }; }
+  
+  async createSyncConflict(): Promise<any> { return { id: 1 }; }
+  async getSyncConflict(): Promise<any> { return undefined; }
+  async updateSyncConflict(): Promise<any> { return { id: 1 }; }
+  async getSyncConflicts(): Promise<any[]> { return []; }
+  
+  async getDataMapping(): Promise<any> { return []; }
+  async updateDataMapping(): Promise<any> { return { success: true }; }
 }
 
 export const storage = new DatabaseStorage();

@@ -1,395 +1,314 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  FolderOpen, 
+  FileText, 
+  Upload, 
   Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  Trash2,
-  Calendar,
-  FileText,
-  CheckCircle,
+  Shield, 
   AlertTriangle,
-  Info
+  CheckCircle,
+  Clock,
+  Archive
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/auth-context';
-import { formatFileSize } from '@/lib/utils';
-import { apiRequest } from '@/lib/queryClient';
-import DocumentUploader, { DOCUMENT_CATEGORIES } from './document-uploader';
-
-interface Document {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  category: keyof typeof DOCUMENT_CATEGORIES;
-  companyId: number;
-  uploadedBy: string;
-  uploadedAt: string;
-  url: string;
-  status: 'active' | 'archived' | 'deleted';
-  tags?: string[];
-  description?: string;
-}
-
-interface DocumentStats {
-  totalDocuments: number;
-  totalSize: number;
-  byCategory: Record<string, number>;
-  compliance: {
-    requiredDocuments: string[];
-    missingDocuments: string[];
-    completionRate: number;
-  };
-}
+import { useAuth } from '@/hooks/use-auth';
+import { useLanguage } from '@/context/language-context';
+import DocumentUploader from './document-uploader';
+import DocumentList from './document-list';
+import { cn } from '@/lib/utils';
 
 export default function DocumentManagement() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [activeTab, setActiveTab] = useState('overview');
   const { company } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { language, t } = useLanguage();
 
-  // Fetch documents
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['/api/documents', company?.id, selectedCategory, searchTerm, sortBy, sortOrder],
-    enabled: !!company?.id,
-  });
-
-  // Fetch document statistics
-  const { data: stats } = useQuery<DocumentStats>({
-    queryKey: ['/api/documents/stats', company?.id],
-    enabled: !!company?.id,
-  });
-
-  // Delete document mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      const response = await fetch(`/api/documents/${documentId}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete document');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Document Deleted',
-        description: 'Document removed successfully.'
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents/stats'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Delete Failed',
-        description: error.message || 'Failed to delete document.',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  // Archive document mutation
-  const archiveMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      const response = await fetch(`/api/documents/${documentId}/archive`, {
-        method: 'PATCH'
-      });
-      if (!response.ok) throw new Error('Failed to archive document');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Document Archived',
-        description: 'Document archived successfully.'
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Archive Failed',
-        description: error.message || 'Failed to archive document.',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  const filteredDocuments = (documents as Document[]).filter((doc: Document) => {
-    if (selectedCategory !== 'all' && doc.category !== selectedCategory) return false;
-    if (searchTerm && !doc.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  }).sort((a: Document, b: Document) => {
-    let comparison = 0;
-    switch (sortBy) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'date':
-        comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
-        break;
-      case 'size':
-        comparison = a.size - b.size;
-        break;
-    }
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
-
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType.includes('spreadsheet') || fileType.includes('excel')) return '📊';
-    if (fileType === 'application/pdf') return '📄';
-    return '📁';
-  };
-
-  const getCategoryBadgeColor = (category: keyof typeof DOCUMENT_CATEGORIES) => {
-    const colors = {
-      TRN_CERTIFICATE: 'bg-red-100 text-red-800',
-      INVOICES_RECEIPTS: 'bg-blue-100 text-blue-800',
-      BANK_STATEMENTS: 'bg-green-100 text-green-800',
-      AUDIT_TRAIL: 'bg-purple-100 text-purple-800',
-      CIT_SUPPORTING: 'bg-orange-100 text-orange-800',
-      TRANSFER_PRICING: 'bg-pink-100 text-pink-800'
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Document Statistics */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Documents</p>
-                  <p className="text-2xl font-bold">{stats.totalDocuments}</p>
-                </div>
-                <FolderOpen className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Storage</p>
-                  <p className="text-2xl font-bold">{formatFileSize(stats.totalSize)}</p>
-                </div>
-                <FileText className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Compliance Rate</p>
-                  <p className="text-2xl font-bold">{Math.round(stats.compliance.completionRate)}%</p>
-                </div>
-                {stats.compliance.completionRate >= 80 ? (
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                ) : (
-                  <AlertTriangle className="h-8 w-8 text-orange-500" />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Missing Documents</p>
-                  <p className="text-2xl font-bold">{stats.compliance.missingDocuments.length}</p>
-                </div>
-                <Info className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Compliance Alert */}
-      {stats && stats.compliance.missingDocuments.length > 0 && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-1">
-              <p><strong>Missing Required Documents:</strong></p>
-              <ul className="list-disc list-inside ml-4">
-                {stats.compliance.missingDocuments.map((doc, index) => (
-                  <li key={index}>{doc}</li>
-                ))}
-              </ul>
-            </div>
+  if (!company) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Company Setup Required</strong><br />
+            Please complete your company profile setup to access document management features.
           </AlertDescription>
         </Alert>
-      )}
+      </div>
+    );
+  }
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">Upload Documents</TabsTrigger>
-          <TabsTrigger value="manage">Manage Documents</TabsTrigger>
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Document Management</h1>
+          <p className="text-gray-600 mt-2">
+            Upload, organize, and manage your UAE tax compliance documents
+          </p>
+        </div>
+        <DocumentUploader className="w-full md:w-auto" />
+      </div>
+
+      {/* Compliance Status Banner */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-900">UAE FTA Compliance Status</h3>
+                <p className="text-sm text-blue-700">
+                  Keep your documents organized and readily available for tax compliance
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium">Required</span>
+                </div>
+                <p className="text-xs text-gray-600">TRN & Licenses</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-medium">Pending</span>
+                </div>
+                <p className="text-xs text-gray-600">VAT Documents</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <Archive className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">Organized</span>
+                </div>
+                <p className="text-xs text-gray-600">7-Year Retention</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Content Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            Browse Documents
+          </TabsTrigger>
+          <TabsTrigger value="compliance" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Compliance Guide
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Object.entries(DOCUMENT_CATEGORIES).map(([key, config]) => (
-              <DocumentUploader
-                key={key}
-                category={key as keyof typeof DOCUMENT_CATEGORIES}
-                onUploadComplete={() => {
-                  queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-                  queryClient.invalidateQueries({ queryKey: ['/api/documents/stats'] });
-                }}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="manage" className="space-y-6">
-          {/* Search and Filter Controls */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search documents..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {Object.entries(DOCUMENT_CATEGORIES).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        {config.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={(value: 'name' | 'date' | 'size') => setSortBy(value)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="size">Size</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-blue-600" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <DocumentUploader className="w-full justify-start">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload New Documents
+                </DocumentUploader>
+                <Button variant="outline" className="w-full justify-start">
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Documents
                 </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Archive className="h-4 w-4 mr-2" />
+                  View Archived
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Document Categories */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Document Categories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">TRN Certificate</span>
+                    <Badge variant="outline" className="text-xs text-green-600">Required</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Invoices & Receipts</span>
+                    <Badge variant="outline" className="text-xs">Active</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">VAT Documents</span>
+                    <Badge variant="outline" className="text-xs">Active</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Bank Statements</span>
+                    <Badge variant="outline" className="text-xs">Active</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Licenses & Permits</span>
+                    <Badge variant="outline" className="text-xs text-green-600">Required</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Compliance Reminders */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
+                  Compliance Reminders
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Alert className="border-orange-200 bg-orange-50">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-800">
+                    <strong>Document Retention</strong><br />
+                    UAE FTA requires 7-year document retention for tax compliance.
+                  </AlertDescription>
+                </Alert>
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Digital Records</strong><br />
+                    Electronic records are accepted for FTA audits and inspections.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Document Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-gray-500" />
+                  <div className="flex-1">
+                    <p className="font-medium">No recent activity</p>
+                    <p className="text-sm text-gray-600">Upload your first document to get started</p>
+                  </div>
+                  <span className="text-xs text-gray-500">-</span>
+                </div>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Documents List */}
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <DocumentList />
+        </TabsContent>
+
+        {/* Compliance Guide Tab */}
+        <TabsContent value="compliance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Documents ({filteredDocuments.length})</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-green-600" />
+                UAE FTA Document Compliance Guide
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">Loading documents...</div>
-              ) : filteredDocuments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {searchTerm ? 'No documents match your search.' : 'No documents uploaded yet.'}
+            <CardContent className="space-y-6">
+              
+              {/* Required Documents */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-green-600">Required Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border border-green-200 rounded-lg bg-green-50">
+                    <h4 className="font-medium text-green-800">TRN Certificate</h4>
+                    <p className="text-sm text-green-700 mt-1">
+                      Tax Registration Number certificate issued by FTA. Required for all tax-registered businesses.
+                    </p>
+                    <Badge variant="outline" className="mt-2 text-xs text-green-600">Mandatory</Badge>
+                  </div>
+                  <div className="p-4 border border-green-200 rounded-lg bg-green-50">
+                    <h4 className="font-medium text-green-800">Trade License</h4>
+                    <p className="text-sm text-green-700 mt-1">
+                      Valid trade license from relevant authority. Must be renewed before expiry.
+                    </p>
+                    <Badge variant="outline" className="mt-2 text-xs text-green-600">Mandatory</Badge>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredDocuments.map((doc: Document) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4 flex-1">
-                        <span className="text-2xl">{getFileIcon(doc.type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium truncate">{doc.name}</p>
-                            <Badge className={getCategoryBadgeColor(doc.category)}>
-                              {DOCUMENT_CATEGORIES[doc.category].label}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                            <span>{formatFileSize(doc.size)}</span>
-                            <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                            <span>Uploaded by {doc.uploadedBy}</span>
-                          </div>
-                        </div>
-                      </div>
+              </div>
 
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(doc.url, '_blank')}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = doc.url;
-                            link.download = doc.name;
-                            link.click();
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => archiveMutation.mutate(doc.id)}
-                          disabled={archiveMutation.isPending}
-                        >
-                          <Calendar className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteMutation.mutate(doc.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              {/* Recommended Documents */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-blue-600">Recommended Documents</h3>
+                <div className="space-y-3">
+                  <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <h4 className="font-medium text-blue-800">Invoices & Receipts</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      All sales invoices, purchase receipts, and expense documentation. Required for VAT and CIT calculations.
+                    </p>
+                  </div>
+                  <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <h4 className="font-medium text-blue-800">Bank Statements</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Monthly bank statements showing all business transactions. Essential for financial reconciliation.
+                    </p>
+                  </div>
+                  <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <h4 className="font-medium text-blue-800">VAT Returns & Documents</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Filed VAT returns, VAT certificates, and supporting documentation for VAT claims and calculations.
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Compliance Tips */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-purple-600">Compliance Best Practices</h3>
+                <div className="space-y-3">
+                  <Alert className="border-purple-200 bg-purple-50">
+                    <CheckCircle className="h-4 w-4 text-purple-600" />
+                    <AlertDescription className="text-purple-800">
+                      <strong>7-Year Retention:</strong> Keep all documents for at least 7 years as required by UAE FTA regulations.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert className="border-purple-200 bg-purple-50">
+                    <CheckCircle className="h-4 w-4 text-purple-600" />
+                    <AlertDescription className="text-purple-800">
+                      <strong>Digital Acceptance:</strong> Electronic documents and records are fully accepted by FTA for audits.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert className="border-purple-200 bg-purple-50">
+                    <CheckCircle className="h-4 w-4 text-purple-600" />
+                    <AlertDescription className="text-purple-800">
+                      <strong>Regular Backups:</strong> Maintain secure backups of all tax-related documents and records.
+                    </AlertDescription>
+                  </Alert>
+                  <Alert className="border-purple-200 bg-purple-50">
+                    <CheckCircle className="h-4 w-4 text-purple-600" />
+                    <AlertDescription className="text-purple-800">
+                      <strong>Easy Access:</strong> Ensure documents can be quickly retrieved for FTA inspections and audits.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
