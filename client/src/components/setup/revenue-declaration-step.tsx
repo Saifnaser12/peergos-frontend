@@ -173,10 +173,11 @@ export default function RevenueDeclarationStep() {
           </Label>
           <Input
             id="mainRevenueSource"
-            {...register('mainRevenueSource')}
+            value={watchedData.mainRevenueSource || ''}
             placeholder={language === 'ar' ? 'مثال: بيع المنتجات، تقديم الخدمات' : 'e.g., Product sales, Service provision'}
             className={cn(errors.mainRevenueSource && "border-red-500")}
             onChange={(e) => {
+              console.log('Main revenue source changed:', e.target.value);
               setValue('mainRevenueSource', e.target.value);
               form.trigger('mainRevenueSource');
             }}
@@ -205,9 +206,11 @@ export default function RevenueDeclarationStep() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Business model clicked:', model.value);
-                  setValue('businessModel', model.value as 'B2B' | 'B2C' | 'MIXED');
-                  form.trigger('businessModel');
+                  console.log('Business model clicked:', model.value, 'Current:', watchedData.businessModel);
+                  const newValue = model.value as 'B2B' | 'B2C' | 'MIXED';
+                  setValue('businessModel', newValue);
+                  form.trigger();
+                  console.log('Business model updated to:', newValue);
                 }}
               >
                 <div className="flex items-start gap-3">
@@ -246,13 +249,16 @@ export default function RevenueDeclarationStep() {
               {language === 'ar' ? 'المبيعات الدولية' : 'International Sales'}
             </Label>
             <div className="flex items-center space-x-2">
-              <Checkbox 
+              <input
+                type="checkbox"
                 id="hasInternationalSales"
                 checked={watchedData.hasInternationalSales || false}
-                onCheckedChange={(checked) => {
-                  setValue('hasInternationalSales', !!checked);
+                onChange={(e) => {
+                  console.log('International sales checkbox changed:', e.target.checked);
+                  setValue('hasInternationalSales', e.target.checked);
                   form.trigger('hasInternationalSales');
                 }}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />
