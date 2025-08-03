@@ -24,7 +24,7 @@ export const revenueDeclarationSchema = z.object({
   businessModel: z.enum(['B2B', 'B2C', 'MIXED'], {
     errorMap: () => ({ message: 'Please select business model' })
   }),
-  hasInternationalSales: z.boolean(),
+  hasInternationalSales: z.boolean().default(false),
   internationalSalesPercentage: z.number().min(0).max(100).optional(),
 });
 

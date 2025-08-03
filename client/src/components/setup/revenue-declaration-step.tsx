@@ -200,16 +200,27 @@ export default function RevenueDeclarationStep() {
 
         {/* International Sales */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="hasInternationalSales"
-              checked={watchedData.hasInternationalSales}
-              onCheckedChange={(checked) => setValue('hasInternationalSales', checked as boolean)}
-            />
-            <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
-              <Globe className="h-3 w-3" />
-              {language === 'ar' ? 'لديك مبيعات دولية' : 'You have international sales'}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              {language === 'ar' ? 'المبيعات الدولية' : 'International Sales'}
             </Label>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="hasInternationalSales"
+                checked={watchedData.hasInternationalSales || false}
+                onCheckedChange={(checked) => setValue('hasInternationalSales', checked as boolean)}
+              />
+              <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                {language === 'ar' ? 'لديك مبيعات دولية' : 'I have international sales'}
+              </Label>
+            </div>
+            <p className="text-xs text-gray-500 ml-6">
+              {language === 'ar' 
+                ? 'اتركها غير محددة إذا لم تكن لديك مبيعات دولية'
+                : 'Leave unchecked if you have no international sales'
+              }
+            </p>
           </div>
 
           {watchedData.hasInternationalSales && (
@@ -227,7 +238,11 @@ export default function RevenueDeclarationStep() {
                 className={cn(errors.internationalSalesPercentage && "border-red-500")}
               />
               {errors.internationalSalesPercentage && (
-                <p className="text-sm text-red-600">{errors.internationalSalesPercentage.message}</p>
+                <p className="text-sm text-red-600">
+                  {typeof errors.internationalSalesPercentage.message === 'string' 
+                    ? errors.internationalSalesPercentage.message 
+                    : 'Invalid percentage value'}
+                </p>
               )}
             </div>
           )}
