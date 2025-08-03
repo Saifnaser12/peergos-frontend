@@ -30,12 +30,14 @@ export default function RevenueDeclarationStep() {
   const { register, watch, setValue, formState: { errors, isValid } } = form;
   const watchedData = watch();
 
-  // Initialize hasInternationalSales if not set
+  // Initialize form fields if not set
   useEffect(() => {
     if (watchedData.hasInternationalSales === undefined || watchedData.hasInternationalSales === null) {
       setValue('hasInternationalSales', false);
     }
-  }, [watchedData.hasInternationalSales, setValue]);
+    // Trigger validation after initialization
+    form.trigger();
+  }, [watchedData.hasInternationalSales, setValue, form]);
 
   // Update context when form data changes
   useEffect(() => {
@@ -43,9 +45,11 @@ export default function RevenueDeclarationStep() {
     updateStepValidation(2, isValid);
     
     // Debug log to see validation status
-    if (Object.keys(errors).length > 0) {
-      console.log('Revenue Declaration Form Errors:', errors);
-    }
+    console.log('Revenue Declaration Form State:', {
+      isValid,
+      errors,
+      formData: watchedData
+    });
   }, [watchedData, isValid, updateRevenueDeclaration, updateStepValidation, errors]);
 
   // Auto-select revenue category based on expected revenue
@@ -182,7 +186,7 @@ export default function RevenueDeclarationStep() {
                     ? "border-blue-500 bg-blue-50" 
                     : "border-gray-200 hover:border-gray-300"
                 )}
-                onClick={() => setValue('businessModel', model.value as any)}
+                onClick={() => setValue('businessModel', model.value as 'B2B' | 'B2C' | 'MIXED')}
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-1">

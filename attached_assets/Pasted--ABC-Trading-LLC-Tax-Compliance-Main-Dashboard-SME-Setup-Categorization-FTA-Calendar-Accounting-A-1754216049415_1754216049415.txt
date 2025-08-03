@@ -1,0 +1,150 @@
+
+ABC Trading LLC
+Tax Compliance
+
+Main
+Dashboard
+SME Setup & Categorization
+FTA
+Calendar
+Accounting
+Accounting
+Financial Reports
+Invoicing
+Tax Compliance
+SME Workflow
+FTA
+Corporate Income Tax
+VAT Returns
+Transfer Pricing
+SME
+Support
+AI Tax Assistant
+AI
+Administration
+Dashboard
+Overview of your tax compliance status
+
+English
+العربية
+54
+
+JD
+John Doe
+
+ADMIN
+
+Business Setup
+Complete your company profile setup for UAE tax compliance
+
+Welcome to Peergos Setup
+This wizard will guide you through 5 simple steps to set up your company profile and tax compliance. Progress is automatically saved.
+
+UAE Compliant
+Only 5 minutes
+Business Info
+
+Company details and contact information
+
+2
+Revenue Declaration
+
+Expected revenue and business model
+
+3
+License & Free Zone
+
+License type and free zone status
+
+4
+TRN & Tax Registration
+
+Tax registration details and documents
+
+5
+Summary & Review
+
+Review setup and tax category
+
+Progress: 1 / 4 steps completed
+25%
+Progress is auto-saved - you can continue later
+Revenue Declaration
+Declare expected revenue and business model to determine appropriate tax category
+
+Expected Annual Revenue (AED) *
+4000000
+AED 4,000,000 annually
+
+Auto-Selected Tax Category
+Above AED 3,000,000
+CIT: 9%
+Standard CIT rate applies to full income
+
+Benefits:
+Full business deductions
+Advanced tax planning opportunities
+Main Revenue Source *
+Sales
+Business Model *
+Business to Business (B2B)
+Primarily selling to other businesses
+
+VAT: Input VAT recovery available, detailed invoice requirements
+
+Business to Consumer (B2C)
+Primarily selling to end consumers
+
+VAT: Consumer-friendly invoicing, point-of-sale VAT collection
+
+Mixed Business Model
+Combination of B2B and B2C sales
+
+VAT: Flexible invoicing requirements, comprehensive VAT tracking
+
+International Sales
+
+I have international sales
+Leave unchecked if you have no international sales
+
+Tax category is automatically determined based on declared revenue. This information can be updated later if business circumstances change.
+Previous
+Reset
+Save Progress
+Next
+Please complete all required fields in this step to continue.
+Progress is automatically saved with every change
+Need help? Contact our support team or refer to the detailed setup guide.
+Progress Overview
+0% Complete
+1/7 Steps
+
+Business Setup
+Company information and tax classification
+1
+
+Dashboard
+Overview and compliance status
+2
+
+Accounting
+Transaction entry and bookkeeping
+3
+
+Corporate Tax
+CIT calculations and filing
+4
+
+VAT Management
+VAT returns and compliance
+5
+
+Financial Reports
+P&L, balance sheet, and statements
+6
+
+E-Invoicing
+FTA-compliant digital invoicing
+7
+
+Ask Peergos AI
