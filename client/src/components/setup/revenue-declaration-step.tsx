@@ -197,7 +197,10 @@ export default function RevenueDeclarationStep() {
                     ? "border-blue-500 bg-blue-50" 
                     : "border-gray-200 hover:border-gray-300"
                 )}
-                onClick={() => setValue('businessModel', model.value as 'B2B' | 'B2C' | 'MIXED')}
+                onClick={() => {
+                  setValue('businessModel', model.value as 'B2B' | 'B2C' | 'MIXED');
+                  form.trigger('businessModel');
+                }}
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-1">
@@ -238,7 +241,7 @@ export default function RevenueDeclarationStep() {
               <Checkbox 
                 id="hasInternationalSales"
                 checked={watchedData.hasInternationalSales || false}
-                onCheckedChange={(checked) => setValue('hasInternationalSales', !!checked)}
+                onChange={(e) => setValue('hasInternationalSales', e.target.checked)}
               />
               <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />

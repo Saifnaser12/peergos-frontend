@@ -35,28 +35,36 @@ const FINANCIAL_YEAR_OPTIONS = [
 ];
 
 export default function RevenueInfoStep() {
-  const { formData, updateFormData } = useSetup();
+  const { revenueDeclaration, updateRevenueDeclaration, updateStepValidation } = useSetup();
   const { setClassification } = useTaxClassification();
 
   const form = useForm<RevenueInfoData>({
     resolver: zodResolver(revenueInfoSchema),
-    defaultValues: formData.revenueInfo || {
-      annualRevenue: 0,
+    defaultValues: {
+      annualRevenue: revenueDeclaration.expectedAnnualRevenue || 0,
       employees: 1,
       financialYearEnd: '12-31',
     },
   });
 
-  const { watch, formState: { errors } } = form;
+  const { watch, formState: { errors, isValid } } = form;
   const watchedValues = watch();
+
+  // Update step validation
+  useEffect(() => {
+    updateStepValidation(2, isValid);
+  }, [isValid, updateStepValidation]);
 
   // Auto-save form data as user types
   useEffect(() => {
     const subscription = form.watch((value) => {
-      updateFormData('revenueInfo', value);
+      updateRevenueDeclaration({
+        expectedAnnualRevenue: value.annualRevenue,
+        mainRevenueSource: 'Business Operations',
+      });
     });
     return () => subscription.unsubscribe();
-  }, [form, updateFormData]);
+  }, [form, updateRevenueDeclaration]);
 
   const formatRevenue = (value: string) => {
     // Remove non-digits and format as number
@@ -245,7 +253,10 @@ export default function RevenueInfoStep() {
         <TaxCategoryDetector
           initialRevenue={watchedValues.annualRevenue}
           onClassificationChange={(classification) => {
-            setClassification(classification);
+            setClassification({
+              ...classification,
+              annualRevenue: watchedValues.annualRevenue,
+            });
           }}
           className="mt-6"
         />
