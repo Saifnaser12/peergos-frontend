@@ -28,8 +28,23 @@ export default function BusinessInfoStep() {
   // Update context when form data changes
   useEffect(() => {
     updateBusinessInfo(watchedData);
-    updateStepValidation(1, isValid);
-  }, [watchedData, isValid, updateBusinessInfo, updateStepValidation]);
+    
+    // Enhanced validation - ensure required fields are actually filled
+    const formIsValid = isValid && 
+      !!watchedData.companyName?.trim() && 
+      !!watchedData.contactEmail?.trim() && 
+      !!watchedData.contactPhone?.trim();
+    
+    updateStepValidation(1, formIsValid);
+    
+    // Debug log to see validation status
+    console.log('Business Info Form State:', {
+      isValid,
+      formIsValid,
+      errors,
+      formData: watchedData
+    });
+  }, [watchedData, isValid, updateBusinessInfo, updateStepValidation, errors]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">

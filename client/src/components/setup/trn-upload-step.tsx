@@ -39,11 +39,20 @@ export default function TRNUploadStep() {
   // Update context when form data changes
   useEffect(() => {
     updateTRNUpload(watchedData);
-    updateStepValidation(4, isValid);
+    
+    // Enhanced validation - ensure conditional required fields are filled
+    const formIsValid = isValid && 
+      // If has TRN, TRN number is required and valid
+      (!watchedData.hasTRN || (watchedData.hasTRN && !!watchedData.trnNumber?.trim())) &&
+      // If tax agent appointed, tax agent name is required
+      (!watchedData.taxAgentAppointed || (watchedData.taxAgentAppointed && !!watchedData.taxAgentName?.trim()));
+    
+    updateStepValidation(4, formIsValid);
     
     // Debug log to see validation status
     console.log('TRN Upload Form State:', {
       isValid,
+      formIsValid,
       errors,
       formData: watchedData
     });

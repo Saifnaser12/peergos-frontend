@@ -43,11 +43,21 @@ export default function RevenueDeclarationStep() {
   // Update context when form data changes
   useEffect(() => {
     updateRevenueDeclaration(watchedData);
-    updateStepValidation(2, isValid);
+    
+    // Enhanced validation - ensure required fields are filled
+    const formIsValid = isValid && 
+      watchedData.expectedAnnualRevenue !== undefined && 
+      watchedData.expectedAnnualRevenue >= 0 &&
+      !!watchedData.revenueCategory &&
+      !!watchedData.mainRevenueSource?.trim() &&
+      !!watchedData.businessModel;
+    
+    updateStepValidation(2, formIsValid);
     
     // Debug log to see validation status
     console.log('Revenue Declaration Form State:', {
       isValid,
+      formIsValid,
       errors,
       formData: watchedData
     });

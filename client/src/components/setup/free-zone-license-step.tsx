@@ -39,11 +39,20 @@ export default function FreeZoneLicenseStep() {
   // Update context when form data changes
   useEffect(() => {
     updateFreeZoneLicense(watchedData);
-    updateStepValidation(3, isValid);
+    
+    // Enhanced validation - ensure required fields based on license type
+    const formIsValid = isValid && 
+      !!watchedData.licenseType &&
+      !!watchedData.licenseNumber?.trim() &&
+      (watchedData.licenseType === 'Mainland' || 
+        (watchedData.licenseType === 'FreeZone' && !!watchedData.freeZoneName?.trim()));
+    
+    updateStepValidation(3, formIsValid);
     
     // Debug log to see validation status
     console.log('Free Zone License Form State:', {
       isValid,
+      formIsValid,
       errors,
       formData: watchedData
     });
