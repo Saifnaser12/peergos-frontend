@@ -11,6 +11,7 @@ import { EnhancedButton } from '@/components/ui/enhanced-button';
 import ProgressTracker from '@/components/ui/progress-tracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CitCalculator from '@/components/tax/cit-calculator';
+import CitReturnForm from '@/components/tax/cit-return-form';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
 import FilingHistoryTable from '@/components/tax/filing-history-table';
@@ -39,15 +40,15 @@ export default function CIT() {
     enabled: !!company?.id,
   });
 
-  const currentYearRevenue = transactions?.filter(t => 
+  const currentYearRevenue = Array.isArray(transactions) ? transactions.filter((t: any) => 
     t.type === 'REVENUE' && 
     new Date(t.transactionDate).getFullYear() === new Date().getFullYear()
-  ).reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) : 0;
 
-  const currentYearExpenses = transactions?.filter(t => 
+  const currentYearExpenses = Array.isArray(transactions) ? transactions.filter((t: any) => 
     t.type === 'EXPENSE' && 
     new Date(t.transactionDate).getFullYear() === new Date().getFullYear()
-  ).reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) : 0;
 
   const netIncome = currentYearRevenue - currentYearExpenses;
   // Use centralized tax configuration for CIT calculation
@@ -79,7 +80,7 @@ export default function CIT() {
     );
   }
 
-  if (!transactions || transactions.length === 0) {
+  if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
     console.warn('[CIT Page] No transactions found - user needs to add financial data');
     return (
       <div className="space-y-6">
@@ -147,7 +148,7 @@ export default function CIT() {
           requiresValidation={true}
           validationFn={() => {
             // Validate that required data exists for CIT filing
-            return netIncome >= 0 && transactions && transactions.length > 0;
+            return netIncome >= 0 && Array.isArray(transactions) && transactions.length > 0;
           }}
           onClick={async () => {
             setIsSubmitting(true);
@@ -238,10 +239,23 @@ export default function CIT() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="calculator">Calculate CIT</TabsTrigger>
-              <TabsTrigger value="filings">Filing History</TabsTrigger>
-              <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="calculator" className="flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Quick Calculator
+              </TabsTrigger>
+              <TabsTrigger value="return" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                CIT Return
+              </TabsTrigger>
+              <TabsTrigger value="filings" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Filing History
+              </TabsTrigger>
+              <TabsTrigger value="compliance" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Compliance
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="calculator" className="mt-6">
@@ -249,6 +263,15 @@ export default function CIT() {
                 type="CIT"
                 onResultUpdate={setTaxResult}
                 className="max-w-4xl mx-auto"
+              />
+            </TabsContent>
+
+            <TabsContent value="return" className="mt-6">
+              <CitReturnForm 
+                initialData={{
+                  accountingIncome: netIncome.toString(),
+                }}
+                mode="submit"
               />
             </TabsContent>
             

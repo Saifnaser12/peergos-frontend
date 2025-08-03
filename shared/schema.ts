@@ -253,3 +253,74 @@ export const chartOfAccounts = pgTable("chart_of_accounts", {
 export const insertChartOfAccountSchema = createInsertSchema(chartOfAccounts);
 export type InsertChartOfAccount = z.infer<typeof insertChartOfAccountSchema>;
 export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
+
+// Extended CIT Return schema with detailed calculations
+export const citReturnCalculationsSchema = z.object({
+  // Basic Information
+  taxYear: z.string(),
+  filingPeriod: z.string(),
+  accountingIncome: z.number(),
+  
+  // Tax Adjustments
+  addBacks: z.object({
+    nonDeductibleExpenses: z.number().optional(),
+    depreciation: z.number().optional(),
+    provisionsReversals: z.number().optional(),
+    penaltiesFines: z.number().optional(),
+    entertainmentExpenses: z.number().optional(),
+    excessiveSalaries: z.number().optional(),
+    other: z.number().optional(),
+  }),
+  
+  deductions: z.object({
+    acceleratedDepreciation: z.number().optional(),
+    researchDevelopment: z.number().optional(),
+    capitalAllowances: z.number().optional(),
+    businessProvisions: z.number().optional(),
+    carryForwardLosses: z.number().optional(),
+    other: z.number().optional(),
+  }),
+  
+  // Free Zone Information
+  isFreeZone: z.boolean(),
+  freeZoneName: z.string().optional(),
+  qualifyingIncome: z.number().optional(),
+  nonQualifyingIncome: z.number().optional(),
+  
+  // Quarterly Installments
+  installments: z.object({
+    q1Paid: z.number().optional(),
+    q2Paid: z.number().optional(),
+    q3Paid: z.number().optional(),
+    q4Paid: z.number().optional(),
+  }),
+  
+  // Withholding Tax Credits and penalties
+  withholdingCredits: z.number().optional(),
+  penaltiesInterest: z.number().optional(),
+  
+  // Calculated results
+  calculation: z.object({
+    accountingIncome: z.number(),
+    totalAddBacks: z.number(),
+    totalDeductions: z.number(),
+    taxableIncome: z.number(),
+    citLiability: z.number(),
+    applicableRate: z.number(),
+    reliefApplied: z.number(),
+    installmentsPaid: z.number(),
+    withholdingCredits: z.number(),
+    penaltiesInterest: z.number(),
+    netTaxDue: z.number(),
+    refundDue: z.number(),
+  }),
+  
+  // Declaration
+  declaration: z.object({
+    accurateComplete: z.boolean(),
+    authorizedSignatory: z.boolean(),
+  }),
+});
+
+// CIT Return specific types
+export type CitReturnCalculations = z.infer<typeof citReturnCalculationsSchema>;
