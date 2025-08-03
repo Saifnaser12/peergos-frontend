@@ -27,10 +27,14 @@ export default function SummaryReviewStep() {
   } = useSetup();
   const { language } = useLanguage();
 
+  // Get current financial year end (December 31st by default)
+  const currentYear = new Date().getFullYear();
+  const defaultYearEnd = `${currentYear}-12-31`;
+
   const form = useForm<SummaryReview>({
     resolver: zodResolver(summaryReviewSchema),
     defaultValues: {
-      confirmFinancialYearEnd: summaryReview.confirmFinancialYearEnd || '',
+      confirmFinancialYearEnd: summaryReview.confirmFinancialYearEnd || defaultYearEnd,
       wantsSmartReminders: summaryReview.wantsSmartReminders ?? true,
       agreeToTerms: summaryReview.agreeToTerms || false,
       readyToStart: summaryReview.readyToStart || false,
@@ -44,11 +48,19 @@ export default function SummaryReviewStep() {
   // Update context when form data changes
   useEffect(() => {
     updateSummaryReview(watchedData);
-    updateStepValidation(5, isValid);
+    
+    // Form is valid when all required fields are complete
+    const formIsValid = isValid && 
+      watchedData.confirmFinancialYearEnd && 
+      watchedData.agreeToTerms && 
+      watchedData.readyToStart;
+    
+    updateStepValidation(5, formIsValid);
     
     // Debug log to see validation status
     console.log('Summary Review Form State:', {
       isValid,
+      formIsValid,
       errors,
       formData: watchedData
     });
@@ -58,13 +70,10 @@ export default function SummaryReviewStep() {
   const completeSetup = getCompleteSetup();
   const taxCategory = completeSetup ? calculateTaxCategory(completeSetup) : null;
 
-  // Get current financial year end (December 31st by default)
-  const currentYear = new Date().getFullYear();
-  const defaultYearEnd = `${currentYear}-12-31`;
-
+  // Ensure financial year end is set on mount and trigger validation
   useEffect(() => {
     if (!watchedData.confirmFinancialYearEnd) {
-      setValue('confirmFinancialYearEnd', defaultYearEnd);
+      setValue('confirmFinancialYearEnd', defaultYearEnd, { shouldValidate: true });
     }
   }, [setValue, watchedData.confirmFinancialYearEnd, defaultYearEnd]);
 
@@ -285,9 +294,12 @@ export default function SummaryReviewStep() {
                 {language === 'ar' 
                   ? 'جاهز لبدء استخدام Peergos'
                   : 'Ready to start using Peergos'
-                }
+                } *
               </Label>
             </div>
+            {errors.readyToStart && (
+              <p className="text-sm text-red-600">{errors.readyToStart.message}</p>
+            )}
             <p className="text-xs text-gray-500 ml-6">
               {language === 'ar' 
                 ? 'تأكيد الاستعداد لبدء إدارة الامتثال الضريبي'
@@ -316,12 +328,18 @@ export default function SummaryReviewStep() {
                 ? 'يرجى إكمال جميع الحقول المطلوبة للمتابعة.'
                 : 'Please complete all required fields to continue.'
               }
+              <div className="mt-2 text-xs">
+                <strong>Missing:</strong>
+                {!watchedData.confirmFinancialYearEnd && " Financial Year End,"}
+                {!watchedData.agreeToTerms && " Terms Agreement,"}
+                {!watchedData.readyToStart && " Ready to Start confirmation"}
+              </div>
             </AlertDescription>
           </Alert>
         )}
 
         {/* Success State */}
-        {isValid && watchedData.agreeToTerms && (
+        {isValid && watchedData.agreeToTerms && watchedData.readyToStart && (
           <Alert className="border-green-200 bg-green-50">
             <Rocket className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800 text-sm">

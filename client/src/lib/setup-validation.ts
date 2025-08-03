@@ -99,7 +99,9 @@ export const summaryReviewSchema = z.object({
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: 'You must agree to the terms and conditions'
   }),
-  readyToStart: z.boolean().default(false),
+  readyToStart: z.boolean().refine(val => val === true, {
+    message: 'Please confirm you are ready to start using Peergos'
+  }),
 });
 
 // Complete setup data combining all steps

@@ -111,6 +111,8 @@ export default function SetupWizard({ className = '' }: SetupWizardProps) {
               onClick={() => {
                 // Complete setup logic here
                 console.log('Setup completed!');
+                // Navigate to dashboard after successful completion
+                window.location.href = '/dashboard';
               }}
               disabled={!canProceed}
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
