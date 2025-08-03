@@ -19,7 +19,13 @@ import {
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 
+import EnhancedDashboard from '@/components/dashboard/enhanced-dashboard';
+
 export default function Dashboard() {
+  return <EnhancedDashboard />;
+}
+
+function OriginalDashboard() {
   const { language } = useLanguage();
   const { company, user } = useAuth();
   const [, setLocation] = useLocation();
