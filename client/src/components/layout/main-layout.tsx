@@ -5,6 +5,8 @@ import Sidebar from './sidebar';
 import TopBar from './topbar';
 import ProgressTracker from '@/components/ui/progress-tracker';
 import ChatBubble from '@/components/chat/chat-bubble';
+import { MobileTabBar } from '../MobileTabBar';
+import { FloatingAIButton } from '../FloatingAIButton';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -54,6 +56,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
       
       {/* AI Chat Assistant */}
       <ChatBubble />
+      
+      {/* Mobile Components */}
+      <MobileTabBar />
+      <FloatingAIButton />
     </div>
   );
 }

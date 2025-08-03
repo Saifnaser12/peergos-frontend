@@ -1,0 +1,112 @@
+♻️  NAV + UX REWORK  —  “SME-Friendly Flow”
+
+### 0. Goal
+Make Peergos feel obvious for first-time SME users:
+* Flat, 1-layer nav (Dashboard / Bookkeeping / Taxes / Reports / AI / Settings)
+* Context cards & quick-actions
+* Bottom tab-bar on mobile
+* Consistent progress pills across filings
+* Remove gray “coming soon” links (replace with a single Roadmap page)
+
+---
+
+### 1. Flatten & rename navigation
+1. Delete `SidebarItem` entries for
+   * “Accounting”, “Tax Compliance”, sub-menus, “Bank Feeds”, “Invoice Scan”, etc.
+2. Add six items in **this order**:
+Dashboard | Bookkeeping | Taxes | Reports | AI | Settings
+3. Route map:
+* `/`               → Dashboard
+* `/bookkeeping`    → new consolidated page (see §2)
+* `/taxes`          → new consolidated page (see §3)
+* `/reports`        → Financial Reports
+* `/ai`             → AI Tax Assistant
+* `/settings`       → existing Administration panel
+* `/roadmap`        → placeholder page listing Bank Feeds, Invoice Scan, UAE Pass SSO, FTA API, e-invoice signature
+
+---
+
+### 2. Bookkeeping page (tabs)
+Create `Bookkeeping.tsx` with ShadCN `Tabs`:
+[ Revenue | Expenses | Invoices ]
+* Move existing Revenue & Expenses components here.
+* **Invoices**: embed invoice builder list.
+* Remove old “Invoicing” nav entry.
+
+---
+
+### 3. Taxes page (tabs)
+`Taxes.tsx` tabs:
+[ VAT Return | CIT Return | Transfer Pricing ]
+* Render existing VAT & CIT pages inside tabs.
+* Transfer Pricing tab shows current stub with “Phase 2” banner.
+
+---
+
+### 4. Dashboard polish
+1. After wizard completes, redirect to **Dashboard** and show card:
+   > 🎉 Setup complete — next, record your first expense  
+   > **[Add Expense]**
+2. Add four `QuickActionButton`s top-right:
+   * Add Expense
+   * File VAT
+   * File CIT
+   * Ask AI
+3. Display “Last filed” date on VAT & CIT metric cards.
+
+---
+
+### 5. Global “Ask AI” button
+* Floating `Button` (`fixed bottom-6 right-6 md:hidden`) opens AI slide-over.
+
+---
+
+### 6. Consistent progress pills
+* Create `<ProgressPill step total>` component.
+* Place on VAT Return, CIT Return, Invoice Builder (Step 1 of 2: Draft → Submit).
+
+---
+
+### 7. Mobile bottom tab-bar
+Show when `window.innerWidth <= 767`:
+🏠 📒 📑 📊 🤖
+Icons → same routes as sidebar.
+
+---
+
+### 8. UX micro-wins
+* Add “Skip tour” link in wizard header.
+* `useEffect(() => firstEmptyInputRef.current?.focus(), [])` on all forms.
+* After successful VAT/CIT filing, `navigate('/reports?show=latest')`.
+* Expense form: set `autoFocus` on description.
+
+---
+
+### 9. Roadmap page
+`ComingSoonPage.tsx` lists:
+* Bank / POS Feeds (Q4 2025)
+* Invoice Scan & OCR (Q4 2025)
+* UAE Pass SSO (Q1 2026)
+* FTA Live API (Q1 2026)
+* E-invoice Signature (Q2 2026)
+
+Link “See what’s next” under sidebar.
+
+---
+
+### 10. Tests
+* **Playwright** `nav-flow.spec.ts`  
+  1. login → complete wizard → lands on Dashboard card  
+  2. click QuickAction “Add Expense” → opens `/bookkeeping?tab=expenses`
+* Mobile viewport 375×812: bottom tab-bar visible, sidebar hidden.
+
+---
+
+### 11. Commit & push
+```bash
+git add client/src/components/nav/**/* client/src/pages/{Bookkeeping,Taxes,ComingSoonPage}.tsx
+git add client/src/components/ProgressPill.tsx
+git commit -m "refactor: flat nav + consolidated pages + mobile tabbar + UX polish"
+git push origin main
+git push gl main
+🚀 This keeps all existing logic but gives SMEs a cleaner, flatter journey.

@@ -29,41 +29,20 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   const navigationItems = [
     {
-      section: 'Main',
+      section: '',
       items: [
-        { path: '/', icon: Home, label: t('nav.dashboard'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
-        { path: '/setup', icon: Shield, label: 'SME Setup & Categorization', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'], badge: 'FTA' },
-        { path: '/calendar', icon: Calendar, label: t('nav.calendar'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/', icon: Home, label: 'Dashboard', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/bookkeeping', icon: Wallet, label: 'Bookkeeping', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/taxes', icon: FileText, label: 'Taxes', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
+        { path: '/financials', icon: BarChart3, label: 'Reports', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
+        { path: '/tax-assistant', icon: Bot, label: 'AI', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/admin', icon: Settings, label: 'Settings', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
       ],
     },
     {
-      section: 'Accounting',
+      section: 'Quick Links',
       items: [
-        { path: '/accounting', icon: Wallet, label: t('nav.accounting'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT'] },
-        { path: '/financials', icon: BarChart3, label: t('nav.financials'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
-        { path: '/invoicing', icon: Receipt, label: t('nav.invoicing'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT'] },
-      ],
-    },
-    {
-      section: 'Tax Compliance',
-      items: [
-        { path: '/workflow', icon: ArrowRightLeft, label: 'SME Workflow', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'], badge: 'FTA' },
-        { path: '/cit', icon: Building2, label: t('nav.cit'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
-        { path: '/vat', icon: FileText, label: t('nav.vat'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
-        { 
-          path: '/transfer-pricing', 
-          icon: ArrowRightLeft, 
-          label: t('nav.transfer_pricing'), 
-          roles: ['ADMIN', 'ACCOUNTANT'],
-          badge: 'SME',
-        },
-      ],
-    },
-    {
-      section: 'Support',
-      items: [
-        { path: '/tax-assistant', icon: Bot, label: 'AI Tax Assistant', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'], badge: 'AI' },
-        { path: '/admin', icon: Settings, label: t('nav.admin'), roles: ['ADMIN'] },
+        { path: '/roadmap', icon: Calendar, label: 'See what\'s next', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
       ],
     },
   ];
@@ -136,15 +115,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                         {item.label}
                       </span>
                     )}
-                    {item.badge && (isOpen || !isOpen) && (
-                      <span className={cn(
-                        "ml-auto bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full",
-                        language === 'ar' && "rtl:ml-0 rtl:mr-auto",
-                        !isOpen && "lg:hidden"
-                      )}>
-                        {item.badge}
-                      </span>
-                    )}
+
                   </div>
                 </Link>
               ))}

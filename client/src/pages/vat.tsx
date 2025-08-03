@@ -19,6 +19,7 @@ import FilingHistoryTable from '@/components/tax/filing-history-table';
 import { FileText, Receipt, Calculator, Download, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
+import { ProgressPill } from '@/components/ProgressPill';
 
 export default function VAT() {
   const [activeTab, setActiveTab] = useState('vat201');

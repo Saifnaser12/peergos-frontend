@@ -11,6 +11,9 @@ import { NavigationProvider } from "./context/navigation-context";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import MainLayout from "./components/layout/main-layout";
 import Dashboard from "./pages/dashboard";
+import Bookkeeping from "./pages/Bookkeeping";
+import Taxes from "./pages/Taxes";
+import ComingSoonPage from "./pages/ComingSoonPage";
 import Accounting from "./pages/accounting";
 import CIT from "./pages/cit";
 import VAT from "./pages/vat";
@@ -31,6 +34,14 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
+        
+        {/* New flat navigation routes */}
+        <Route path="/bookkeeping" component={Bookkeeping} />
+        <Route path="/taxes" component={Taxes} />
+        <Route path="/ai" component={TaxAssistant} />
+        <Route path="/roadmap" component={ComingSoonPage} />
+        
+        {/* Legacy routes for direct access */}
         <Route path="/accounting" component={Accounting} />
         <Route path="/cit" component={CIT} />
         <Route path="/vat" component={VAT} />

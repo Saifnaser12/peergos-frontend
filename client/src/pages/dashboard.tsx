@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { useLanguage } from '@/context/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { formatCurrency } from '@/lib/business-logic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { QuickActionButton } from '@/components/QuickActionButton';
 import { 
   Calculator, 
   FileText, 
   Plus,
   DollarSign,
-  Building2
+  Building2,
+  Bot,
+  Receipt
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
@@ -18,6 +22,7 @@ import { cn } from '@/lib/utils';
 export default function Dashboard() {
   const { language } = useLanguage();
   const { company, user } = useAuth();
+  const [, setLocation] = useLocation();
 
   // Fetch essential data only
   const { data: kpiData = [] } = useQuery({
@@ -55,7 +60,7 @@ export default function Dashboard() {
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
-      {/* Simple Header */}
+      {/* Header with Quick Actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
@@ -63,13 +68,42 @@ export default function Dashboard() {
           </h1>
           <p className="text-gray-600">{company?.name || 'Tax Compliance Overview'}</p>
         </div>
-        <div className="flex gap-2">
-          {company?.freeZone && (
-            <Badge variant="outline">Free Zone</Badge>
-          )}
-          {company?.vatRegistered && (
-            <Badge variant="outline">VAT Registered</Badge>
-          )}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            {company?.freeZone && (
+              <Badge variant="outline">Free Zone</Badge>
+            )}
+            {company?.vatRegistered && (
+              <Badge variant="outline">VAT Registered</Badge>
+            )}
+          </div>
+          
+          {/* Quick Action Buttons */}
+          <div className="hidden md:flex gap-2">
+            <QuickActionButton
+              icon={Plus}
+              label="Add Expense"
+              onClick={() => setLocation('/bookkeeping?tab=expenses')}
+            />
+            <QuickActionButton
+              icon={FileText}
+              label="File VAT"
+              onClick={() => setLocation('/taxes?tab=vat')}
+              variant="outline"
+            />
+            <QuickActionButton
+              icon={Calculator}
+              label="File CIT"
+              onClick={() => setLocation('/taxes?tab=cit')}
+              variant="outline"
+            />
+            <QuickActionButton
+              icon={Bot}
+              label="Ask AI"
+              onClick={() => setLocation('/ai')}
+              variant="secondary"
+            />
+          </div>
         </div>
       </div>
 
