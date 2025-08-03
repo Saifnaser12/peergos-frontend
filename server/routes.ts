@@ -379,6 +379,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced VAT calculation with comprehensive UAE compliance
+  app.post("/api/tax/calculate-vat-enhanced", async (req, res) => {
+    try {
+      const { 
+        standardRatedValue, standardRatedVAT,
+        zeroRatedValue, exemptValue,
+        reverseChargeValue, reverseChargeVAT,
+        inputVATStandard, inputVATCapital, inputVATCorrections,
+        increaseInVAT, decreaseInVAT,
+        period 
+      } = req.body;
+
+      // Validate UAE VAT compliance
+      const validationErrors = [];
+
+      // Check standard-rated VAT calculation (5%)
+      const expectedStandardVAT = Math.round(standardRatedValue * 0.05 * 100) / 100;
+      if (Math.abs(standardRatedVAT - expectedStandardVAT) > 0.01) {
+        validationErrors.push(`Standard VAT should be ${expectedStandardVAT}, but ${standardRatedVAT} was provided`);
+      }
+
+      // Check reverse charge VAT calculation
+      if (reverseChargeValue > 0) {
+        const expectedReverseVAT = Math.round(reverseChargeValue * 0.05 * 100) / 100;
+        if (Math.abs(reverseChargeVAT - expectedReverseVAT) > 0.01) {
+          validationErrors.push(`Reverse charge VAT should be ${expectedReverseVAT}, but ${reverseChargeVAT} was provided`);
+        }
+      }
+
+      // Calculate totals
+      const totalOutputVAT = standardRatedVAT + reverseChargeVAT + increaseInVAT - decreaseInVAT;
+      const totalInputVAT = inputVATStandard + inputVATCapital + inputVATCorrections;
+      const netVATPayable = totalOutputVAT - totalInputVAT;
+
+      // Generate detailed breakdown
+      const breakdown = {
+        supplies: {
+          standardRated: { value: standardRatedValue, vat: standardRatedVAT, rate: 5 },
+          zeroRated: { value: zeroRatedValue, vat: 0, rate: 0 },
+          exempt: { value: exemptValue, vat: 0, rate: null },
+          reverseCharge: { value: reverseChargeValue, vat: reverseChargeVAT, rate: 5 }
+        },
+        adjustments: {
+          increase: increaseInVAT,
+          decrease: decreaseInVAT,
+          net: increaseInVAT - decreaseInVAT
+        },
+        inputVAT: {
+          standard: inputVATStandard,
+          capital: inputVATCapital,
+          corrections: inputVATCorrections,
+          total: totalInputVAT
+        },
+        totals: {
+          outputVAT: totalOutputVAT,
+          inputVAT: totalInputVAT,
+          netVATPayable,
+          isRefund: netVATPayable < 0
+        },
+        compliance: {
+          validationErrors,
+          isCompliant: validationErrors.length === 0,
+          warnings: []
+        }
+      };
+
+      // Add compliance warnings
+      if (exemptValue > 50000) {
+        breakdown.compliance.warnings.push('Exempt supplies exceed AED 50,000 - partial exemption rules may apply');
+      }
+
+      if (netVATPayable < -10000) {
+        breakdown.compliance.warnings.push('Large VAT refund claimed - ensure proper documentation is available');
+      }
+
+      res.json({
+        period,
+        breakdown,
+        calculatedAt: new Date(),
+        ftaCompliance: {
+          standardRate: 5,
+          zeroRateSupplies: ['Exports', 'International transport', 'Investment precious metals'],
+          exemptSupplies: ['Financial services', 'Residential rent', 'Life insurance'],
+          reverseChargeApplicable: ['Digital services from abroad', 'Imported services']
+        }
+      });
+    } catch (error) {
+      console.error('Enhanced VAT calculation error:', error);
+      res.status(500).json({ message: "Enhanced VAT calculation error" });
+    }
+  });
+
   app.post("/api/tax/calculate-cit", async (req, res) => {
     try {
       const { revenue, expenses, freeZone, eligibleIncome } = req.body;

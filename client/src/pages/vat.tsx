@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VatCalculator from '@/components/tax/vat-calculator';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
+import EnhancedVATCalculator from '@/components/vat/enhanced-vat-calculator';
 import TaxFilingStatus from '@/components/tax/tax-filing-status';
 import FilingHistoryTable from '@/components/tax/filing-history-table';
 import { FileText, Receipt, Calculator, Download, AlertTriangle, Info } from 'lucide-react';
@@ -360,10 +361,15 @@ export default function VAT() {
             </TabsContent>
             
             <TabsContent value="calculator" className="mt-6">
-              <SecureTaxCalculator 
-                type="VAT"
-                onResultUpdate={setTaxResult}
-                className="max-w-4xl mx-auto"
+              <EnhancedVATCalculator 
+                onSubmit={(data) => {
+                  console.log('Enhanced VAT calculation:', data);
+                  toast({
+                    title: "VAT Calculated",
+                    description: `Net VAT ${data.breakdown.isRefund ? 'refund' : 'payable'}: ${formatCurrency(Math.abs(data.breakdown.netVAT), 'AED', 'en-AE')}`,
+                  });
+                }}
+                className="max-w-6xl mx-auto"
               />
             </TabsContent>
             
