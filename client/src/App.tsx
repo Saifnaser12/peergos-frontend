@@ -10,7 +10,8 @@ import { TaxClassificationProvider } from "./context/tax-classification-context"
 import { NavigationProvider } from "./context/navigation-context";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import EnhancedMainLayout from "./components/layout/enhanced-main-layout";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
+import { registerServiceWorker } from "./hooks/use-offline";
 import Dashboard from "./pages/dashboard";
 import Bookkeeping from "./pages/Bookkeeping";
 import Taxes from "./pages/Taxes";
@@ -75,6 +76,10 @@ function Router() {
 }
 
 function App() {
+  // Register service worker for offline capabilities
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

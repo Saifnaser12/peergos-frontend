@@ -5,7 +5,28 @@ import { pool } from "./db";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
 import dataImportRoutes from "./routes/data-import";
 
+// Import security and error handling middleware
+import { 
+  errorHandler, 
+  notFoundHandler, 
+  asyncHandler 
+} from "./middleware/error-handler";
+import { 
+  generalRateLimit,
+  securityHeaders,
+  requestId,
+  requestLogger,
+  sanitizeInput 
+} from "./middleware/security";
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Apply security middleware
+  app.use(securityHeaders);
+  app.use(requestId);
+  app.use(requestLogger);
+  app.use(sanitizeInput);
+  app.use(generalRateLimit);
   
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
@@ -954,6 +975,8 @@ Company ID: ${req.user.companyId}
   const calculationAuditRoutes = await import("./routes/calculation-audit");
   app.use("/api/calculation-audit", calculationAuditRoutes.default);
 
+  // Note: Do not add catch-all error handlers here in development
+  // The Vite middleware needs to handle static routes after this
   const httpServer = createServer(app);
   return httpServer;
 }
