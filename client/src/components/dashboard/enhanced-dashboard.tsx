@@ -73,9 +73,12 @@ export default function EnhancedDashboard() {
   const currentKpi = Array.isArray(kpiData) && kpiData.length > 0 ? kpiData[0] : null;
   const hasData = currentKpi && (parseFloat(currentKpi.revenue || '0') > 0);
   
-  const pendingTasks = Array.isArray(tasks) ? tasks.filter((task: any) => task.status === 'pending').length : 0;
-  const overdueTasks = Array.isArray(tasks) ? tasks.filter((task: any) => task.status === 'overdue').length : 0;
-  const upcomingDeadlines = Array.isArray(notifications) ? notifications.filter((n: any) => n.type === 'deadline').length : 0;
+  const tasksArray = Array.isArray(tasks) ? tasks : [];
+  const notificationsArray = Array.isArray(notifications) ? notifications : [];
+  
+  const pendingTasks = tasksArray.filter((task: any) => task.status === 'pending').length;
+  const overdueTasks = tasksArray.filter((task: any) => task.status === 'overdue').length;
+  const upcomingDeadlines = notificationsArray.filter((n: any) => n.type === 'deadline').length;
 
   const toggleWidgetVisibility = (widgetId: string) => {
     setWidgets(prev => prev.map(widget => 
@@ -230,7 +233,7 @@ export default function EnhancedDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(parseFloat(currentKpi?.revenue || '0'), 'AED')}
+                {formatCurrency(parseFloat(currentKpi?.revenue || '0'))}
               </p>
             </div>
             <TrendingUp className="h-8 w-8 text-green-500" />
@@ -242,7 +245,7 @@ export default function EnhancedDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Tax Due</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(parseFloat(currentKpi?.vatDue || '0'), 'AED')}
+                {formatCurrency(parseFloat(currentKpi?.vatDue || '0'))}
               </p>
             </div>
             <Calculator className="h-8 w-8 text-red-500" />

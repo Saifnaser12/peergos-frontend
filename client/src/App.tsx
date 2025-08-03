@@ -23,6 +23,7 @@ import Invoicing from "./pages/invoicing";
 import TransferPricing from "./pages/transfer-pricing";
 import TaxAssistant from "./pages/tax-assistant";
 import Calendar from "./pages/calendar";
+import Compliance from "./pages/compliance";
 import Admin from "./pages/admin";
 import Setup from "./pages/setup";
 import Workflow from "./pages/workflow";
@@ -58,6 +59,7 @@ function Router() {
           <Route path="/tax-assistant" component={TaxAssistant} />
           <Route path="/assistant" component={TaxAssistant} />
           <Route path="/calendar" component={Calendar} />
+          <Route path="/compliance" component={Compliance} />
           <Route path="/admin" component={Admin} />
           <Route path="/setup" component={Setup} />
           <Route path="/workflow" component={Workflow} />

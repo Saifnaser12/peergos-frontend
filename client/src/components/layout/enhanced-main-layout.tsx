@@ -7,7 +7,7 @@ import Sidebar from './sidebar';
 import Breadcrumb, { useBreadcrumb } from '@/components/navigation/breadcrumb';
 import GlobalSearch from '@/components/navigation/global-search';
 import { Button } from '@/components/ui/button';
-import { ContextualHelp } from '@/components/ui/tooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 import { 
   Search, 
   Menu, 
@@ -181,11 +181,14 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
 
             {/* Page help */}
             {currentPageConfig?.help && (
-              <ContextualHelp 
+              <Tooltip 
                 content={currentPageConfig.help}
-                variant="info"
                 className="hidden md:block"
-              />
+              >
+                <Button variant="ghost" size="sm">
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             )}
           </div>
 

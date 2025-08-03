@@ -3,7 +3,7 @@ import { useAuth } from '@/context/auth-context';
 import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import Tooltip from '@/components/ui/tooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 import {
   BarChart3,
   Calendar,
