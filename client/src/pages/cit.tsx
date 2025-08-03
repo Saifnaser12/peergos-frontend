@@ -143,13 +143,8 @@ export default function CIT() {
           <p className="text-gray-600">Calculate and file your CIT returns</p>
         </div>
         <EnhancedButton 
-          navigationType="submit"
           loading={isSubmitting}
-          requiresValidation={true}
-          validationFn={() => {
-            // Validate that required data exists for CIT filing
-            return netIncome >= 0 && Array.isArray(transactions) && transactions.length > 0;
-          }}
+          disabled={!(netIncome >= 0 && Array.isArray(transactions) && transactions.length > 0)}
           onClick={async () => {
             setIsSubmitting(true);
             try {
