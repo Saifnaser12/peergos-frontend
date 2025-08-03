@@ -1,0 +1,57 @@
+🚩 BLOCKER — Setup Wizard freezes at “Free Zone & License” step (shows only **Coming soon…**)
+
+**What’s wrong**
+- Step 3 of the wizard (Free Zone & License) is just a placeholder, so users can’t finish the initial 5-step onboarding.
+- “Next” button is disabled with “Please complete all required fields…” even though there are no fields to complete.
+- Overall progress is stuck at 50 %, preventing any further use of CIT/VAT features.
+
+**What we need**
+1. **Implement the full “Free Zone & License” form now (no placeholder).**  
+   | Field | Type | Validation | Notes |
+   |-------|------|------------|-------|
+   | `licenseType` | enum: `['Mainland', 'FreeZone']` | required | radio buttons |
+   | `freeZoneName` | string | required **iff** `licenseType === 'FreeZone'` | dropdown populated from `constants/freeZones.ts` |
+   | `licenseNumber` | string | required | length 6-20 alphanum |
+   | `licenseIssueDate` | date | required | date picker |
+   | `licenseExpiryDate` | date | required | must be > `issueDate` |
+   | `isQFZP` | boolean | optional | checkbox “Qualifying Free-Zone Person (QFZP)” |
+   | `docs` | file[] | optional | accept PDF/JPG; mock upload for now |
+
+2. **Schema / validation**
+   - Extend `setupSchema.ts` (Zod) with a `license` object using the rules above.
+   - Add sensible defaults so the form is valid when required fields are filled and optional fields are left blank.
+
+3. **Form wiring**
+   ```tsx
+   const { register, control, watch, formState } = useForm<LicenseForm>({
+     mode: 'onChange',
+     defaultValues: {
+       licenseType: 'Mainland',
+       freeZoneName: '',
+       licenseNumber: '',
+       licenseIssueDate: undefined,
+       licenseExpiryDate: undefined,
+       isQFZP: false,
+       docs: []
+     },
+     resolver: zodResolver(licenseSchema)
+   });
+Conditionally render freeZoneName when licenseType === 'FreeZone'.
+Hook up file uploads to the existing mock useFileUpload hook.
+Navigation / progress
+Update the wizard’s step list so Step 3 is real.
+Enable Next when formState.isValid.
+When the user clicks Next, persist license data to the same Supabase table used for steps 1-2.
+UX polish
+Keep the simplified design (no extra shadows/borders).
+Show a green check-mark badge on the step indicator once the license form is valid.
+Display a small info banner: “Free-zone companies: ticking QFZP will apply the 0 % corporate-tax regime.”
+Regression check
+Complete the whole wizard with both Mainland and Free-Zone paths to confirm progress hits 100 % and dashboard loads.
+Confirm no TypeScript or LSP errors.
+Commit
+git add client/src/components/setup/license-step.tsx
+git add client/src/schemas/setupSchema.ts
+git commit -m "feat: implement Free Zone & License step (unblocks wizard)"
+git push
+Please implement these changes so users can finish onboarding without getting stuck.

@@ -9,12 +9,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Placeholder components for remaining steps
-const FreeZoneLicenseStep = () => (
-  <div className="text-center py-8">
-    <h3 className="text-lg font-medium">Free Zone & License Step</h3>
-    <p className="text-gray-600">Coming soon...</p>
-  </div>
-);
+import FreeZoneLicenseStep from './free-zone-license-step';
 
 const TRNUploadStep = () => (
   <div className="text-center py-8">

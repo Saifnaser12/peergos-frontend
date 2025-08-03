@@ -42,9 +42,13 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     hasInternationalSales: false,
   });
   const [freeZoneLicense, setFreeZoneLicense] = useState<Partial<FreeZoneLicense>>({
-    isFreeZone: false,
+    licenseType: 'Mainland',
+    freeZoneName: '',
+    licenseNumber: '',
+    licenseIssueDate: '',
+    licenseExpiryDate: '',
     isQFZP: false,
-    hasRelatedParties: false,
+    docs: [],
   });
   const [trnUpload, setTRNUpload] = useState<Partial<TRNUpload>>({
     hasTRN: false,

@@ -30,16 +30,35 @@ export const revenueDeclarationSchema = z.object({
 
 // Step 3: Free Zone & License Details
 export const freeZoneLicenseSchema = z.object({
-  isFreeZone: z.boolean(),
-  freeZoneName: z.string().optional(),
-  freeZoneActivity: z.string().optional(),
-  licenseType: z.enum(['MAINLAND', 'FREE_ZONE', 'OFFSHORE'], {
+  licenseType: z.enum(['Mainland', 'FreeZone'], {
     errorMap: () => ({ message: 'Please select license type' })
   }),
-  isQFZP: z.boolean(), // Qualifying Free Zone Person
-  qfzpCertificate: z.string().optional(),
-  hasRelatedParties: z.boolean(),
-  relatedPartyDetails: z.string().optional(),
+  freeZoneName: z.string().optional(),
+  licenseNumber: z.string().min(6, 'License number must be at least 6 characters').max(20, 'License number cannot exceed 20 characters'),
+  licenseIssueDate: z.string().min(1, 'License issue date is required'),
+  licenseExpiryDate: z.string().min(1, 'License expiry date is required'),
+  isQFZP: z.boolean().optional().default(false),
+  docs: z.array(z.instanceof(File)).optional().default([]),
+}).refine((data) => {
+  // Require freeZoneName if licenseType is FreeZone
+  if (data.licenseType === 'FreeZone' && (!data.freeZoneName || data.freeZoneName.length < 2)) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Free zone name is required for free zone licenses',
+  path: ['freeZoneName']
+}).refine((data) => {
+  // Check that expiry date is after issue date
+  if (data.licenseIssueDate && data.licenseExpiryDate) {
+    const issueDate = new Date(data.licenseIssueDate);
+    const expiryDate = new Date(data.licenseExpiryDate);
+    return expiryDate > issueDate;
+  }
+  return true;
+}, {
+  message: 'License expiry date must be after issue date',
+  path: ['licenseExpiryDate']
 });
 
 // Step 4: TRN & Tax Registration
