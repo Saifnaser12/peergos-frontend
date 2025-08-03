@@ -9,6 +9,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// Enhanced translations with more comprehensive coverage
 const translations = {
   en: {
     'nav.dashboard': 'Dashboard',
@@ -42,6 +43,23 @@ const translations = {
     'common.submit': 'Submit',
     'common.edit': 'Edit',
     'common.delete': 'Delete',
+    'common.search': 'Search',
+    'common.close': 'Close',
+    'common.open': 'Open',
+    'common.settings': 'Settings',
+    'common.help': 'Help',
+    'common.notifications': 'Notifications',
+    'common.profile': 'Profile',
+    'common.logout': 'Logout',
+    'common.language': 'Language',
+    'common.collapse': 'Collapse',
+    'common.expand': 'Expand',
+    'nav.bookkeeping': 'Bookkeeping',
+    'nav.taxes': 'Taxes',
+    'nav.documents': 'Documents',
+    'nav.data_entry': 'Data Entry',
+    'nav.calculation_audit': 'Calculation Audit',
+    'nav.reports': 'Reports',
   },
   ar: {
     'nav.dashboard': 'لوحة التحكم',
@@ -75,6 +93,23 @@ const translations = {
     'common.submit': 'إرسال',
     'common.edit': 'تعديل',
     'common.delete': 'حذف',
+    'common.search': 'بحث',
+    'common.close': 'إغلاق',
+    'common.open': 'فتح',
+    'common.settings': 'الإعدادات',
+    'common.help': 'مساعدة',
+    'common.notifications': 'الإشعارات',
+    'common.profile': 'الملف الشخصي',
+    'common.logout': 'تسجيل الخروج',
+    'common.language': 'اللغة',
+    'common.collapse': 'طي',
+    'common.expand': 'توسيع',
+    'nav.bookkeeping': 'مسك الدفاتر',
+    'nav.taxes': 'الضرائب',
+    'nav.documents': 'المستندات',
+    'nav.data_entry': 'إدخال البيانات',
+    'nav.calculation_audit': 'تدقيق العمليات الحسابية',
+    'nav.reports': 'التقارير',
   },
 };
 
