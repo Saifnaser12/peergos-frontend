@@ -1,10 +1,10 @@
 import { 
-  users, companies, transactions, taxFilings, invoices, notifications, creditNotes, debitNotes, kpiData,
+  users, companies, transactions, taxFilings, invoices, notifications, creditNotes, debitNotes, kpiData, documentsTable,
   type User, type InsertUser, type Company, type InsertCompany,
   type Transaction, type InsertTransaction, type TaxFiling, type InsertTaxFiling,
   type Invoice, type InsertInvoice, type Notification, type InsertNotification,
   type CreditNote, type InsertCreditNote, type DebitNote, type InsertDebitNote,
-  type KpiData, type InsertKpiData
+  type KpiData, type InsertKpiData, type Document, type InsertDocument
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -66,6 +66,23 @@ export interface IStorage {
   // Automatic Tax Calculations
   calculateAndUpdateTaxes(companyId: number, period?: string): Promise<{ vatDue: number; citDue: number; netIncome: number }>;
   recalculateFinancials(companyId: number): Promise<void>;
+
+  // Document Management
+  getDocuments(filters: { companyId: number; category?: string; search?: string; sortBy?: string; sortOrder?: string }): Promise<Document[]>;
+  getDocument(id: number): Promise<Document | undefined>;
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined>;
+  deleteDocument(id: number): Promise<boolean>;
+  getDocumentStats(companyId: number): Promise<{
+    totalDocuments: number;
+    totalSize: number;
+    byCategory: Record<string, number>;
+    compliance: {
+      requiredDocuments: string[];
+      missingDocuments: string[];
+      completionRate: number;
+    };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -449,6 +466,115 @@ export class DatabaseStorage implements IStorage {
       const period = date.toISOString().slice(0, 7);
       await this.calculateAndUpdateTaxes(companyId, period);
     }
+  }
+
+  // Document Management Methods
+  async getDocuments(filters: { companyId: number; category?: string; search?: string; sortBy?: string; sortOrder?: string }): Promise<Document[]> {
+    const { desc, asc, like, ilike } = await import("drizzle-orm");
+    
+    let query = db.select().from(documentsTable).where(eq(documentsTable.companyId, filters.companyId));
+    
+    if (filters.category) {
+      query = query.where(eq(documentsTable.category, filters.category));
+    }
+    
+    if (filters.search) {
+      query = query.where(ilike(documentsTable.name, `%${filters.search}%`));
+    }
+    
+    // Sort by specified field and order
+    const sortField = filters.sortBy || 'uploadedAt';
+    const sortOrder = filters.sortOrder || 'desc';
+    
+    if (sortOrder === 'desc') {
+      query = query.orderBy(desc(documentsTable[sortField as keyof typeof documentsTable]));
+    } else {
+      query = query.orderBy(asc(documentsTable[sortField as keyof typeof documentsTable]));
+    }
+    
+    return await query;
+  }
+
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [document] = await db.select().from(documentsTable).where(eq(documentsTable.id, id));
+    return document || undefined;
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db
+      .insert(documentsTable)
+      .values(document)
+      .returning();
+    return newDocument;
+  }
+
+  async updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [document] = await db
+      .update(documentsTable)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(documentsTable.id, id))
+      .returning();
+    return document || undefined;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const result = await db
+      .update(documentsTable)
+      .set({ status: 'DELETED', updatedAt: new Date() })
+      .where(eq(documentsTable.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getDocumentStats(companyId: number): Promise<{
+    totalDocuments: number;
+    totalSize: number;
+    byCategory: Record<string, number>;
+    compliance: {
+      requiredDocuments: string[];
+      missingDocuments: string[];
+      completionRate: number;
+    };
+  }> {
+    const { sql, count, sum } = await import("drizzle-orm");
+    
+    // Get all active documents for the company
+    const documents = await db.select().from(documentsTable)
+      .where(and(
+        eq(documentsTable.companyId, companyId),
+        eq(documentsTable.status, 'ACTIVE')
+      ));
+    
+    const totalDocuments = documents.length;
+    const totalSize = documents.reduce((sum, doc) => sum + doc.size, 0);
+    
+    // Group by category
+    const byCategory: Record<string, number> = {};
+    documents.forEach(doc => {
+      byCategory[doc.category] = (byCategory[doc.category] || 0) + 1;
+    });
+    
+    // Compliance tracking
+    const requiredDocuments = [
+      'TRN_CERTIFICATE',
+      'TRADE_LICENSE',
+      'MOA_AOA',
+      'AUDIT_REPORT'
+    ];
+    
+    const presentCategories = Object.keys(byCategory);
+    const missingDocuments = requiredDocuments.filter(req => !presentCategories.includes(req));
+    const completionRate = ((requiredDocuments.length - missingDocuments.length) / requiredDocuments.length) * 100;
+    
+    return {
+      totalDocuments,
+      totalSize,
+      byCategory,
+      compliance: {
+        requiredDocuments,
+        missingDocuments,
+        completionRate: Math.round(completionRate)
+      }
+    };
   }
 }
 

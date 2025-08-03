@@ -254,6 +254,41 @@ export const insertChartOfAccountSchema = createInsertSchema(chartOfAccounts);
 export type InsertChartOfAccount = z.infer<typeof insertChartOfAccountSchema>;
 export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;
 
+// Document Management System
+export const documentsTable = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  originalName: text("original_name").notNull(),
+  size: integer("size").notNull(), // Size in bytes
+  type: text("type").notNull(), // MIME type
+  category: text("category").notNull(), // TRN_CERTIFICATE, INVOICES_RECEIPTS, etc.
+  companyId: integer("company_id").notNull(),
+  uploadedBy: integer("uploaded_by").notNull(),
+  url: text("url").notNull(), // Object storage URL
+  objectPath: text("object_path").notNull(), // Internal object storage path
+  status: text("status").default("ACTIVE"), // ACTIVE, ARCHIVED, DELETED
+  tags: text("tags").array(), // Searchable tags
+  description: text("description"),
+  
+  // Compliance tracking
+  isRequired: boolean("is_required").default(false),
+  expiryDate: timestamp("expiry_date"), // For certificates that expire
+  
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertDocumentSchema = createInsertSchema(documentsTable).omit({
+  id: true,
+  uploadedAt: true,
+  updatedAt: true,
+}).extend({
+  expiryDate: z.coerce.date().optional(),
+});
+
+export type Document = typeof documentsTable.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
 // Extended CIT Return schema with detailed calculations
 export const citReturnCalculationsSchema = z.object({
   // Basic Information

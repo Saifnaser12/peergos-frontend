@@ -834,6 +834,118 @@ Company ID: ${req.user.companyId}
     }
   });
 
+  // Document Management Routes
+  const { ObjectStorageService } = await import("./objectStorage");
+  const objectStorageService = new ObjectStorageService();
+
+  // Get upload URL for documents
+  app.post("/api/documents/upload-url", async (req, res) => {
+    try {
+      const { fileName, fileType, category, companyId } = req.body;
+      
+      if (!fileName || !fileType || !category || !companyId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const uploadData = await objectStorageService.getObjectEntityUploadURL(fileName);
+      
+      res.json({
+        uploadUrl: uploadData.uploadUrl,
+        finalUrl: uploadData.finalUrl,
+        objectPath: uploadData.objectPath
+      });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Create document record
+  app.post("/api/documents", async (req, res) => {
+    try {
+      const documentData = req.body;
+      const result = await storage.createDocument({
+        ...documentData,
+        uploadedBy: 1, // Mock user ID - would get from session
+        status: 'ACTIVE'
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ message: "Failed to create document" });
+    }
+  });
+
+  // Get documents for company
+  app.get("/api/documents", async (req, res) => {
+    try {
+      const { companyId = 1, category, search, sortBy = 'uploadedAt', sortOrder = 'desc' } = req.query;
+      const documents = await storage.getDocuments({
+        companyId: Number(companyId),
+        category: category as string,
+        search: search as string,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as string
+      });
+      
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // Get document statistics
+  app.get("/api/documents/stats", async (req, res) => {
+    try {
+      const companyId = req.query.companyId || 1;
+      const stats = await storage.getDocumentStats(Number(companyId));
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching document stats:", error);
+      res.status(500).json({ message: "Failed to fetch document stats" });
+    }
+  });
+
+  // Serve document files
+  app.get("/api/documents/file/:fileName", async (req, res) => {
+    try {
+      const { fileName } = req.params;
+      const filePath = `/api/documents/file/${fileName}`;
+      const file = await objectStorageService.getObjectEntityFile(filePath);
+      
+      await objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error serving document:", error);
+      res.status(404).json({ message: "Document not found" });
+    }
+  });
+
+  // Delete document
+  app.delete("/api/documents/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteDocument(Number(id));
+      res.json({ message: "Document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Failed to delete document" });
+    }
+  });
+
+  // Archive document
+  app.patch("/api/documents/:id/archive", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await storage.updateDocument(Number(id), { status: 'ARCHIVED' });
+      res.json(result);
+    } catch (error) {
+      console.error("Error archiving document:", error);
+      res.status(500).json({ message: "Failed to archive document" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -26,6 +26,7 @@ import Calendar from "./pages/calendar";
 import Admin from "./pages/admin";
 import Setup from "./pages/setup";
 import Workflow from "./pages/workflow";
+import Documents from "./pages/documents";
 import CreditDebitNotes from "./components/financial/credit-debit-notes";
 import NotFound from "@/pages/not-found";
 
@@ -57,6 +58,7 @@ function Router() {
           <Route path="/admin" component={Admin} />
           <Route path="/setup" component={Setup} />
           <Route path="/workflow" component={Workflow} />
+          <Route path="/documents" component={Documents} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>
