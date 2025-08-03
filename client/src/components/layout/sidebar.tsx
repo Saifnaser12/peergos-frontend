@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     {
       section: 'Quick Links',
       items: [
+        { path: '/visual-design-demo', icon: GitBranch, label: 'Design System', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/roadmap', icon: Calendar, label: 'See what\'s next', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
       ],
     },
