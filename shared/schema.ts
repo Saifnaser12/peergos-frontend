@@ -1,6 +1,9 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, json, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, json, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Import calculation schemas
+export * from './calculation-schemas';
 
 // User Management
 export const users = pgTable("users", {

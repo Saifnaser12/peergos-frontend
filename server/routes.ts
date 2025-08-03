@@ -950,6 +950,10 @@ Company ID: ${req.user.companyId}
   // Data import routes
   app.use('/api/data-import', dataImportRoutes);
 
+  // Calculation Audit Routes
+  const calculationAuditRoutes = await import("./routes/calculation-audit");
+  app.use("/api/calculation-audit", calculationAuditRoutes.default);
+
   const httpServer = createServer(app);
   return httpServer;
 }

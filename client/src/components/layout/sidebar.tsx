@@ -17,6 +17,7 @@ import {
   GitBranch,
   FolderOpen,
   PlusCircle,
+  Calculator,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,6 +39,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         { path: '/taxes', icon: FileText, label: 'Taxes', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/documents', icon: FolderOpen, label: 'Documents', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/enhanced-data-entry', icon: PlusCircle, label: 'Enhanced Data Entry', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/calculation-transparency', icon: Calculator, label: 'Calculation Audit', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/financials', icon: BarChart3, label: 'Reports', roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/tax-assistant', icon: Bot, label: 'AI', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/admin', icon: Settings, label: 'Settings', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
