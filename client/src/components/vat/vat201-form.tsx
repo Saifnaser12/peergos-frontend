@@ -99,8 +99,23 @@ export default function VAT201Form({
     },
   });
 
-  const { watch, formState: { errors } } = form;
+  const { watch, formState: { errors }, setValue } = form;
   const watchedValues = watch();
+
+  // Auto-calculate VAT amounts when supply values change
+  useEffect(() => {
+    // Standard-rated supplies: 5% VAT
+    const expectedStandardVAT = watchedValues.standardRatedValue * 0.05;
+    if (Math.abs(watchedValues.standardRatedVAT - expectedStandardVAT) > 0.01) {
+      setValue('standardRatedVAT', Math.round(expectedStandardVAT * 100) / 100);
+    }
+
+    // Reverse charge supplies: 5% VAT (same rate as standard)
+    const expectedReverseChargeVAT = watchedValues.reverseChargeValue * 0.05;
+    if (Math.abs(watchedValues.reverseChargeVAT - expectedReverseChargeVAT) > 0.01) {
+      setValue('reverseChargeVAT', Math.round(expectedReverseChargeVAT * 100) / 100);
+    }
+  }, [watchedValues.standardRatedValue, watchedValues.reverseChargeValue, setValue]);
 
   // Calculate totals on demand (no useEffect to prevent loops)
   const totalOutputVAT = 
@@ -505,7 +520,7 @@ export default function VAT201Form({
                   <Alert className="border-green-200 bg-green-50">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertDescription>
-                      <strong>Refund Due:</strong> You have a VAT refund of {formatCurrency(Math.abs(calculatedData.netVATPayable))}. 
+                      <strong>Refund Due:</strong> You have a VAT refund of {formatCurrency(Math.abs(currentData.netVATPayable))}. 
                       Upload your bank details to request the refund.
                     </AlertDescription>
                   </Alert>
@@ -515,7 +530,7 @@ export default function VAT201Form({
                   <Alert className="border-orange-200 bg-orange-50">
                     <CreditCard className="h-4 w-4 text-orange-600" />
                     <AlertDescription>
-                      <strong>Payment Required:</strong> VAT payment of {formatCurrency(calculatedData.netVATPayable)} is due. 
+                      <strong>Payment Required:</strong> VAT payment of {formatCurrency(currentData.netVATPayable)} is due. 
                       Make payment through FTA portal and upload proof of payment.
                     </AlertDescription>
                   </Alert>
@@ -611,7 +626,6 @@ export default function VAT201Form({
             
             <EnhancedButton
               type="submit"
-              navigationType="submit"
               loading={isSubmitting}
               requiresValidation={true}
               validationFn={() => {
