@@ -1,0 +1,39 @@
+🚨 FULL-APP AUDIT & FIXES REQUEST
+
+**Problem**
+• Several pages (e.g. **“Free Zone & License”**, **“TRN Upload Step”**) still show **“Coming soon…”**, blocking users from finishing the Peergos setup wizard.  
+• We can’t ship until **all** steps load real forms, pass validation, and allow navigation.
+
+**Required Outcome**
+1. **Identify every placeholder view**  
+   ```bash
+   grep -RniE "Coming soon|TODO|placeholder" client/src
+List each file + component with an unresolved placeholder.
+Implement missing forms / logic for each step
+Step	Required Fields & Validation	Notes
+Free Zone & License	licenseType (Mainland/Free Zone), freeZoneName (⇢ required if Free Zone), licenseNumber, issueDate, expiryDate, isQFZP (bool), docs (file[])	use dropdown from constants/freeZones.ts
+TRN Upload	trnNumber (9 digits), trnCertificate (PDF/JPG), issueDate, expiryDate	same Supabase bucket as other uploads (mock ok)
+Calendar step	confirmFinancialYearEnd (date), wantsSmartReminders (bool)	prepare cron placeholder
+Any other “Coming soon…” page	-	match existing UX + schema pattern
+• Extend setupSchema.ts (Zod) for each new sub-object.
+• Provide sensible defaultValues in useForm.
+• Gate the Next button with formState.isValid only.
+• Persist data via supabase.from('company_setup').upsert(...).
+Wizard flow & progress
+• Update the step array so labels match actual pages.
+• After each step is valid, add ✔ badge and advance progress %.
+• Ensure users can exit and re-enter with state restored from DB.
+Search & destroy leftover placeholders
+• After fixes, rerun the grep. Commit should show 0 matches for “Coming soon”.
+Regression test
+• Complete the wizard twice:
+Mainland path (no international sales, no free zone).
+Free-zone QFZP path (with uploads).
+• Verify dashboard renders, CIT/VAT pages load, and no console / LSP errors.
+Deliverables
+Updated components (e.g. license-step.tsx, trn-upload-step.tsx, etc.)
+Extended validation schema.
+One commit:
+git commit -m "feat: implement all placeholder wizard steps & remove 'Coming soon' blockers"
+git push
+Please run the full audit, implement every missing piece, and confirm the onboarding flow is 100 % functional. 🚀

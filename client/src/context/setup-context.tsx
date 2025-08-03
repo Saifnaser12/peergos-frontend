@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BusinessInfo, RevenueDeclaration, FreeZoneLicense, TRNUpload, CompleteSetup } from '@/lib/setup-validation';
+import { BusinessInfo, RevenueDeclaration, FreeZoneLicense, TRNUpload, SummaryReview, CompleteSetup } from '@/lib/setup-validation';
 
 interface SetupContextType {
   currentStep: number;
@@ -7,6 +7,7 @@ interface SetupContextType {
   revenueDeclaration: Partial<RevenueDeclaration>;
   freeZoneLicense: Partial<FreeZoneLicense>;
   trnUpload: Partial<TRNUpload>;
+  summaryReview: Partial<SummaryReview>;
   
   // Navigation
   setCurrentStep: (step: number) => void;
@@ -18,6 +19,7 @@ interface SetupContextType {
   updateRevenueDeclaration: (data: Partial<RevenueDeclaration>) => void;
   updateFreeZoneLicense: (data: Partial<FreeZoneLicense>) => void;
   updateTRNUpload: (data: Partial<TRNUpload>) => void;
+  updateSummaryReview: (data: Partial<SummaryReview>) => void;
   
   // Utility
   resetSetup: () => void;
@@ -55,17 +57,24 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     citRegistrationRequired: true,
     taxAgentAppointed: false,
   });
+  const [summaryReview, setSummaryReview] = useState<Partial<SummaryReview>>({
+    confirmFinancialYearEnd: '',
+    wantsSmartReminders: true,
+    agreeToTerms: false,
+    readyToStart: false,
+  });
   const [stepValidation, setStepValidation] = useState<Record<number, boolean>>({
     1: false,
     2: false,
     3: false,
     4: false,
+    5: false,
   });
 
   // Auto-save progress to localStorage
   useEffect(() => {
     saveProgress();
-  }, [businessInfo, revenueDeclaration, freeZoneLicense, trnUpload, currentStep]);
+  }, [businessInfo, revenueDeclaration, freeZoneLicense, trnUpload, summaryReview, currentStep]);
 
   const updateBusinessInfo = (data: Partial<BusinessInfo>) => {
     setBusinessInfo(prev => ({ ...prev, ...data }));
@@ -81,6 +90,10 @@ export function SetupProvider({ children }: { children: ReactNode }) {
 
   const updateTRNUpload = (data: Partial<TRNUpload>) => {
     setTRNUpload(prev => ({ ...prev, ...data }));
+  };
+
+  const updateSummaryReview = (data: Partial<SummaryReview>) => {
+    setSummaryReview(prev => ({ ...prev, ...data }));
   };
 
   const updateStepValidation = (step: number, isValid: boolean) => {
@@ -107,7 +120,8 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     setRevenueDeclaration({ hasInternationalSales: false });
     setFreeZoneLicense({ licenseType: 'Mainland', freeZoneName: '', licenseNumber: '', licenseIssueDate: '', licenseExpiryDate: '', isQFZP: false, docs: [] });
     setTRNUpload({ hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
-    setStepValidation({ 1: false, 2: false, 3: false, 4: false });
+    setSummaryReview({ confirmFinancialYearEnd: '', wantsSmartReminders: true, agreeToTerms: false, readyToStart: false });
+    setStepValidation({ 1: false, 2: false, 3: false, 4: false, 5: false });
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(VALIDATION_KEY);
   };
@@ -119,6 +133,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
       revenueDeclaration,
       freeZoneLicense,
       trnUpload,
+      summaryReview,
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
@@ -136,6 +151,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
         setRevenueDeclaration(progressData.revenueDeclaration || { hasInternationalSales: false });
         setFreeZoneLicense(progressData.freeZoneLicense || { licenseType: 'Mainland', freeZoneName: '', licenseNumber: '', licenseIssueDate: '', licenseExpiryDate: '', isQFZP: false, docs: [] });
         setTRNUpload(progressData.trnUpload || { hasTRN: false, citRegistrationRequired: true, taxAgentAppointed: false });
+        setSummaryReview(progressData.summaryReview || { confirmFinancialYearEnd: '', wantsSmartReminders: true, agreeToTerms: false, readyToStart: false });
       }
       
       if (savedValidation) {
@@ -154,6 +170,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
         revenueDeclaration: revenueDeclaration as RevenueDeclaration,
         freeZoneLicense: freeZoneLicense as FreeZoneLicense,
         trnUpload: trnUpload as TRNUpload,
+        summaryReview: summaryReview as SummaryReview,
       };
     } catch {
       return null;
@@ -171,6 +188,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     revenueDeclaration,
     freeZoneLicense,
     trnUpload,
+    summaryReview,
     setCurrentStep,
     nextStep,
     prevStep,
@@ -178,6 +196,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     updateRevenueDeclaration,
     updateFreeZoneLicense,
     updateTRNUpload,
+    updateSummaryReview,
     resetSetup,
     getCompleteSetup,
     saveProgress,

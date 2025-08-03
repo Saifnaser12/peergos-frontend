@@ -72,6 +72,34 @@ export const trnUploadSchema = z.object({
   taxAgentAppointed: z.boolean(),
   taxAgentName: z.string().optional(),
   taxAgentLicense: z.string().optional(),
+}).refine((data) => {
+  // Require TRN number if hasTRN is true
+  if (data.hasTRN && (!data.trnNumber || data.trnNumber.length < 9)) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'TRN number must be at least 9 digits when TRN is selected',
+  path: ['trnNumber']
+}).refine((data) => {
+  // Require tax agent name if appointed
+  if (data.taxAgentAppointed && (!data.taxAgentName || data.taxAgentName.length < 2)) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Tax agent name is required when agent is appointed',
+  path: ['taxAgentName']
+});
+
+// Step 5: Summary & Review
+export const summaryReviewSchema = z.object({
+  confirmFinancialYearEnd: z.string().min(1, 'Financial year end is required'),
+  wantsSmartReminders: z.boolean().default(true),
+  agreeToTerms: z.boolean().refine(val => val === true, {
+    message: 'You must agree to the terms and conditions'
+  }),
+  readyToStart: z.boolean().default(false),
 });
 
 // Complete setup data combining all steps
@@ -80,6 +108,7 @@ export const completeSetupSchema = z.object({
   revenueDeclaration: revenueDeclarationSchema,
   freeZoneLicense: freeZoneLicenseSchema,
   trnUpload: trnUploadSchema,
+  summaryReview: summaryReviewSchema,
 });
 
 // Types
@@ -87,6 +116,7 @@ export type BusinessInfo = z.infer<typeof businessInfoSchema>;
 export type RevenueDeclaration = z.infer<typeof revenueDeclarationSchema>;
 export type FreeZoneLicense = z.infer<typeof freeZoneLicenseSchema>;
 export type TRNUpload = z.infer<typeof trnUploadSchema>;
+export type SummaryReview = z.infer<typeof summaryReviewSchema>;
 export type CompleteSetup = z.infer<typeof completeSetupSchema>;
 
 // Step validation functions
@@ -100,6 +130,8 @@ export const validateStep = (step: number, data: any) => {
       return freeZoneLicenseSchema.safeParse(data);
     case 4:
       return trnUploadSchema.safeParse(data);
+    case 5:
+      return summaryReviewSchema.safeParse(data);
     default:
       return { success: false, error: { issues: [{ message: 'Invalid step' }] } };
   }

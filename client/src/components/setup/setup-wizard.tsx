@@ -13,12 +13,7 @@ import FreeZoneLicenseStep from './free-zone-license-step';
 
 import TRNUploadStep from './trn-upload-step';
 
-const SummaryStep = () => (
-  <div className="text-center py-8">
-    <h3 className="text-lg font-medium">Summary & Review Step</h3>
-    <p className="text-gray-600">Coming soon...</p>
-  </div>
-);
+import SummaryReviewStep from './summary-review-step';
 
 interface SetupWizardProps {
   className?: string;
@@ -46,7 +41,7 @@ export default function SetupWizard({ className = '' }: SetupWizardProps) {
       case 4:
         return <TRNUploadStep />;
       case 5:
-        return <SummaryStep />;
+        return <SummaryReviewStep />;
       default:
         return <BusinessInfoStep />;
     }
