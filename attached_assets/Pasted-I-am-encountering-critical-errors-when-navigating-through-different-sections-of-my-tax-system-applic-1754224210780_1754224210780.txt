@@ -1,0 +1,33 @@
+I am encountering critical errors when navigating through different sections of my tax system application hosted on Replit. The application is a tax system designed to handle UAE tax compliance (CIT and VAT).
+
+**Errors Encountered:**
+
+1.  **When clicking on the 'Taxes' link in the sidebar:**
+    *   Error Message: "Something went wrong. An unexpected error occurred. A component suspended while responding to synchronous input. This will cause the UI to be replaced with a loading indicator. To fix, updates that suspend should be wrapped with startTransition."
+    *   This error prevents access to the core tax functionalities.
+
+2.  **When clicking on the 'Bookkeeping' link in the sidebar:**
+    *   Error Message: "Something went wrong. An unexpected error occurred. A component suspended while responding to synchronous input. This will cause the UI to be replaced with a loading indicator. To fix, updates that suspend should be wrapped with startTransition."
+    *   This error prevents access to bookkeeping features.
+
+3.  **When clicking on the 'Reports' link in the sidebar:**
+    *   Error Message: "Something went wrong. An unexpected error occurred. Rendered more hooks than during the previous render."
+    *   This error prevents access to financial reports.
+
+**Steps to Reproduce:**
+
+1.  Access the application at: `https://a9e8f236-7100-4be9-a21a-fc0104224336-00-1tqpfkq4n7bf2.riker.replit.dev/setup`
+2.  Fill in the initial company setup details (Company Name, Trade License Number, Business Activity, Establishment Date, Complete Address, Emirate, Email Address, Phone Number ).
+3.  Click the 'Next' button.
+4.  From the dashboard, attempt to click on the 'Taxes', 'Bookkeeping', or 'Reports' links in the left sidebar.
+
+**Expected Behavior:**
+
+*   Upon clicking 'Taxes', 'Bookkeeping', or 'Reports', the respective pages should load without any errors, displaying their intended functionalities.
+
+**Request to Replit AI Agent:**
+
+Please investigate these errors. It appears to be a front-end rendering issue, possibly related to React hooks or component lifecycle. Please identify the root cause of these suspension and rendering errors and provide a fix to ensure smooth navigation and functionality across the application.
+
+Thank you.
+This prompt provides the Replit AI Agent with the necessary context, exact error messages, steps to reproduce, and expected behavior to help them diagnose and fix the issues effectively. You can copy and paste this directly into your Replit AI Agent interface.

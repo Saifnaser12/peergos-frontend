@@ -3,11 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Calculator, Building2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { lazy } from 'react';
 
-// Import existing tax components
-const VATReturn = lazy(() => import('./vat'));
-const CITReturn = lazy(() => import('./cit'));
+// Direct imports to avoid suspension issues
+import VATReturn from './vat';
+import CITReturn from './cit';
 
 export default function Taxes() {
   const [activeTab, setActiveTab] = useState('vat');

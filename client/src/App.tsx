@@ -10,6 +10,7 @@ import { TaxClassificationProvider } from "./context/tax-classification-context"
 import { NavigationProvider } from "./context/navigation-context";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import MainLayout from "./components/layout/main-layout";
+import { Suspense } from "react";
 import Dashboard from "./pages/dashboard";
 import Bookkeeping from "./pages/Bookkeeping";
 import Taxes from "./pages/Taxes";
@@ -31,32 +32,34 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <MainLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/dashboard" component={Dashboard} />
-        
-        {/* New flat navigation routes */}
-        <Route path="/bookkeeping" component={Bookkeeping} />
-        <Route path="/taxes" component={Taxes} />
-        <Route path="/ai" component={TaxAssistant} />
-        <Route path="/roadmap" component={ComingSoonPage} />
-        
-        {/* Legacy routes for direct access */}
-        <Route path="/accounting" component={Accounting} />
-        <Route path="/cit" component={CIT} />
-        <Route path="/vat" component={VAT} />
-        <Route path="/financials" component={Financials} />
-        <Route path="/invoicing" component={Invoicing} />
-        <Route path="/credit-debit-notes" component={CreditDebitNotes} />
-        <Route path="/transfer-pricing" component={TransferPricing} />
-        <Route path="/tax-assistant" component={TaxAssistant} />
-        <Route path="/assistant" component={TaxAssistant} />
-        <Route path="/calendar" component={Calendar} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/setup" component={Setup} />
-        <Route path="/workflow" component={Workflow} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
+          
+          {/* New flat navigation routes */}
+          <Route path="/bookkeeping" component={Bookkeeping} />
+          <Route path="/taxes" component={Taxes} />
+          <Route path="/ai" component={TaxAssistant} />
+          <Route path="/roadmap" component={ComingSoonPage} />
+          
+          {/* Legacy routes for direct access */}
+          <Route path="/accounting" component={Accounting} />
+          <Route path="/cit" component={CIT} />
+          <Route path="/vat" component={VAT} />
+          <Route path="/financials" component={Financials} />
+          <Route path="/invoicing" component={Invoicing} />
+          <Route path="/credit-debit-notes" component={CreditDebitNotes} />
+          <Route path="/transfer-pricing" component={TransferPricing} />
+          <Route path="/tax-assistant" component={TaxAssistant} />
+          <Route path="/assistant" component={TaxAssistant} />
+          <Route path="/calendar" component={Calendar} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/setup" component={Setup} />
+          <Route path="/workflow" component={Workflow} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </MainLayout>
   );
 }

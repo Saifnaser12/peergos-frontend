@@ -3,12 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, Receipt, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { lazy } from 'react';
 
-// Import existing page components
-const Revenue = lazy(() => import('./financials'));
-const Expenses = lazy(() => import('./accounting'));
-const Invoicing = lazy(() => import('./invoicing'));
+// Direct imports to avoid suspension issues
+import Revenue from './financials';
+import Expenses from './accounting';
+import Invoicing from './invoicing';
 import TransactionForm from '@/components/accounting/transaction-form';
 
 export default function Bookkeeping() {

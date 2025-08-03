@@ -64,7 +64,7 @@ export default function Financials() {
     );
   }
 
-  if (!transactions || transactions.length === 0) {
+  if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
     console.warn('[Financials Page] No transactions found - user needs to add financial data');
     return (
       <div className="space-y-6">
@@ -91,16 +91,16 @@ export default function Financials() {
 
   // Generate financial statements
   const financialStatements = useMemo(() => {
-    if (!transactions || !company) return null;
+    if (!transactions || !Array.isArray(transactions) || !company) return null;
 
     const companyInfo: CompanyInfo = {
       name: company.name || 'Company Name',
       trn: company.trn || '',
-      licenseNumber: company.businessLicense || '',
+      licenseNumber: (company as any).businessLicense || '',
       address: company.address || '',
-      isFreeZone: company.freeZone || false,
-      freeZoneName: company.freeZone ? 'DIFC' : undefined,
-      accountingBasis: company.annualRevenue && company.annualRevenue < 3000000 ? 'cash' : 'accrual',
+      isFreeZone: (company as any).freeZone || false,
+      freeZoneName: (company as any).freeZone ? 'DIFC' : undefined,
+      accountingBasis: (company as any).annualRevenue && (company as any).annualRevenue < 3000000 ? 'cash' : 'accrual',
       fiscalYearEnd: '12-31',
     };
 
@@ -132,7 +132,7 @@ export default function Financials() {
     };
   }, [transactions, company]);
 
-  const currentKpi = kpiData?.[0];
+  const currentKpi = Array.isArray(kpiData) && kpiData.length > 0 ? kpiData[0] : null;
   const revenue = parseFloat(currentKpi?.revenue || '0');
   const expenses = parseFloat(currentKpi?.expenses || '0');
   const netIncome = parseFloat(currentKpi?.netIncome || '0');
