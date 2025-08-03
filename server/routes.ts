@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
-import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema } from "@shared/schema";
+import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -637,6 +637,74 @@ Company ID: ${req.user.companyId}
       });
     } catch (error) {
       res.status(500).json({ message: "FTA submission error" });
+    }
+  });
+
+  // Transfer Pricing Documentation routes
+  app.get("/api/transfer-pricing/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      const { transferPricingDocumentation } = await import("@shared/schema");
+      const { db } = await import("./db");
+      const { eq } = await import("drizzle-orm");
+      
+      const result = await db.select()
+        .from(transferPricingDocumentation)
+        .where(eq(transferPricingDocumentation.companyId, companyId))
+        .orderBy(transferPricingDocumentation.createdAt);
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching transfer pricing documentation:', error);
+      res.status(500).json({ error: 'Failed to fetch transfer pricing documentation' });
+    }
+  });
+
+  app.post("/api/transfer-pricing", async (req, res) => {
+    try {
+      const validatedData = insertTransferPricingDocumentationSchema.parse(req.body);
+      const { transferPricingDocumentation } = await import("@shared/schema");
+      const { db } = await import("./db");
+      
+      const result = await db.insert(transferPricingDocumentation)
+        .values({
+          ...validatedData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      res.status(201).json(result[0]);
+    } catch (error) {
+      console.error('Error creating transfer pricing documentation:', error);
+      res.status(400).json({ error: 'Invalid transfer pricing documentation data' });
+    }
+  });
+
+  app.patch("/api/transfer-pricing/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const { transferPricingDocumentation } = await import("@shared/schema");
+      const { db } = await import("./db");
+      const { eq } = await import("drizzle-orm");
+      
+      const result = await db.update(transferPricingDocumentation)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(transferPricingDocumentation.id, id))
+        .returning();
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Transfer pricing documentation not found' });
+      }
+
+      res.json(result[0]);
+    } catch (error) {
+      console.error('Error updating transfer pricing documentation:', error);
+      res.status(500).json({ error: 'Failed to update transfer pricing documentation' });
     }
   });
 

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { useToast } from '@/hooks/use-toast';
+import TransferPricingForm from '@/components/tax/transfer-pricing-form';
 import TransferPricingCalculator from '@/components/compliance/transfer-pricing-calculator';
 import DMTTCalculator from '@/components/compliance/dmtt-calculator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -264,11 +265,10 @@ export default function TransferPricing() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="methods">Methods</TabsTrigger>
-            <TabsTrigger value="documentation">Documentation</TabsTrigger>
+            <TabsTrigger value="documentation">Transfer Pricing Form</TabsTrigger>
+            <TabsTrigger value="calculator">TP Calculator</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -364,278 +364,35 @@ export default function TransferPricing() {
             </Alert>
           </TabsContent>
 
-          {/* Transactions Tab */}
-          <TabsContent value="transactions" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Related Party Transactions</h3>
-              <Button 
-                onClick={() => setShowAddTransaction(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Add Transaction
-              </Button>
-            </div>
+          {/* Transfer Pricing Documentation Form */}
+          <TabsContent value="documentation" className="space-y-6">
+            <TransferPricingForm 
+              mode="submit"
+              onSubmit={(data) => {
+                console.log('Transfer Pricing Form Submitted:', data);
+                toast({
+                  title: "Documentation Submitted",
+                  description: "Your transfer pricing documentation has been submitted successfully.",
+                });
+              }}
+            />
+          </TabsContent>
 
-            {showAddTransaction && (
-              <Card className="border-blue-200">
-                <CardHeader>
-                  <CardTitle>Add Related Party Transaction</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="partyName">Related Party Name</Label>
-                      <Input
-                        id="partyName"
-                        value={newTransaction.relatedPartyName}
-                        onChange={(e) => setNewTransaction(prev => ({ ...prev, relatedPartyName: e.target.value }))}
-                        placeholder="Company name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="relationship">Relationship</Label>
-                      <Input
-                        id="relationship"
-                        value={newTransaction.relationship}
-                        onChange={(e) => setNewTransaction(prev => ({ ...prev, relationship: e.target.value }))}
-                        placeholder="e.g., Parent Company, Subsidiary"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="amount">Transaction Amount (AED)</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        value={newTransaction.amount}
-                        onChange={(e) => setNewTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="armLength">Arm's Length Price (AED)</Label>
-                      <Input
-                        id="armLength"
-                        type="number"
-                        value={newTransaction.armLengthPrice}
-                        onChange={(e) => setNewTransaction(prev => ({ ...prev, armLengthPrice: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="methodology">Transfer Pricing Method</Label>
-                    <Input
-                      id="methodology"
-                      value={newTransaction.methodology}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, methodology: e.target.value }))}
-                      placeholder="e.g., Comparable Uncontrolled Price"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={addTransaction} className="bg-green-600 hover:bg-green-700">
-                      Add Transaction
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowAddTransaction(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
+          {/* Transfer Pricing Calculator */}
+          <TabsContent value="calculator" className="space-y-6">
             <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Related Party</TableHead>
-                      <TableHead>Relationship</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Risk Level</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {relatedPartyTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="font-medium">{transaction.relatedPartyName}</TableCell>
-                        <TableCell>{transaction.relationship}</TableCell>
-                        <TableCell className="capitalize">{transaction.transactionType}</TableCell>
-                        <TableCell>{formatCurrency(transaction.amount, 'AED', 'en-AE')}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            className={
-                              transaction.riskLevel === 'low' ? 'bg-green-100 text-green-800' :
-                              transaction.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }
-                          >
-                            {transaction.riskLevel}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">
-                            <Eye size={14} className="mr-1" />
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Transfer Pricing Calculator
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TransferPricingCalculator />
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Methods Tab */}
-          <TabsContent value="methods" className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">FTA-Approved Transfer Pricing Methods</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {transferPricingMethods.map((method, index) => (
-                  <Card key={index} className="h-full">
-                    <CardHeader>
-                      <CardTitle className="text-lg">{method.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-gray-600">{method.description}</p>
-                      
-                      <div>
-                        <h5 className="font-medium text-sm mb-2">Applicability:</h5>
-                        <p className="text-sm text-gray-600">{method.applicability}</p>
-                      </div>
-                      
-                      <div>
-                        <h5 className="font-medium text-sm mb-2">Advantages:</h5>
-                        <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
-                          {method.advantages.map((advantage, i) => (
-                            <li key={i}>{advantage}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <div>
-                        <h5 className="font-medium text-sm mb-2">Requirements:</h5>
-                        <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
-                          {method.requirements.map((requirement, i) => (
-                            <li key={i}>{requirement}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Documentation Tab */}
-          <TabsContent value="documentation" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Required Documentation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="text-sm font-medium">Organizational Structure</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="text-sm font-medium">Business Strategy</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="text-sm font-medium">Controlled Transactions</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-yellow-600" />
-                      <span className="text-sm font-medium">Financial & Tax Position</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-yellow-600" />
-                      <span className="text-sm font-medium">Benchmarking Studies</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Document Upload</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h4 className="font-medium text-gray-900 mb-2">Upload Documents</h4>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Drag and drop files or click to browse
-                    </p>
-                    <Button variant="outline">Choose Files</Button>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">Management Service Agreement.pdf</span>
-                      <Button variant="ghost" size="sm">
-                        <Download size={14} />
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">IP License Agreement.pdf</span>
-                      <Button variant="ghost" size="sm">
-                        <Download size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Alert className="border-amber-200 bg-amber-50">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                <strong>Documentation Retention:</strong> UAE FTA requires maintaining transfer pricing documentation 
-                for at least 7 years. Ensure all documents are readily available for potential audit requests.
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
         </Tabs>
-
-        {/* UAE FTA 2025 Enhanced Compliance Section */}
-        <div className="mt-12 space-y-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">UAE FTA 2025 Advanced Compliance</h2>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Complete OECD-aligned transfer pricing and DMTT compliance tools designed for UAE FTA requirements. 
-              Built for SMEs with enterprise-grade accuracy and automation.
-            </p>
-          </div>
-
-          <Tabs value={activeTab.startsWith('advanced-') ? activeTab : 'advanced-transfer-pricing'} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="advanced-transfer-pricing">UAE Transfer Pricing Calculator</TabsTrigger>
-              <TabsTrigger value="advanced-dmtt">DMTT Calculator (2025)</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="advanced-transfer-pricing" className="space-y-6">
-              <TransferPricingCalculator />
-            </TabsContent>
-
-            <TabsContent value="advanced-dmtt" className="space-y-6">
-              <DMTTCalculator />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2025 Peergos Solutions • UAE FTA 2025 Compliance • Complete SME Tax Solution</p>
-        </div>
       </div>
     </div>
   );

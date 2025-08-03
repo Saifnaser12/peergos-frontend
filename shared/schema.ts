@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, json, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, json, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -324,3 +324,31 @@ export const citReturnCalculationsSchema = z.object({
 
 // CIT Return specific types
 export type CitReturnCalculations = z.infer<typeof citReturnCalculationsSchema>;
+
+// Transfer Pricing table
+export const transferPricingDocumentation = pgTable("transfer_pricing_documentation", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).notNull(),
+  reportingYear: varchar("reporting_year", { length: 4 }).notNull(),
+  reportingPeriod: varchar("reporting_period", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("DRAFT"), // DRAFT, SUBMITTED, REVIEWED, APPROVED
+  data: jsonb("data").notNull(), // Store the full transfer pricing data
+  submittedAt: timestamp("submitted_at"),
+  submittedBy: integer("submitted_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: integer("reviewed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTransferPricingDocumentationSchema = createInsertSchema(transferPricingDocumentation).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  submittedAt: z.coerce.date().optional(),
+  reviewedAt: z.coerce.date().optional(),
+});
+
+export type TransferPricingDocumentation = typeof transferPricingDocumentation.$inferSelect;
+export type InsertTransferPricingDocumentation = z.infer<typeof insertTransferPricingDocumentationSchema>;
