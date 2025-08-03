@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
 import { 
   Search, 
   Filter, 
@@ -57,7 +58,7 @@ interface DocumentListProps {
 
 export default function DocumentList({ className }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('uploadedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -66,11 +67,13 @@ export default function DocumentList({ className }: DocumentListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+
+
   // Fetch documents
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['/api/documents', { 
       companyId: company?.id, 
-      category: categoryFilter || undefined,
+      category: categoryFilter === 'all' ? undefined : categoryFilter,
       search: searchTerm || undefined,
       sortBy,
       sortOrder 
@@ -87,9 +90,7 @@ export default function DocumentList({ className }: DocumentListProps) {
   // Delete document mutation
   const deleteMutation = useMutation({
     mutationFn: async (documentId: number) => {
-      return apiRequest(`/api/documents/${documentId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/documents/${documentId}`, 'DELETE');
     },
     onSuccess: () => {
       toast({
@@ -111,9 +112,7 @@ export default function DocumentList({ className }: DocumentListProps) {
   // Archive document mutation
   const archiveMutation = useMutation({
     mutationFn: async (documentId: number) => {
-      return apiRequest(`/api/documents/${documentId}/archive`, {
-        method: 'POST',
-      });
+      return apiRequest(`/api/documents/${documentId}/archive`, 'POST');
     },
     onSuccess: () => {
       toast({
@@ -277,7 +276,7 @@ export default function DocumentList({ className }: DocumentListProps) {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {Object.entries(DOCUMENT_CATEGORIES).map(([key, category]) => (
                   <SelectItem key={key} value={key}>
                     {category.label}
