@@ -1,0 +1,88 @@
+🚨 **FULL REQUIREMENTS AUDIT & IMPLEMENTATION TASK**
+
+We’ve captured dozens of specs over the past months.  
+Your job: **verify the live Peergos workspace satisfies _every_ requirement below, fix what’s missing, and produce both a “compliance matrix” and automated tests.**
+
+---
+
+## 1️⃣ Master Requirements Checklist
+
+### Core Architecture
+- Vite + React + TypeScript frontend  
+- Express API layer (tax engines)  
+- Supabase DB & storage (mock keys allowed)  
+
+### Functional Modules
+1. **Setup Wizard (5 steps)**  
+   1. Business Info  
+   2. Revenue Declaration (no-international-sales path)  
+   3. Free Zone & License (Mainland / Free-Zone + QFZP toggle)  
+   4. TRN Upload & Tax Registration  
+   5. Summary + Review  
+2. **Dashboard** – clean, simplified “Apple-grade” UI showing CIT/VAT status, alerts, next actions  
+3. **CIT Calculator & Filing** – UAE CIT logic incl. 0 % Free-Zone regime, small-business relief toggle  
+4. **VAT Returns** – 3-tab page (Return, Calculator, Filing History) with accurate totals  
+5. **Accounting** – minimal ledger (revenue, expenses), auto-syncs to Financial Reports  
+6. **Financial Reports** – on-demand P&L + Balance Sheet generation  
+7. **Invoicing** – phase-2 e-invoicing placeholder (QR, hash, signature)  
+8. **Transfer Pricing** – simplified navigation only (full TP postponed)  
+9. **Calendar** – tax deadlines & smart reminders (placeholder OK)  
+10. **AI Tax Assistant** – single chat tab (duplicate removed)  
+
+### Cross-Cutting
+- **i18n**: English ↔ العربية toggle, RTL layout verified  
+- **Responsive**: mobile breakpoint tested (≤ 375 px)  
+- **Permissions**: SME, Tax Agent, Admin, FTA roles  
+- **Accessibility**: no critical Axe violations  
+- **UAE FTA compliance**: Phase 2 e-invoice schema, QFZP declaration, 9-digit TRN validation  
+- **Docs**: `README.md` & `Replit.md` with changelog  
+
+### Nice-to-Have (implement if quick)  
+- POS / bank integration placeholders  
+- Smart notifications service skeleton  
+
+---
+
+## 2️⃣ Deliverables
+
+### A. **Compliance Matrix**
+File: `docs/compliance-matrix.md`  
+| Requirement | Implemented? | File / Component | Notes / Fix link |
+|-------------|--------------|------------------|------------------|
+
+Mark ✅ or ❌, and link each ❌ to a Git commit that fixes it.
+
+### B. **Code Fixes**
+For every ❌ above, create or patch code so the requirement becomes ✅.  
+Follow existing simplified UI style (no noisy shadows).
+
+### C. **Automated Tests**
+1. **Unit tests** – Jest/RTL for all calculators, wizard steps, hooks  
+2. **E2E tests** – Playwright scripts:  
+   - Mainland wizard flow (no international sales)  
+   - Free-Zone QFZP flow (with uploads)  
+   - CIT filing, VAT filing, invoice creation  
+   - English → Arabic RTL toggle  
+3. **CI pipeline** – GitHub Actions running `npm test` + `npx playwright test`
+
+### D. **Final Report**
+Print to console and commit as `audit-report.txt`:
+- Overall pass/fail summary  
+- Coverage %  
+- Remaining TODO (if any)  
+
+---
+
+## 3️⃣ Workflow
+
+1. **Scan**:  
+   ```bash
+   grep -RniE "Coming soon|TODO|placeholder" client/src
+Fix all placeholders & schema gaps.
+Generate tests & run locally until green.
+Update docs and commit:
+git commit -am "chore: complete requirements audit, fix gaps, add tests & docs"
+git push
+Post the compliance-matrix table in chat for quick review.
+⚠️ Do not mark a requirement ✅ unless a passing test proves it.
+Please begin the audit now, replace every missing piece, and produce the compliance matrix + tests. Thank you! 🚀

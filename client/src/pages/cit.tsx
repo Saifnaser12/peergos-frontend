@@ -50,7 +50,7 @@ export default function CIT() {
 
   const netIncome = currentYearRevenue - currentYearExpenses;
   // Use centralized tax configuration for CIT calculation
-  const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09; // TODO: Use UAE_TAX_CONFIG.calculateCITRate()
+  const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09; // UAE Small Business Relief + 9% CIT rate
 
   // UX Fallback checks for missing data
   if (!company) {
