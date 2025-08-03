@@ -133,26 +133,38 @@ function EnhancedVATCalculator({
   // Auto-calculate VAT amounts when supply values change
   useEffect(() => {
     const standardVAT = Math.round(watchedValues.standardRatedValue * 0.05 * 100) / 100;
-    if (watchedValues.standardRatedVAT !== standardVAT) {
-      setValue('standardRatedVAT', standardVAT);
+    if (Math.abs(watchedValues.standardRatedVAT - standardVAT) > 0.01) {
+      setValue('standardRatedVAT', standardVAT, { shouldTouch: false, shouldDirty: false });
     }
   }, [watchedValues.standardRatedValue, setValue]);
 
   useEffect(() => {
     const reverseVAT = Math.round(watchedValues.reverseChargeValue * 0.05 * 100) / 100;
-    if (watchedValues.reverseChargeVAT !== reverseVAT) {
-      setValue('reverseChargeVAT', reverseVAT);
+    if (Math.abs(watchedValues.reverseChargeVAT - reverseVAT) > 0.01) {
+      setValue('reverseChargeVAT', reverseVAT, { shouldTouch: false, shouldDirty: false });
     }
   }, [watchedValues.reverseChargeValue, setValue]);
 
-  // Calculate real-time breakdown
+  // Calculate real-time breakdown with specific dependencies to prevent infinite loops
   useEffect(() => {
     const breakdown = calculateRealTimeBreakdown(watchedValues);
     setCalculationBreakdown(breakdown);
     
     const validation = EnhancedVATProcessor.validateReturnCompleteness(breakdown);
     setValidationResults(validation);
-  }, [watchedValues]);
+  }, [
+    watchedValues.standardRatedValue,
+    watchedValues.standardRatedVAT,
+    watchedValues.zeroRatedValue,
+    watchedValues.exemptValue,
+    watchedValues.reverseChargeValue,
+    watchedValues.reverseChargeVAT,
+    watchedValues.inputVATStandard,
+    watchedValues.inputVATCapital,
+    watchedValues.inputVATCorrections,
+    watchedValues.increaseInVAT,
+    watchedValues.decreaseInVAT
+  ]);
 
   const calculateRealTimeBreakdown = (data: VATFormData) => {
     const outputVAT = data.standardRatedVAT + data.reverseChargeVAT + data.increaseInVAT - data.decreaseInVAT;
@@ -267,9 +279,11 @@ function EnhancedVATCalculator({
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
                   <CardTitle className="text-lg">Standard-rated supplies (5%)</CardTitle>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-gray-400" />
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="inline-flex">
+                        <HelpCircle className="h-4 w-4 text-gray-400" />
+                      </button>
                     </TooltipTrigger>
                     {renderTooltip(EnhancedVATProcessor.getFieldExplanations().standardRatedSupplies)}
                   </Tooltip>
