@@ -3,465 +3,392 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { EnhancedForm } from '@/components/forms/enhanced-form';
+import { EnhancedInput } from '@/components/forms/enhanced-input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { EnhancedInput } from './enhanced-input';
-import { EnhancedForm } from './enhanced-form';
-import { useAutoSave } from '@/hooks/use-auto-save';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { PlusCircle, Upload, DollarSign, Calendar, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Calculator, Save } from 'lucide-react';
 
-// Enhanced validation schema with detailed rules
-const transactionSchema = z.object({
+// Enhanced transaction schema with UAE-specific validation
+const enhancedTransactionSchema = z.object({
   type: z.enum(['REVENUE', 'EXPENSE'], {
-    errorMap: () => ({ message: 'Please select transaction type' })
+    required_error: 'Transaction type is required'
   }),
-  amount: z.number({
-    required_error: 'Amount is required',
-    invalid_type_error: 'Amount must be a valid number'
-  }).positive('Amount must be greater than 0').max(1000000000, 'Amount exceeds maximum limit'),
+  category: z.string().min(1, 'Category is required'),
   description: z.string()
     .min(3, 'Description must be at least 3 characters')
     .max(200, 'Description cannot exceed 200 characters'),
-  category: z.string().min(1, 'Category is required'),
+  amount: z.string()
+    .min(1, 'Amount is required')
+    .refine((val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    }, 'Amount must be a positive number')
+    .refine((val) => {
+      const num = parseFloat(val);
+      return num <= 999999.99;
+    }, 'Amount cannot exceed AED 999,999.99'),
+  vatAmount: z.string().optional(),
   transactionDate: z.string().min(1, 'Transaction date is required'),
-  reference: z.string().optional(),
-  vatAmount: z.number().min(0, 'VAT amount cannot be negative').optional(),
-  exchangeRate: z.number().positive('Exchange rate must be positive').optional(),
-  currency: z.string().default('AED'),
-  attachmentUrl: z.string().optional(),
+  attachments: z.array(z.string()).optional(),
   notes: z.string().max(500, 'Notes cannot exceed 500 characters').optional(),
-}).refine((data) => {
-  // Auto-calculate VAT if not provided
-  if (data.type === 'REVENUE' && !data.vatAmount) {
-    return true; // Will calculate 5% VAT
-  }
-  return true;
 });
 
-type TransactionFormData = z.infer<typeof transactionSchema>;
+type EnhancedTransactionFormData = z.infer<typeof enhancedTransactionSchema>;
 
-const CATEGORIES = {
+const UAE_CATEGORIES = {
   REVENUE: [
     'Sales Revenue',
-    'Service Revenue', 
+    'Service Revenue',
     'Consulting Revenue',
-    'Subscription Revenue',
+    'Rental Income',
     'Interest Income',
     'Other Revenue'
   ],
   EXPENSE: [
-    'Office Rent',
-    'Utilities',
-    'Marketing',
+    'Office Supplies',
+    'Marketing & Advertising',
+    'Travel & Entertainment',
     'Professional Services',
-    'Travel',
-    'Equipment',
-    'Software Licenses',
+    'Utilities',
+    'Rent',
     'Insurance',
-    'Bank Charges',
+    'Banking Fees',
+    'Technology',
+    'Equipment',
     'Other Expenses'
   ]
 };
 
-const CURRENCIES = [
-  { code: 'AED', name: 'UAE Dirham', symbol: 'AED' },
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'SAR', name: 'Saudi Riyal', symbol: 'SAR' },
-  { code: 'GBP', name: 'British Pound', symbol: '£' },
-];
-
 interface EnhancedTransactionFormProps {
   onSuccess?: () => void;
-  defaultValues?: Partial<TransactionFormData>;
-  mode?: 'create' | 'edit';
-  transactionId?: number;
 }
 
-export default function EnhancedTransactionForm({ 
-  onSuccess, 
-  defaultValues,
-  mode = 'create',
-  transactionId 
-}: EnhancedTransactionFormProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransactionFormProps) {
+  const [autoCalculatedVAT, setAutoCalculatedVAT] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
+  const form = useForm<EnhancedTransactionFormData>({
+    resolver: zodResolver(enhancedTransactionSchema),
     defaultValues: {
       type: 'EXPENSE',
-      currency: 'AED',
-      exchangeRate: 1,
+      category: '',
+      description: '',
+      amount: '',
+      vatAmount: '',
       transactionDate: new Date().toISOString().split('T')[0],
-      ...defaultValues,
+      attachments: [],
+      notes: '',
     },
   });
 
-  const watchedType = form.watch('type');
-  const watchedAmount = form.watch('amount');
-  const watchedCurrency = form.watch('currency');
-
-  // Auto-calculate VAT for UAE transactions
-  React.useEffect(() => {
-    if (watchedType === 'REVENUE' && watchedAmount && watchedCurrency === 'AED') {
-      const vatAmount = watchedAmount * 0.05; // 5% UAE VAT
-      form.setValue('vatAmount', Number(vatAmount.toFixed(2)));
-    }
-  }, [watchedType, watchedAmount, watchedCurrency, form]);
-
-  const mutation = useMutation({
-    mutationFn: async (data: TransactionFormData) => {
-      const endpoint = mode === 'edit' && transactionId 
-        ? `/api/transactions/${transactionId}` 
-        : '/api/transactions';
-      const method = mode === 'edit' ? 'PUT' : 'POST';
-      
-      return apiRequest(endpoint, {
-        method,
-        body: JSON.stringify({
-          ...data,
-          companyId: 1, // TODO: Get from auth context
-        }),
+  const createTransactionMutation = useMutation({
+    mutationFn: async (data: EnhancedTransactionFormData) => {
+      const transactionData = {
+        ...data,
+        vatAmount: autoCalculatedVAT || data.vatAmount || '0',
+        attachments: data.attachments || [],
+      };
+      return apiRequest('/api/transactions', {
+        method: 'POST',
+        body: JSON.stringify(transactionData),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/kpi-data'] });
       toast({
-        title: mode === 'edit' ? "Transaction updated" : "Transaction created",
-        description: "Transaction has been saved successfully",
+        title: 'Success',
+        description: 'Transaction created successfully with enhanced validation',
       });
+      form.reset();
+      setAutoCalculatedVAT('');
       onSuccess?.();
-      if (mode === 'create') {
-        form.reset();
-      }
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to save transaction",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to create transaction',
+        variant: 'destructive',
       });
     },
   });
 
-  const handleSubmit = async (data: TransactionFormData) => {
-    mutation.mutate(data);
+  // Auto-calculate VAT (5% for UAE)
+  const watchedAmount = form.watch('amount');
+  React.useEffect(() => {
+    if (watchedAmount) {
+      const amount = parseFloat(watchedAmount);
+      if (!isNaN(amount) && amount > 0) {
+        const vat = (amount * 0.05).toFixed(2);
+        setAutoCalculatedVAT(vat);
+      } else {
+        setAutoCalculatedVAT('');
+      }
+    }
+  }, [watchedAmount]);
+
+  const onSubmit = async (data: EnhancedTransactionFormData) => {
+    await createTransactionMutation.mutateAsync(data);
   };
 
-  const formatCurrency = (value: string) => {
-    const currency = form.getValues('currency');
-    const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency;
-    return value ? `${symbol} ${value}` : value;
-  };
-
-  const validateTRN = (value: string) => {
-    if (!value) return null;
-    const trnRegex = /^\d{15}$/;
-    return trnRegex.test(value) ? null : 'TRN must be exactly 15 digits';
-  };
-
-  const validateAmount = (value: string) => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return 'Must be a valid number';
-    if (num <= 0) return 'Amount must be greater than 0';
-    if (num > 1000000000) return 'Amount exceeds maximum limit';
-    return null;
-  };
+  const selectedType = form.watch('type');
+  const availableCategories = UAE_CATEGORIES[selectedType] || [];
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PlusCircle className="h-5 w-5" />
-            {mode === 'edit' ? 'Edit Transaction' : 'Add New Transaction'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              {/* Basic Transaction Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Transaction Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="REVENUE">Revenue (Income)</SelectItem>
-                          <SelectItem value="EXPENSE">Expense (Outgoing)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <EnhancedForm
+      form={form}
+      onSubmit={onSubmit}
+      title="Enhanced Transaction Entry"
+      description="Create transactions with real-time validation and auto-save"
+      autoSaveKey="enhanced-transaction-form"
+      enableAutoSave={true}
+      showProgress={false}
+    >
+      <Form {...form}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Transaction Type */}
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Transaction Type *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select transaction type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="REVENUE">Revenue</SelectItem>
+                    <SelectItem value="EXPENSE">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                <FormField
-                  control={form.control}
-                  name="transactionDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Transaction Date</FormLabel>
-                      <FormControl>
-                        <EnhancedInput
-                          type="date"
-                          {...field}
-                          hint="Date when the transaction occurred"
-                          validationRules={{ required: true }}
-                          realTimeValidation
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+          {/* Category */}
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category *</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount</FormLabel>
-                      <FormControl>
-                        <EnhancedInput
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          hint="Enter the transaction amount"
-                          example="1500.00"
-                          format="Decimal number with up to 2 decimal places"
-                          formatDisplay={formatCurrency}
-                          validationRules={{
-                            required: true,
-                            custom: validateAmount
-                          }}
-                          realTimeValidation
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="currency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CURRENCIES.map((currency) => (
-                            <SelectItem key={currency.code} value={currency.code}>
-                              {currency.symbol} - {currency.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <EnhancedInput
-                        {...field}
-                        placeholder="Enter transaction description"
-                        hint="Provide a clear description of the transaction"
-                        example="Office rent payment for January 2025"
-                        validationRules={{
-                          required: true,
-                          minLength: 3,
-                          maxLength: 200
-                        }}
-                        realTimeValidation
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CATEGORIES[watchedType]?.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="reference"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reference Number (Optional)</FormLabel>
-                      <FormControl>
-                        <EnhancedInput
-                          {...field}
-                          placeholder="INV-001, REF-2025-001"
-                          hint="Invoice number, receipt number, or other reference"
-                          example="INV-2025-001"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Advanced Fields */}
-              <div className="border-t pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="mb-4"
-                >
-                  {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-                </Button>
-
-                {showAdvanced && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="vatAmount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>VAT Amount</FormLabel>
-                            <FormControl>
-                              <EnhancedInput
-                                type="number"
-                                step="0.01"
-                                placeholder="0.00"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                hint="VAT amount (auto-calculated for AED revenue at 5%)"
-                                formatDisplay={formatCurrency}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {watchedCurrency !== 'AED' && (
-                        <FormField
-                          control={form.control}
-                          name="exchangeRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Exchange Rate to AED</FormLabel>
-                              <FormControl>
-                                <EnhancedInput
-                                  type="number"
-                                  step="0.0001"
-                                  placeholder="1.0000"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
-                                  hint={`How many AED per 1 ${watchedCurrency}`}
-                                  example="3.6725 (for USD to AED)"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Additional Notes</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Any additional notes or comments..."
-                              className="min-h-[80px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+          {/* Amount with VAT Auto-calculation */}
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount (AED) *</FormLabel>
+                  <FormControl>
+                    <EnhancedInput
+                      {...field}
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      hint="Enter amount in AED"
+                      example="1500.00"
+                      format="AED 0.00"
+                      realTimeValidation={true}
+                      validationRules={{
+                        required: true,
+                        custom: (value) => {
+                          const num = parseFloat(value);
+                          if (isNaN(num) || num <= 0) return 'Amount must be positive';
+                          if (num > 999999.99) return 'Amount too large';
+                          return null;
+                        }
+                      }}
                     />
-                  </div>
-                )}
-              </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => form.reset()}
-                >
-                  Reset Form
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={mutation.isPending}
-                  className="min-w-[120px]"
-                >
-                  {mutation.isPending ? 'Saving...' : mode === 'edit' ? 'Update Transaction' : 'Add Transaction'}
-                </Button>
+            {/* Auto-calculated VAT Display */}
+            {autoCalculatedVAT && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-900">
+                        Auto-calculated VAT (5%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        AED {autoCalculatedVAT}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Transaction Date */}
+          <FormField
+            control={form.control}
+            name="transactionDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Transaction Date *</FormLabel>
+                <FormControl>
+                  <EnhancedInput
+                    {...field}
+                    type="date"
+                    hint="Date when transaction occurred"
+                    realTimeValidation={true}
+                    validationRules={{
+                      required: true,
+                      custom: (value) => {
+                        const date = new Date(value);
+                        const today = new Date();
+                        if (date > today) return 'Transaction date cannot be in the future';
+                        return null;
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Description */}
+          <div className="md:col-span-2">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description *</FormLabel>
+                  <FormControl>
+                    <EnhancedInput
+                      {...field}
+                      placeholder="Enter transaction description"
+                      hint="Provide clear details about the transaction"
+                      example="Office supplies from ABC Stationery"
+                      realTimeValidation={true}
+                      validationRules={{
+                        required: true,
+                        minLength: 3,
+                        maxLength: 200
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Manual VAT Override */}
+          <FormField
+            control={form.control}
+            name="vatAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>VAT Amount Override (Optional)</FormLabel>
+                <FormControl>
+                  <EnhancedInput
+                    {...field}
+                    type="number"
+                    step="0.01"
+                    placeholder={autoCalculatedVAT || "0.00"}
+                    hint="Leave empty to use auto-calculated VAT"
+                    format="AED 0.00"
+                    realTimeValidation={true}
+                    validationRules={{
+                      custom: (value) => {
+                        if (!value) return null;
+                        const num = parseFloat(value);
+                        if (isNaN(num) || num < 0) return 'VAT amount cannot be negative';
+                        return null;
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Notes */}
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Notes</FormLabel>
+                <FormControl>
+                  <EnhancedInput
+                    {...field}
+                    placeholder="Optional additional notes"
+                    hint="Any additional information about this transaction"
+                    validationRules={{
+                      maxLength: 500
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="flex justify-end pt-6">
+          <Button
+            type="submit"
+            disabled={createTransactionMutation.isPending}
+            className="min-w-[120px]"
+          >
+            {createTransactionMutation.isPending ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                Saving...
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                Save Transaction
+              </div>
+            )}
+          </Button>
+        </div>
+      </Form>
+    </EnhancedForm>
   );
 }

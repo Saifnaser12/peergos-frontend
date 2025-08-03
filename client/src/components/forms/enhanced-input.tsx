@@ -1,221 +1,185 @@
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { CheckCircle, AlertTriangle, Info, HelpCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
-export interface EnhancedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  success?: string;
+interface ValidationRule {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  custom?: (value: string) => string | null;
+}
+
+interface EnhancedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
   example?: string;
   format?: string;
   realTimeValidation?: boolean;
-  validationRules?: {
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
-    pattern?: RegExp;
-    custom?: (value: string) => string | null;
-  };
-  formatDisplay?: (value: string) => string;
-  onValidationChange?: (isValid: boolean, error?: string) => void;
+  validationRules?: ValidationRule;
 }
 
-const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
+export const EnhancedInput = React.forwardRef<HTMLInputElement, EnhancedInputProps>(
   ({ 
-    className, 
-    label, 
-    error, 
-    success, 
     hint, 
     example, 
     format, 
-    realTimeValidation = false,
+    realTimeValidation = false, 
     validationRules,
-    formatDisplay,
-    onValidationChange,
-    onChange,
     value,
+    onChange,
+    onBlur,
+    className,
     ...props 
   }, ref) => {
-    const [localError, setLocalError] = useState<string>('');
-    const [isValid, setIsValid] = useState<boolean>(true);
-    const [touched, setTouched] = useState<boolean>(false);
+    const [validationState, setValidationState] = useState<'valid' | 'invalid' | 'neutral'>('neutral');
+    const [validationMessage, setValidationMessage] = useState<string>('');
+    const [isFocused, setIsFocused] = useState(false);
 
-    const validateValue = (val: string): { valid: boolean; error?: string } => {
-      if (!validationRules) return { valid: true };
+    // Real-time validation
+    useEffect(() => {
+      if (realTimeValidation && validationRules && value !== undefined) {
+        const result = validateValue(String(value), validationRules);
+        setValidationState(result.isValid ? 'valid' : 'invalid');
+        setValidationMessage(result.message);
+      }
+    }, [value, realTimeValidation, validationRules]);
 
+    const validateValue = (val: string, rules: ValidationRule) => {
       // Required validation
-      if (validationRules.required && (!val || val.trim() === '')) {
-        return { valid: false, error: 'This field is required' };
+      if (rules.required && (!val || val.trim() === '')) {
+        return { isValid: false, message: 'This field is required' };
       }
 
       // Skip other validations if field is empty and not required
       if (!val || val.trim() === '') {
-        return { valid: true };
+        return { isValid: true, message: '' };
       }
 
-      // Min length validation
-      if (validationRules.minLength && val.length < validationRules.minLength) {
-        return { 
-          valid: false, 
-          error: `Minimum ${validationRules.minLength} characters required` 
-        };
+      // Length validations
+      if (rules.minLength && val.length < rules.minLength) {
+        return { isValid: false, message: `Minimum ${rules.minLength} characters required` };
       }
 
-      // Max length validation
-      if (validationRules.maxLength && val.length > validationRules.maxLength) {
-        return { 
-          valid: false, 
-          error: `Maximum ${validationRules.maxLength} characters allowed` 
-        };
+      if (rules.maxLength && val.length > rules.maxLength) {
+        return { isValid: false, message: `Maximum ${rules.maxLength} characters allowed` };
       }
 
       // Pattern validation
-      if (validationRules.pattern && !validationRules.pattern.test(val)) {
-        return { 
-          valid: false, 
-          error: format ? `Please follow format: ${format}` : 'Invalid format' 
-        };
+      if (rules.pattern && !rules.pattern.test(val)) {
+        return { isValid: false, message: 'Invalid format' };
       }
 
       // Custom validation
-      if (validationRules.custom) {
-        const customError = validationRules.custom(val);
-        if (customError) {
-          return { valid: false, error: customError };
+      if (rules.custom) {
+        const customResult = rules.custom(val);
+        if (customResult) {
+          return { isValid: false, message: customResult };
         }
       }
 
-      return { valid: true };
+      return { isValid: true, message: '' };
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      
-      if (realTimeValidation && touched) {
-        const validation = validateValue(newValue);
-        setIsValid(validation.valid);
-        setLocalError(validation.error || '');
-        onValidationChange?.(validation.valid, validation.error);
-      }
-
       onChange?.(e);
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setTouched(true);
+      setIsFocused(false);
       
-      if (realTimeValidation) {
-        const validation = validateValue(e.target.value);
-        setIsValid(validation.valid);
-        setLocalError(validation.error || '');
-        onValidationChange?.(validation.valid, validation.error);
+      // Validate on blur if not real-time validation
+      if (!realTimeValidation && validationRules) {
+        const result = validateValue(e.target.value, validationRules);
+        setValidationState(result.isValid ? 'valid' : 'invalid');
+        setValidationMessage(result.message);
       }
-
-      props.onBlur?.(e);
+      
+      onBlur?.(e);
     };
 
-    useEffect(() => {
-      if (realTimeValidation && value && touched) {
-        const validation = validateValue(String(value));
-        setIsValid(validation.valid);
-        setLocalError(validation.error || '');
-        onValidationChange?.(validation.valid, validation.error);
-      }
-    }, [value, realTimeValidation, touched, validationRules, onValidationChange]);
+    const handleFocus = () => {
+      setIsFocused(true);
+    };
 
-    const displayError = error || localError;
-    const displayValue = formatDisplay && value ? formatDisplay(String(value)) : value;
+    const getInputClassName = () => {
+      let baseClassName = className || '';
+      
+      if (realTimeValidation) {
+        if (validationState === 'valid') {
+          baseClassName += ' border-green-500 focus:border-green-500 focus:ring-green-500';
+        } else if (validationState === 'invalid') {
+          baseClassName += ' border-red-500 focus:border-red-500 focus:ring-red-500';
+        }
+      }
+      
+      return baseClassName;
+    };
 
     return (
       <div className="space-y-2">
-        {label && (
-          <Label htmlFor={props.id} className="flex items-center gap-2">
-            {label}
-            {validationRules?.required && (
-              <Badge variant="outline" className="text-xs">Required</Badge>
-            )}
-          </Label>
-        )}
-        
+        {/* Input field */}
         <div className="relative">
           <Input
             ref={ref}
-            className={cn(
-              "transition-all duration-200",
-              displayError && "border-red-500 focus-visible:ring-red-500",
-              success && "border-green-500 focus-visible:ring-green-500",
-              className
-            )}
-            value={displayValue}
+            value={value}
             onChange={handleChange}
             onBlur={handleBlur}
+            onFocus={handleFocus}
+            className={getInputClassName()}
             {...props}
           />
           
-          {/* Status indicator */}
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            {displayError && (
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-            )}
-            {success && !displayError && (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            )}
-          </div>
+          {/* Validation indicator */}
+          {realTimeValidation && value && validationState !== 'neutral' && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              {validationState === 'valid' ? (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Help text, examples, and format guidance */}
-        {(hint || example || format) && !displayError && (
-          <div className="space-y-1">
-            {hint && (
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                <span>{hint}</span>
-              </div>
-            )}
-            {example && (
-              <div className="flex items-start gap-2 text-sm text-gray-500">
-                <HelpCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                <span>Example: {example}</span>
-              </div>
-            )}
-            {format && (
-              <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                Format: {format}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Helper content */}
+        <div className="space-y-2">
+          {/* Hint */}
+          {hint && (
+            <div className="flex items-start gap-1 text-sm text-gray-600">
+              <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>{hint}</span>
+            </div>
+          )}
 
-        {/* Error message */}
-        {displayError && (
-          <Alert variant="destructive" className="py-2">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              {displayError}
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Example */}
+          {example && (isFocused || !value) && (
+            <div className="text-xs text-gray-500">
+              <span className="font-medium">Example:</span> {example}
+            </div>
+          )}
 
-        {/* Success message */}
-        {success && !displayError && (
-          <Alert className="py-2 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-sm text-green-700">
-              {success}
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Format */}
+          {format && (isFocused || !value) && (
+            <Badge variant="outline" className="text-xs">
+              Format: {format}
+            </Badge>
+          )}
+
+          {/* Validation message */}
+          {validationMessage && validationState === 'invalid' && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700 text-sm">
+                {validationMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
     );
   }
 );
 
-EnhancedInput.displayName = "EnhancedInput";
-
-export { EnhancedInput };
+EnhancedInput.displayName = 'EnhancedInput';

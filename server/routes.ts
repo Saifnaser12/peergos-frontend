@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
-import dataImportRoutes from "./routes/data-import";
 
 // Import security and error handling middleware
 import { 
@@ -27,6 +26,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(requestLogger);
   app.use(sanitizeInput);
   app.use(generalRateLimit);
+
+
   
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {

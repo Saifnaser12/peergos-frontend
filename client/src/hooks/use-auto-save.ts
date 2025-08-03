@@ -1,112 +1,155 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { UseFormReturn } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseAutoSaveOptions {
+  form: UseFormReturn<any>;
   key: string;
-  data: any;
-  onSave?: (data: any) => Promise<void>;
-  delay?: number;
   enabled?: boolean;
+  debounceMs?: number;
+  onSave?: (data: any) => Promise<void>;
 }
 
-export function useAutoSave({ 
-  key, 
-  data, 
-  onSave, 
-  delay = 2000, 
-  enabled = true 
-}: UseAutoSaveOptions) {
+interface UseAutoSaveReturn {
+  lastSaved: Date | null;
+  isAutoSaving: boolean;
+  saveNow: () => Promise<void>;
+  clearSaved: () => void;
+}
+
+export function useAutoSave({
+  form,
+  key,
+  enabled = true,
+  debounceMs = 2000,
+  onSave,
+}: UseAutoSaveOptions): UseAutoSaveReturn {
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const lastSavedRef = useRef<string>('');
-  const isSavingRef = useRef(false);
 
-  const saveToLocal = useCallback((saveData: any) => {
+  // Load saved data on mount
+  useEffect(() => {
+    if (!enabled) return;
+
     try {
-      localStorage.setItem(`auto-save-${key}`, JSON.stringify({
-        data: saveData,
-        timestamp: Date.now()
-      }));
+      const savedData = localStorage.getItem(`autosave_${key}`);
+      const savedTimestamp = localStorage.getItem(`autosave_${key}_timestamp`);
+      
+      if (savedData && savedTimestamp) {
+        const parsedData = JSON.parse(savedData);
+        const timestamp = new Date(savedTimestamp);
+        
+        // Only restore if data was saved within the last 24 hours
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        if (timestamp > dayAgo) {
+          // Check if form is currently empty or has default values
+          const currentValues = form.getValues();
+          const isEmpty = Object.values(currentValues).every(value => 
+            !value || value === '' || (Array.isArray(value) && value.length === 0)
+          );
+          
+          if (isEmpty) {
+            form.reset(parsedData);
+            setLastSaved(timestamp);
+            toast({
+              title: 'Data Restored',
+              description: 'Your previous work has been restored from auto-save',
+            });
+          }
+        }
+      }
     } catch (error) {
-      console.error('Failed to save to localStorage:', error);
+      console.error('Failed to load auto-saved data:', error);
     }
-  }, [key]);
+  }, [enabled, key, form, toast]);
 
-  const saveToServer = useCallback(async (saveData: any) => {
-    if (!onSave || isSavingRef.current) return;
-    
+  // Save data to localStorage
+  const saveToStorage = useCallback(async (data: any) => {
     try {
-      isSavingRef.current = true;
-      await onSave(saveData);
-      lastSavedRef.current = JSON.stringify(saveData);
+      setIsAutoSaving(true);
+      
+      // Call custom save function if provided
+      if (onSave) {
+        await onSave(data);
+      }
+      
+      // Save to localStorage
+      const timestamp = new Date();
+      localStorage.setItem(`autosave_${key}`, JSON.stringify(data));
+      localStorage.setItem(`autosave_${key}_timestamp`, timestamp.toISOString());
+      
+      setLastSaved(timestamp);
     } catch (error) {
       console.error('Auto-save failed:', error);
       toast({
-        title: "Auto-save failed",
-        description: "Your changes are saved locally but couldn't sync to server.",
-        variant: "destructive",
+        title: 'Auto-save Failed',
+        description: 'Your data could not be saved automatically',
+        variant: 'destructive',
       });
     } finally {
-      isSavingRef.current = false;
+      setIsAutoSaving(false);
     }
-  }, [onSave, toast]);
+  }, [key, onSave, toast]);
 
-  const debouncedSave = useCallback((saveData: any) => {
+  // Manual save function
+  const saveNow = useCallback(async () => {
     if (!enabled) return;
-    
-    const dataString = JSON.stringify(saveData);
-    if (dataString === lastSavedRef.current) return;
+    const data = form.getValues();
+    await saveToStorage(data);
+  }, [enabled, form, saveToStorage]);
 
-    // Clear existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  // Clear saved data
+  const clearSaved = useCallback(() => {
+    localStorage.removeItem(`autosave_${key}`);
+    localStorage.removeItem(`autosave_${key}_timestamp`);
+    setLastSaved(null);
+  }, [key]);
 
-    // Save to localStorage immediately
-    saveToLocal(saveData);
-
-    // Debounce server save
-    timeoutRef.current = setTimeout(() => {
-      saveToServer(saveData);
-    }, delay);
-  }, [enabled, delay, saveToLocal, saveToServer]);
-
+  // Watch form changes and auto-save with debouncing
   useEffect(() => {
-    debouncedSave(data);
-  }, [data, debouncedSave]);
+    if (!enabled) return;
 
-  useEffect(() => {
+    const subscription = form.watch((data) => {
+      // Clear existing timer
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
+      // Set new timer
+      const timer = setTimeout(() => {
+        // Only save if form has been touched
+        const formState = form.formState;
+        if (formState.isDirty || Object.keys(formState.touchedFields).length > 0) {
+          saveToStorage(data);
+        }
+      }, debounceMs);
+
+      setDebounceTimer(timer);
+    });
+
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      subscription.unsubscribe();
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
       }
     };
-  }, []);
+  }, [enabled, form, debounceMs, saveToStorage, debounceTimer]);
 
-  const loadFromLocal = useCallback(() => {
-    try {
-      const saved = localStorage.getItem(`auto-save-${key}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.data;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
       }
-    } catch (error) {
-      console.error('Failed to load from localStorage:', error);
-    }
-    return null;
-  }, [key]);
-
-  const clearLocalSave = useCallback(() => {
-    try {
-      localStorage.removeItem(`auto-save-${key}`);
-    } catch (error) {
-      console.error('Failed to clear localStorage:', error);
-    }
-  }, [key]);
+    };
+  }, [debounceTimer]);
 
   return {
-    loadFromLocal,
-    clearLocalSave,
-    isSaving: isSavingRef.current
+    lastSaved,
+    isAutoSaving,
+    saveNow,
+    clearSaved,
   };
 }

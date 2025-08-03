@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { storage } from "../storage";
-import { z } from "zod";
-import multer from "multer";
-import * as XLSX from "xlsx";
-import csv from "csv-parser";
-import { Readable } from "stream";
+import express, { Router } from 'express';
+import multer from 'multer';
+import csv from 'csv-parser';
+import * as xlsx from 'xlsx';
+import { Readable } from 'stream';
+import { storage } from '../storage';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -18,474 +18,323 @@ const upload = multer({
     const allowedTypes = [
       'text/csv',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/json',
-      'application/xml',
-      'text/xml'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
     
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Unsupported file type'), false);
+      cb(new Error('Invalid file type. Only CSV and Excel files are allowed.'));
     }
   }
 });
 
-// Schema for import configuration
-const ImportConfigSchema = z.object({
-  dataType: z.enum(['TRANSACTIONS', 'INVOICES', 'ACCOUNTS', 'CUSTOMERS', 'SUPPLIERS', 'PRODUCTS']),
-  mapping: z.record(z.string()), // Maps CSV columns to database fields
-  skipFirstRow: z.boolean().optional().default(true),
-  dateFormat: z.string().optional().default('YYYY-MM-DD'),
-  duplicateHandling: z.enum(['SKIP', 'UPDATE', 'CREATE_NEW']).optional().default('SKIP'),
-  validateOnly: z.boolean().optional().default(false)
+// Validation schemas for different import types
+const transactionRowSchema = z.object({
+  date: z.string().min(1, 'Date is required'),
+  description: z.string().min(1, 'Description is required'),
+  amount: z.string().min(1, 'Amount is required'),
+  type: z.enum(['REVENUE', 'EXPENSE'], { required_error: 'Type must be REVENUE or EXPENSE' }),
+  category: z.string().min(1, 'Category is required'),
+  vat_amount: z.string().optional(),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
 });
 
-// Get import templates
-router.get("/templates", (req, res) => {
-  const templates = {
-    TRANSACTIONS: {
-      requiredFields: ['date', 'account', 'amount', 'description'],
-      optionalFields: ['reference', 'category', 'vatRate', 'vatAmount'],
-      sampleData: [
-        {
-          date: '2024-01-15',
-          account: 'Bank Account',
-          amount: '1500.00',
-          description: 'Invoice payment from customer',
-          reference: 'INV-001',
-          category: 'Revenue',
-          vatRate: '5',
-          vatAmount: '71.43'
-        }
-      ]
-    },
-    INVOICES: {
-      requiredFields: ['invoiceNumber', 'customerName', 'issueDate', 'totalAmount'],
-      optionalFields: ['dueDate', 'vatAmount', 'status', 'currency'],
-      sampleData: [
-        {
-          invoiceNumber: 'INV-001',
-          customerName: 'ABC Company',
-          issueDate: '2024-01-15',
-          dueDate: '2024-02-15',
-          totalAmount: '1575.00',
-          vatAmount: '75.00',
-          status: 'SENT',
-          currency: 'AED'
-        }
-      ]
-    },
-    ACCOUNTS: {
-      requiredFields: ['accountCode', 'accountName', 'accountType'],
-      optionalFields: ['parentAccount', 'description', 'isActive'],
-      sampleData: [
-        {
-          accountCode: '1001',
-          accountName: 'Petty Cash',
-          accountType: 'ASSET',
-          parentAccount: '1000',
-          description: 'Cash on hand',
-          isActive: 'true'
-        }
-      ]
-    },
-    CUSTOMERS: {
-      requiredFields: ['name', 'email'],
-      optionalFields: ['phone', 'address', 'taxNumber', 'paymentTerms'],
-      sampleData: [
-        {
-          name: 'ABC Trading LLC',
-          email: 'info@abctrading.ae',
-          phone: '+971501234567',
-          address: 'Dubai, UAE',
-          taxNumber: '100123456700003',
-          paymentTerms: '30'
-        }
-      ]
-    }
-  };
-  
-  res.json(templates);
+const invoiceRowSchema = z.object({
+  invoice_number: z.string().min(1, 'Invoice number is required'),
+  customer_name: z.string().min(1, 'Customer name is required'),
+  issue_date: z.string().min(1, 'Issue date is required'),
+  due_date: z.string().min(1, 'Due date is required'),
+  amount: z.string().min(1, 'Amount is required'),
+  customer_email: z.string().email().optional(),
+  customer_address: z.string().optional(),
+  vat_amount: z.string().optional(),
+  description: z.string().optional(),
 });
 
-// Get sample CSV for specific data type
-router.get("/sample/:dataType", (req, res) => {
-  const { dataType } = req.params;
-  
-  const templates = {
-    TRANSACTIONS: [
-      ['Date', 'Account', 'Amount', 'Description', 'Reference', 'Category', 'VAT Rate', 'VAT Amount'],
-      ['2024-01-15', 'Bank Account', '1500.00', 'Invoice payment', 'INV-001', 'Revenue', '5', '71.43'],
-      ['2024-01-16', 'Office Supplies', '250.00', 'Stationery purchase', 'EXP-001', 'Expenses', '5', '11.90']
-    ],
-    INVOICES: [
-      ['Invoice Number', 'Customer Name', 'Issue Date', 'Due Date', 'Total Amount', 'VAT Amount', 'Status'],
-      ['INV-001', 'ABC Company', '2024-01-15', '2024-02-15', '1575.00', '75.00', 'SENT'],
-      ['INV-002', 'XYZ Corp', '2024-01-16', '2024-02-16', '2100.00', '100.00', 'PAID']
-    ]
-  };
-  
-  const template = templates[dataType as keyof typeof templates];
-  if (!template) {
-    return res.status(404).json({ message: "Template not found" });
+const customerRowSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  company: z.string().optional(),
+  trn: z.string().optional(),
+});
+
+// Template definitions
+const IMPORT_TEMPLATES = {
+  transactions: {
+    name: 'Transactions',
+    schema: transactionRowSchema,
+    requiredColumns: ['date', 'description', 'amount', 'type', 'category'],
+    optionalColumns: ['vat_amount', 'reference', 'notes'],
+  },
+  invoices: {
+    name: 'Invoices',
+    schema: invoiceRowSchema,
+    requiredColumns: ['invoice_number', 'customer_name', 'issue_date', 'due_date', 'amount'],
+    optionalColumns: ['customer_email', 'customer_address', 'vat_amount', 'description'],
+  },
+  customers: {
+    name: 'Customers',
+    schema: customerRowSchema,
+    requiredColumns: ['name', 'email'],
+    optionalColumns: ['phone', 'address', 'company', 'trn'],
   }
+};
+
+// Helper function to parse CSV/Excel files
+async function parseFile(buffer: Buffer, filename: string): Promise<any[]> {
+  const ext = filename.split('.').pop()?.toLowerCase();
   
-  const csvContent = template.map(row => row.join(',')).join('\n');
-  
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', `attachment; filename="${dataType.toLowerCase()}_template.csv"`);
-  res.send(csvContent);
-});
-
-// Preview import data
-router.post("/preview", upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const config = ImportConfigSchema.parse(JSON.parse(req.body.config || '{}'));
-    
-    const preview = await parseFileForPreview(req.file, config);
-    
-    res.json({
-      filename: req.file.originalname,
-      fileSize: req.file.size,
-      totalRows: preview.totalRows,
-      sampleData: preview.sampleData,
-      detectedColumns: preview.detectedColumns,
-      validationErrors: preview.validationErrors,
-      suggestions: preview.suggestions
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid configuration", errors: error.errors });
-    }
-    console.error("Error previewing import:", error);
-    res.status(500).json({ message: "Failed to preview import", error: error.message });
-  }
-});
-
-// Import data
-router.post("/import", upload.single('file'), async (req, res) => {
-  try {
-    const companyId = req.user?.companyId;
-    if (!companyId) {
-      return res.status(401).json({ message: "Company ID required" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const config = ImportConfigSchema.parse(JSON.parse(req.body.config || '{}'));
-    
-    // Create import job
-    const importJob = await storage.createImportJob({
-      companyId,
-      userId: req.user.id,
-      filename: req.file.originalname,
-      fileSize: req.file.size,
-      dataType: config.dataType,
-      config,
-      status: 'PROCESSING',
-      createdAt: new Date()
-    });
-
-    // Parse and validate data
-    const parseResult = await parseFileForImport(req.file, config);
-    
-    if (config.validateOnly) {
-      await storage.updateImportJob(importJob.id, {
-        status: 'VALIDATED',
-        totalRows: parseResult.totalRows,
-        validRows: parseResult.validRows,
-        errorRows: parseResult.errorRows,
-        validationErrors: parseResult.errors,
-        completedAt: new Date()
-      });
+  if (ext === 'csv') {
+    return new Promise((resolve, reject) => {
+      const results: any[] = [];
+      const stream = Readable.from(buffer);
       
-      return res.json({
-        jobId: importJob.id,
-        status: 'VALIDATED',
-        summary: {
-          totalRows: parseResult.totalRows,
-          validRows: parseResult.validRows,
-          errorRows: parseResult.errorRows,
-          errors: parseResult.errors
-        }
+      stream
+        .pipe(csv())
+        .on('data', (data: any) => results.push(data))
+        .on('end', () => resolve(results))
+        .on('error', reject);
+    });
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    return xlsx.utils.sheet_to_json(worksheet);
+  } else {
+    throw new Error('Unsupported file format');
+  }
+}
+
+// Validate and normalize data based on template
+function validateAndNormalizeData(rawData: any[], templateKey: string) {
+  const template = IMPORT_TEMPLATES[templateKey as keyof typeof IMPORT_TEMPLATES];
+  if (!template) {
+    throw new Error(`Unknown template: ${templateKey}`);
+  }
+
+  const results = {
+    validRows: [] as any[],
+    errors: [] as Array<{ row: number; error: string }>,
+  };
+
+  rawData.forEach((row, index) => {
+    try {
+      // Normalize column names (convert to lowercase, replace spaces with underscores)
+      const normalizedRow: any = {};
+      Object.keys(row).forEach(key => {
+        const normalizedKey = key.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
+        normalizedRow[normalizedKey] = row[key];
       });
-    }
 
-    // Process valid rows
-    let processedRows = 0;
-    let successRows = 0;
-    let errorRows = 0;
-    const errors: any[] = [];
-
-    for (const rowData of parseResult.validData) {
-      try {
-        switch (config.dataType) {
-          case 'TRANSACTIONS':
-            await storage.createTransactionFromImport(companyId, rowData, config.mapping);
-            break;
-          case 'INVOICES':
-            await storage.createInvoiceFromImport(companyId, rowData, config.mapping);
-            break;
-          case 'ACCOUNTS':
-            await storage.createAccountFromImport(companyId, rowData, config.mapping);
-            break;
-          case 'CUSTOMERS':
-            await storage.createCustomerFromImport(companyId, rowData, config.mapping);
-            break;
-          default:
-            throw new Error('Unsupported data type');
-        }
-        successRows++;
-      } catch (error) {
-        errorRows++;
-        errors.push({
-          row: processedRows + 1,
-          error: error.message,
-          data: rowData
+      // Validate against schema
+      const validatedRow = template.schema.parse(normalizedRow);
+      results.validRows.push({
+        ...validatedRow,
+        originalIndex: index + 1
+      });
+    } catch (error: any) {
+      if (error.errors) {
+        // Zod validation errors
+        const errorMessages = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
+        results.errors.push({
+          row: index + 1,
+          error: errorMessages
+        });
+      } else {
+        results.errors.push({
+          row: index + 1,
+          error: error.message || 'Validation error'
         });
       }
-      processedRows++;
     }
+  });
 
-    // Update import job
-    await storage.updateImportJob(importJob.id, {
-      status: 'COMPLETED',
-      totalRows: parseResult.totalRows,
-      validRows: successRows,
-      errorRows: errorRows,
-      processingErrors: errors,
-      completedAt: new Date()
-    });
-
-    res.json({
-      jobId: importJob.id,
-      status: 'COMPLETED',
-      summary: {
-        totalRows: parseResult.totalRows,
-        successRows,
-        errorRows,
-        errors: errors.slice(0, 10) // Return first 10 errors
-      }
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid configuration", errors: error.errors });
-    }
-    console.error("Error importing data:", error);
-    res.status(500).json({ message: "Import failed", error: error.message });
-  }
-});
-
-// Get import job status
-router.get("/jobs/:jobId", async (req, res) => {
-  try {
-    const { jobId } = req.params;
-    const job = await storage.getImportJob(Number(jobId));
-    
-    if (!job) {
-      return res.status(404).json({ message: "Import job not found" });
-    }
-    
-    res.json(job);
-  } catch (error) {
-    console.error("Error fetching import job:", error);
-    res.status(500).json({ message: "Failed to fetch import job" });
-  }
-});
-
-// Get import history
-router.get("/history", async (req, res) => {
-  try {
-    const companyId = req.user?.companyId;
-    const { page = 1, limit = 20 } = req.query;
-    
-    const history = await storage.getImportHistory(companyId, {
-      page: Number(page),
-      limit: Number(limit)
-    });
-    
-    res.json(history);
-  } catch (error) {
-    console.error("Error fetching import history:", error);
-    res.status(500).json({ message: "Failed to fetch import history" });
-  }
-});
-
-// Helper functions
-async function parseFileForPreview(file: Express.Multer.File, config: any) {
-  const data = await parseFile(file, config);
-  
-  return {
-    totalRows: data.length,
-    sampleData: data.slice(0, 5), // First 5 rows for preview
-    detectedColumns: data.length > 0 ? Object.keys(data[0]) : [],
-    validationErrors: [], // TODO: Add validation
-    suggestions: generateMappingSuggestions(data.length > 0 ? Object.keys(data[0]) : [], config.dataType)
-  };
+  return results;
 }
 
-async function parseFileForImport(file: Express.Multer.File, config: any) {
-  const data = await parseFile(file, config);
-  
-  // Apply field mapping
-  const mappedData = data.map(row => {
-    const mapped: any = {};
-    for (const [sourceField, targetField] of Object.entries(config.mapping)) {
-      if (row[sourceField] !== undefined) {
-        mapped[targetField] = row[sourceField];
-      }
-    }
-    return mapped;
-  });
-  
-  // Validate data
-  const validData: any[] = [];
-  const errors: any[] = [];
-  
-  mappedData.forEach((row, index) => {
+// Convert validated data to database format
+async function processTransactions(validRows: any[], companyId: number, userId: number) {
+  const results = {
+    successful: 0,
+    failed: 0,
+    errors: [] as Array<{ row: number; error: string }>
+  };
+
+  for (const row of validRows) {
     try {
-      // Basic validation based on data type
-      validateRow(row, config.dataType);
-      validData.push(row);
-    } catch (error) {
-      errors.push({
-        row: index + 1,
-        error: error.message,
-        data: row
+      await storage.createTransaction({
+        companyId,
+        type: row.type,
+        category: row.category,
+        description: row.description,
+        amount: row.amount,
+        vatAmount: row.vat_amount || '0',
+        transactionDate: new Date(row.date),
+        attachments: [],
+        createdBy: userId,
+      });
+      results.successful++;
+    } catch (error: any) {
+      results.failed++;
+      results.errors.push({
+        row: row.originalIndex,
+        error: error.message || 'Failed to create transaction'
       });
     }
-  });
-  
-  return {
-    totalRows: data.length,
-    validRows: validData.length,
-    errorRows: errors.length,
-    validData,
-    errors
-  };
-}
-
-async function parseFile(file: Express.Multer.File, config: any): Promise<any[]> {
-  const { mimetype, buffer } = file;
-  
-  if (mimetype === 'text/csv' || mimetype === 'application/vnd.ms-excel') {
-    return parseCSV(buffer, config);
-  } else if (mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-    return parseExcel(buffer, config);
-  } else if (mimetype === 'application/json') {
-    return JSON.parse(buffer.toString());
-  } else {
-    throw new Error('Unsupported file type');
   }
+
+  return results;
 }
 
-function parseCSV(buffer: Buffer, config: any): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    const results: any[] = [];
-    const stream = Readable.from(buffer.toString());
+async function processInvoices(validRows: any[], companyId: number, userId: number) {
+  const results = {
+    successful: 0,
+    failed: 0,
+    errors: [] as Array<{ row: number; error: string }>
+  };
+
+  for (const row of validRows) {
+    try {
+      // Parse amount and calculate VAT if not provided
+      const subtotal = parseFloat(row.amount);
+      const vatAmount = row.vat_amount ? parseFloat(row.vat_amount) : subtotal * 0.05;
+      const total = subtotal + vatAmount;
+
+      await storage.createInvoice({
+        companyId,
+        invoiceNumber: row.invoice_number,
+        clientName: row.customer_name,
+        clientEmail: row.customer_email || '',
+        clientAddress: row.customer_address || '',
+        issueDate: new Date(row.issue_date),
+        dueDate: new Date(row.due_date),
+        items: [
+          {
+            description: row.description || row.customer_name,
+            quantity: 1,
+            rate: subtotal,
+            amount: subtotal
+          }
+        ],
+        subtotal: subtotal.toString(),
+        vatAmount: vatAmount.toString(),
+        total: total.toString(),
+        createdBy: userId,
+      });
+      results.successful++;
+    } catch (error: any) {
+      results.failed++;
+      results.errors.push({
+        row: row.originalIndex,
+        error: error.message || 'Failed to create invoice'
+      });
+    }
+  }
+
+  return results;
+}
+
+// Data entry statistics endpoint
+router.get('/stats', async (req, res) => {
+  try {
+    // Mock data for now - in real implementation would query database
+    const transactions = await storage.getTransactions(1); // Company ID 1
+    const stats = {
+      totalTransactions: transactions.length,
+      pendingValidation: 3,
+      lastImport: new Date().toISOString(),
+      completionRate: 92
+    };
     
-    stream
-      .pipe(csv({
-        skipEmptyLines: true,
-        skipLinesWithError: true
-      }))
-      .on('data', (data) => {
-        if (!config.skipFirstRow || results.length > 0) {
-          results.push(data);
-        }
-      })
-      .on('end', () => resolve(results))
-      .on('error', reject);
-  });
-}
+    res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Failed to fetch stats' });
+  }
+});
 
-function parseExcel(buffer: Buffer, config: any): any[] {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
-  
-  const data = XLSX.utils.sheet_to_json(worksheet, {
-    header: 1,
-    defval: ''
-  });
-  
-  if (data.length === 0) return [];
-  
-  const headers = data[0] as string[];
-  const rows = config.skipFirstRow ? data.slice(1) : data;
-  
-  return rows.map((row: any[]) => {
-    const obj: any = {};
-    headers.forEach((header, index) => {
-      obj[header] = row[index] || '';
+// File preview endpoint
+router.post('/preview', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const templateKey = req.body.template || 'transactions';
+    const rawData = await parseFile(req.file.buffer, req.file.originalname);
+    
+    // Return first 10 rows for preview
+    res.json({
+      data: rawData.slice(0, 10),
+      totalRows: rawData.length,
+      template: templateKey
     });
-    return obj;
-  });
-}
-
-function validateRow(row: any, dataType: string): void {
-  switch (dataType) {
-    case 'TRANSACTIONS':
-      if (!row.date || !row.account || !row.amount) {
-        throw new Error('Missing required fields: date, account, amount');
-      }
-      if (isNaN(parseFloat(row.amount))) {
-        throw new Error('Invalid amount');
-      }
-      break;
-    case 'INVOICES':
-      if (!row.invoiceNumber || !row.customerName || !row.totalAmount) {
-        throw new Error('Missing required fields: invoiceNumber, customerName, totalAmount');
-      }
-      break;
-    case 'ACCOUNTS':
-      if (!row.accountCode || !row.accountName || !row.accountType) {
-        throw new Error('Missing required fields: accountCode, accountName, accountType');
-      }
-      break;
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Failed to preview file' });
   }
-}
+});
 
-function generateMappingSuggestions(detectedColumns: string[], dataType: string): any {
-  const mappingSuggestions: any = {};
-  
-  const commonMappings: any = {
-    TRANSACTIONS: {
-      date: ['date', 'transaction_date', 'trans_date'],
-      account: ['account', 'account_name', 'acc_name'],
-      amount: ['amount', 'value', 'total'],
-      description: ['description', 'memo', 'details', 'narration']
-    },
-    INVOICES: {
-      invoiceNumber: ['invoice_number', 'invoice_no', 'inv_no'],
-      customerName: ['customer_name', 'customer', 'client_name'],
-      totalAmount: ['total_amount', 'total', 'amount'],
-      issueDate: ['issue_date', 'date', 'invoice_date']
+// File upload and import endpoint
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
     }
-  };
-  
-  const mappings = commonMappings[dataType] || {};
-  
-  for (const [targetField, possibleNames] of Object.entries(mappings)) {
-    const match = detectedColumns.find(col => 
-      possibleNames.some((name: string) => 
-        col.toLowerCase().includes(name.toLowerCase())
-      )
-    );
-    if (match) {
-      mappingSuggestions[match] = targetField;
+
+    const templateKey = req.body.template || 'transactions';
+    const companyId = 1; // Mock company ID - would get from session
+    const userId = 1; // Mock user ID - would get from session
+
+    // Parse file
+    const rawData = await parseFile(req.file.buffer, req.file.originalname);
+    
+    // Validate data
+    const { validRows, errors: validationErrors } = validateAndNormalizeData(rawData, templateKey);
+
+    let processResults;
+    let summary = { transactions: 0, invoices: 0, customers: 0 };
+
+    // Process valid rows based on template type
+    switch (templateKey) {
+      case 'transactions':
+        processResults = await processTransactions(validRows, companyId, userId);
+        summary.transactions = processResults.successful;
+        break;
+      case 'invoices':
+        processResults = await processInvoices(validRows, companyId, userId);
+        summary.invoices = processResults.successful;
+        break;
+      case 'customers':
+        // Customer processing would be implemented here
+        processResults = { successful: 0, failed: 0, errors: [] };
+        summary.customers = processResults.successful;
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid template type' });
     }
+
+    // Combine validation and processing errors
+    const allErrors = [
+      ...validationErrors,
+      ...processResults.errors
+    ];
+
+    const result = {
+      success: allErrors.length === 0,
+      totalRows: rawData.length,
+      successfulRows: processResults.successful,
+      failedRows: processResults.failed + validationErrors.length,
+      errors: allErrors,
+      summary
+    };
+
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Import failed' });
   }
-  
-  return mappingSuggestions;
-}
+});
 
 export default router;
