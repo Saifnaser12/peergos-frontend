@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
+import dataImportRoutes from "./routes/data-import";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -945,6 +946,9 @@ Company ID: ${req.user.companyId}
       res.status(500).json({ message: "Failed to archive document" });
     }
   });
+
+  // Data import routes
+  app.use('/api/data-import', dataImportRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -27,6 +27,7 @@ import Admin from "./pages/admin";
 import Setup from "./pages/setup";
 import Workflow from "./pages/workflow";
 import Documents from "./pages/documents";
+import EnhancedDataEntryPage from "./pages/enhanced-data-entry";
 import CreditDebitNotes from "./components/financial/credit-debit-notes";
 import NotFound from "@/pages/not-found";
 
@@ -59,6 +60,7 @@ function Router() {
           <Route path="/setup" component={Setup} />
           <Route path="/workflow" component={Workflow} />
           <Route path="/documents" component={Documents} />
+          <Route path="/enhanced-data-entry" component={EnhancedDataEntryPage} />
           <Route component={NotFound} />
         </Switch>
       </Suspense>

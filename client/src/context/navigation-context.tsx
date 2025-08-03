@@ -180,23 +180,29 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
   const markStepCompleted = (step: string) => {
     setState(prev => ({
       ...prev,
-      completedSteps: new Set([...prev.completedSteps, step]),
+      completedSteps: new Set([...Array.from(prev.completedSteps), step]),
     }));
 
     // Update progress based on completed steps
-    const completedWeight = USER_JOURNEY_STEPS
-      .filter(journeyStep => prev.completedSteps.has(journeyStep.path))
-      .reduce((sum, step) => sum + step.weight, 0);
+    setState(prevState => {
+      const completedWeight = USER_JOURNEY_STEPS
+        .filter(journeyStep => prevState.completedSteps.has(journeyStep.path))
+        .reduce((sum, step) => sum + step.weight, 0);
     
-    const totalWeight = USER_JOURNEY_STEPS.reduce((sum, step) => sum + step.weight, 0);
-    const newProgress = Math.round((completedWeight / totalWeight) * 100);
-    
-    setState(prev => ({ ...prev, userProgress: newProgress }));
-
-    toast({
-      title: 'Step Completed',
-      description: `Progress: ${newProgress}% complete`,
+      const totalWeight = USER_JOURNEY_STEPS.reduce((sum, step) => sum + step.weight, 0);
+      const newProgress = Math.round((completedWeight / totalWeight) * 100);
+      
+      return { ...prevState, userProgress: newProgress };
     });
+
+    // Toast is shown after state update
+    setTimeout(() => {
+      const currentProgress = state.userProgress;
+      toast({
+        title: 'Step Completed',
+        description: `Progress: ${currentProgress}% complete`,
+      });
+    }, 100);
   };
 
   const updateProgress = (progress: number) => {
