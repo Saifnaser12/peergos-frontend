@@ -20,18 +20,33 @@ export default function RevenueDeclarationStep() {
 
   const form = useForm<RevenueDeclaration>({
     resolver: zodResolver(revenueDeclarationSchema),
-    defaultValues: revenueDeclaration as RevenueDeclaration,
+    defaultValues: {
+      ...revenueDeclaration,
+      hasInternationalSales: revenueDeclaration.hasInternationalSales ?? false,
+    } as RevenueDeclaration,
     mode: 'onChange',
   });
 
   const { register, watch, setValue, formState: { errors, isValid } } = form;
   const watchedData = watch();
 
+  // Initialize hasInternationalSales if not set
+  useEffect(() => {
+    if (watchedData.hasInternationalSales === undefined || watchedData.hasInternationalSales === null) {
+      setValue('hasInternationalSales', false);
+    }
+  }, [watchedData.hasInternationalSales, setValue]);
+
   // Update context when form data changes
   useEffect(() => {
     updateRevenueDeclaration(watchedData);
     updateStepValidation(2, isValid);
-  }, [watchedData, isValid, updateRevenueDeclaration, updateStepValidation]);
+    
+    // Debug log to see validation status
+    if (Object.keys(errors).length > 0) {
+      console.log('Revenue Declaration Form Errors:', errors);
+    }
+  }, [watchedData, isValid, updateRevenueDeclaration, updateStepValidation, errors]);
 
   // Auto-select revenue category based on expected revenue
   useEffect(() => {
