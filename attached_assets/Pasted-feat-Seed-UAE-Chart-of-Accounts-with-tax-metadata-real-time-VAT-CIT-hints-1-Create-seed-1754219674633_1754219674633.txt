@@ -1,0 +1,58 @@
+feat: Seed UAE Chart of Accounts with tax metadata + real-time VAT/CIT hints
+
+👩🏻‍💻 1. Create seed script
+---------------------------------
+File: `server/scripts/seedChartOfAccounts.ts`
+
+Seed the `chart_of_accounts` table with:
+
+| code | name                              | vatCode  | citDeductible | notes                                                  |
+|------|-----------------------------------|----------|---------------|--------------------------------------------------------|
+| 6001 | Office Supplies                   | STANDARD | true          |                                                        |
+| 6002 | Utilities                         | STANDARD | true          |                                                        |
+| 6003 | Bank Fees                         | EXEMPT   | true          | VAT-exempt financial charges                           |
+| 6004 | Residential Rent                  | EXEMPT   | true          | Article 46 VAT exemption                               |
+| 6005 | Entertainment & Hospitality       | STANDARD | false         | NOT CIT-deductible (Art. 33 (2)(f))                    |
+| 6006 | Motor Vehicle (private availability) | BLOCKED  | true          | Input VAT blocked per Cabinet Decision (52) Art. 53(1) |
+| 6007 | Statutory Fines & Penalties       | N/A      | false         | Non-deductible for CIT (Art. 33 (2)(a))                |
+| 6008 | Charitable Donation (non-approved) | N/A      | false         | Non-deductible for CIT (Art. 37)                       |
+| 6009 | Qualifying Expense (QFZP)         | STANDARD | true          | Flag qualifiesForQFZP = true                           |
+| 6010 | Non-qualifying Expense (QFZP)     | STANDARD | true          | qualifiesForQFZP = false                               |
+
+Run script on workspace start:  
+`npm run seed:coa` (add to `package.json`).
+
+👩🏻‍💻 2. Extend Expense form dropdown
+--------------------------------------
+* Replace free-text category input with **select** pulling from `chart_of_accounts` (Supabase query `select code,name,vatCode,citDeductible,notes`).
+* When user chooses a category:
+  * **Auto-set VAT rate field** to 5 %, 0 %, or “Exempt/Blocked” depending on `vatCode`.
+  * **Auto-toggle “Non-deductible for CIT”** if `citDeductible = false`.
+
+👩🏻‍💻 3. Real-time hint banner
+--------------------------------
+Add `<HintBanner />` under the category dropdown:
+
+```tsx
+{selectedAccount?.notes && (
+  <div className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-800">
+    {selectedAccount.notes}
+    {selectedAccount.vatCode === 'EXEMPT' && ' → Usually no input-VAT is reclaimable.'}
+    {selectedAccount.vatCode === 'BLOCKED' && ' → Input VAT is blocked by FTA; will be set to 0.'}
+    {selectedAccount.citDeductible === false && ' → Expense will be added back in the CIT computation.'}
+  </div>
+)}
+👩🏻‍💻 4. Validation tweaks
+If vatCode === 'EXEMPT' || 'BLOCKED', force VAT amount = 0 on submit.
+If citDeductible = false, auto-check “Non-deductible” box (but allow override with a warning).
+👩🏻‍💻 5. Tests
+Unit: verify getVatRate('EXEMPT') → 0, isCITDeductible('6005') → false.
+Playwright: create an expense → choose “Entertainment & Hospitality” → assert banner text includes “NOT CIT-deductible” and VAT auto-sets to 5 % but “Non-deductible” toggle is on.
+👩🏻‍💻 6. Commit & push
+git add server/scripts/seedChartOfAccounts.ts
+git add client/src/components/accounting/ExpenseForm.tsx
+git commit -m "feat: pre-seed UAE chart of accounts with VAT/CIT metadata + live hints"
+git push origin main
+# also push to GitLab
+git push gl main
+🚀 After merging, SMEs pick a category and Peergos does the tax treatment automatically—no more guesswork!

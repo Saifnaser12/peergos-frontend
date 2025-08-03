@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { notificationScheduler } from "./notification-scheduler";
+import { seedChartOfAccounts } from "./scripts/seedChartOfAccounts";
 
 const app = express();
 app.use(express.json());
@@ -41,6 +42,9 @@ app.use((req, res, next) => {
 (async () => {
   // Seed database with initial data
   await seedDatabase();
+  
+  // Seed Chart of Accounts
+  await seedChartOfAccounts();
   
   // Start notification scheduler
   notificationScheduler.start();

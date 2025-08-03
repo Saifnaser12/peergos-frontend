@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { pool } from "./db";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -636,6 +637,40 @@ Company ID: ${req.user.companyId}
       });
     } catch (error) {
       res.status(500).json({ message: "FTA submission error" });
+    }
+  });
+
+  // Chart of Accounts routes
+  app.get("/api/chart-of-accounts", async (req, res) => {
+    try {
+      const { chartOfAccounts } = await import("@shared/schema");
+      const { db } = await import("./db");
+      
+      const result = await db.select().from(chartOfAccounts).orderBy(chartOfAccounts.code);
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching chart of accounts:', error);
+      res.status(500).json({ error: 'Failed to fetch chart of accounts' });
+    }
+  });
+
+  app.get("/api/chart-of-accounts/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { chartOfAccounts } = await import("@shared/schema");
+      const { db } = await import("./db");
+      const { eq } = await import("drizzle-orm");
+      
+      const result = await db.select().from(chartOfAccounts).where(eq(chartOfAccounts.code, code));
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Account not found' });
+      }
+
+      res.json(result[0]);
+    } catch (error) {
+      console.error('Error fetching account:', error);
+      res.status(500).json({ error: 'Failed to fetch account' });
     }
   });
 

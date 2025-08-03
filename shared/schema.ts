@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, json, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -236,3 +236,20 @@ export type DebitNote = typeof debitNotes.$inferSelect;
 export type InsertDebitNote = z.infer<typeof insertDebitNoteSchema>;
 export type KpiData = typeof kpiData.$inferSelect;
 export type InsertKpiData = z.infer<typeof insertKpiDataSchema>;
+
+// Chart of Accounts table
+export const chartOfAccounts = pgTable("chart_of_accounts", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 10 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  vatCode: varchar("vat_code", { length: 20 }).notNull(),
+  citDeductible: boolean("cit_deductible").notNull().default(true),
+  notes: text("notes").default(""),
+  qualifiesForQFZP: boolean("qualifies_for_qfzp").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertChartOfAccountSchema = createInsertSchema(chartOfAccounts);
+export type InsertChartOfAccount = z.infer<typeof insertChartOfAccountSchema>;
+export type ChartOfAccount = typeof chartOfAccounts.$inferSelect;

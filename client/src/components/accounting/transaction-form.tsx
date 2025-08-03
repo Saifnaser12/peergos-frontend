@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useChartOfAccounts, useAccountByCode } from '@/hooks/useChartOfAccounts';
+import { getVatRate } from '@shared/chart-of-accounts';
+import { HintBanner } from './HintBanner';
 import {
   Dialog,
   DialogContent,
@@ -37,12 +40,14 @@ import { cn } from '@/lib/utils';
 const transactionSchema = z.object({
   type: z.enum(['REVENUE', 'EXPENSE']),
   category: z.string().min(1, 'Category is required'),
+  accountCode: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
   amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
     message: 'Amount must be a positive number',
   }),
   vatRate: z.number().min(0).max(1),
   includesVat: z.boolean(),
+  nonDeductible: z.boolean().optional(),
   transactionDate: z.string(),
 });
 
@@ -61,21 +66,43 @@ export default function TransactionForm({ isOpen, onClose, transaction, defaultT
   const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Chart of Accounts integration
+  const { data: chartOfAccounts, isLoading: isLoadingAccounts } = useChartOfAccounts();
+  const [selectedAccountCode, setSelectedAccountCode] = useState<string>('');
+  const { data: selectedAccount } = useAccountByCode(selectedAccountCode);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       type: transaction?.type || defaultType || 'REVENUE',
       category: transaction?.category || '',
+      accountCode: transaction?.accountCode || '',
       description: transaction?.description || '',
       amount: transaction?.amount || '',
       vatRate: 0.05, // 5% VAT rate
       includesVat: false,
+      nonDeductible: false,
       transactionDate: transaction?.transactionDate 
         ? new Date(transaction.transactionDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
     },
   });
+
+  // Auto-update VAT rate and deductibility when account is selected
+  useEffect(() => {
+    if (selectedAccount) {
+      const vatRate = getVatRate(selectedAccount.vatCode);
+      form.setValue('vatRate', vatRate);
+      form.setValue('nonDeductible', !selectedAccount.citDeductible);
+      
+      // Force VAT amount to 0 for exempt/blocked accounts
+      if (selectedAccount.vatCode === 'EXEMPT' || selectedAccount.vatCode === 'BLOCKED') {
+        form.setValue('includesVat', false);
+        setIncludesVat(false);
+      }
+    }
+  }, [selectedAccount, form]);
 
   const createTransactionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -237,16 +264,39 @@ export default function TransactionForm({ isOpen, onClose, transaction, defaultT
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select 
+                    value={field.value} 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Extract account code from the value (format: "code|name")
+                      const accountCode = value.split('|')[0];
+                      setSelectedAccountCode(accountCode);
+                      form.setValue('accountCode', accountCode);
+                    }}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue 
+                          placeholder={
+                            isLoadingAccounts 
+                              ? 'Loading accounts...'
+                              : 'Select expense category'
+                          } 
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(selectedType === 'REVENUE' ? revenueCategories : expenseCategories).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {chartOfAccounts?.map((account) => (
+                        <SelectItem 
+                          key={account.code} 
+                          value={`${account.code}|${account.name}`}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{account.code} - {account.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              VAT: {account.vatCode} • CIT: {account.citDeductible ? 'Deductible' : 'Non-deductible'}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -255,6 +305,11 @@ export default function TransactionForm({ isOpen, onClose, transaction, defaultT
                 </FormItem>
               )}
             />
+
+            {/* Real-time Tax Hint Banner */}
+            {selectedAccount && (
+              <HintBanner account={selectedAccount} />
+            )}
 
             <FormField
               control={form.control}
