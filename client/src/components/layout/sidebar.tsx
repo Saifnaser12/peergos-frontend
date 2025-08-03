@@ -2,6 +2,8 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/context/auth-context';
 import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import Tooltip from '@/components/ui/tooltip';
 import {
   BarChart3,
   Calendar,
@@ -18,14 +20,24 @@ import {
   FolderOpen,
   PlusCircle,
   Calculator,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  isCollapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
 }
 
-export default function Sidebar({ isOpen }: SidebarProps) {
+export default function Sidebar({ 
+  isOpen, 
+  onToggle, 
+  isCollapsed = false, 
+  onCollapse 
+}: SidebarProps) {
   const [location] = useLocation();
   const { user, company } = useAuth();
   const { t, language } = useLanguage();
@@ -87,45 +99,52 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("p-4 space-y-2", !isOpen && "lg:p-2")}>
+      <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto custom-scrollbar">
         {navigationItems.map((section) => (
-          <div key={section.section} className="space-y-1">
-            {(isOpen || !isOpen) && (
-              <div className={cn(
-                "px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
-                !isOpen && "lg:hidden"
-              )}>
+          <div key={section.section}>
+            {!isCollapsed && (
+              <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 {section.section}
-              </div>
+              </h3>
             )}
-            
-            {section.items
-              .filter(item => hasRole(item.roles))
-              .map((item) => (
-                <Link key={item.path} href={item.path}>
-                  <div
-                    className={cn(
-                      "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                      language === 'ar' && "rtl:flex-row-reverse",
-                      isActive(item.path)
-                        ? "text-white"
-                        : "text-gray-600 hover:bg-gray-100",
-                      !isOpen && "lg:justify-center lg:px-2"
-                    )}
-                    style={{
-                      backgroundColor: isActive(item.path) ? (company?.primaryColor || '#1976d2') : undefined,
-                    }}
-                  >
-                    <item.icon className={cn("text-sm", (isOpen || !isOpen) && "mr-3", language === 'ar' && "rtl:mr-0 rtl:ml-3", !isOpen && "lg:mr-0")} size={18} />
-                    {(isOpen || !isOpen) && (
-                      <span className={cn("flex-1", !isOpen && "lg:hidden")}>
-                        {item.label}
-                      </span>
-                    )}
+            <div className="space-y-1">
+              {section.items
+                .filter(item => item.roles.includes(user?.role || 'SME_CLIENT'))
+                .map((item) => {
+                  const isActive = location === item.path;
+                  const IconComponent = item.icon;
 
-                  </div>
-                </Link>
-              ))}
+                  const navItem = (
+                    <Link key={item.path} href={item.path}>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          'w-full justify-start h-10 px-3',
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900',
+                          isCollapsed && 'justify-center px-2'
+                        )}
+                      >
+                        <IconComponent className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
+                        {!isCollapsed && (
+                          <span className="truncate">{item.label}</span>
+                        )}
+                      </Button>
+                    </Link>
+                  );
+
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.path} content={item.label} position="right">
+                        {navItem}
+                      </Tooltip>
+                    );
+                  }
+
+                  return navItem;
+                })}
+            </div>
           </div>
         ))}
       </nav>

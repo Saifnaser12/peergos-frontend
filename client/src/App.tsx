@@ -9,7 +9,7 @@ import { NotificationProvider } from "./context/notification-context";
 import { TaxClassificationProvider } from "./context/tax-classification-context";
 import { NavigationProvider } from "./context/navigation-context";
 import { ErrorBoundary } from "./components/ui/error-boundary";
-import MainLayout from "./components/layout/main-layout";
+import EnhancedMainLayout from "./components/layout/enhanced-main-layout";
 import { Suspense } from "react";
 import Dashboard from "./pages/dashboard";
 import Bookkeeping from "./pages/Bookkeeping";
@@ -35,7 +35,7 @@ import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
-    <MainLayout>
+    <EnhancedMainLayout>
       <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
         <Switch>
           <Route path="/" component={Dashboard} />
@@ -68,7 +68,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </Suspense>
-    </MainLayout>
+    </EnhancedMainLayout>
   );
 }
 
