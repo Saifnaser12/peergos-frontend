@@ -21,8 +21,12 @@ export default function RevenueDeclarationStep() {
   const form = useForm<RevenueDeclaration>({
     resolver: zodResolver(revenueDeclarationSchema),
     defaultValues: {
-      ...revenueDeclaration,
-      hasInternationalSales: revenueDeclaration.hasInternationalSales ?? false,
+      expectedAnnualRevenue: revenueDeclaration.expectedAnnualRevenue || 0,
+      revenueCategory: revenueDeclaration.revenueCategory || undefined,
+      mainRevenueSource: revenueDeclaration.mainRevenueSource || '',
+      businessModel: revenueDeclaration.businessModel || undefined,
+      hasInternationalSales: false,
+      internationalSalesPercentage: revenueDeclaration.internationalSalesPercentage || undefined,
     } as RevenueDeclaration,
     mode: 'onChange',
   });
@@ -30,14 +34,11 @@ export default function RevenueDeclarationStep() {
   const { register, watch, setValue, formState: { errors, isValid } } = form;
   const watchedData = watch();
 
-  // Initialize form fields if not set
+  // Initialize hasInternationalSales to false on mount
   useEffect(() => {
-    if (watchedData.hasInternationalSales === undefined || watchedData.hasInternationalSales === null) {
-      setValue('hasInternationalSales', false);
-    }
-    // Trigger validation after initialization
+    setValue('hasInternationalSales', false);
     form.trigger();
-  }, [watchedData.hasInternationalSales, setValue, form]);
+  }, [setValue, form]);
 
   // Update context when form data changes
   useEffect(() => {
@@ -227,7 +228,7 @@ export default function RevenueDeclarationStep() {
               <Checkbox 
                 id="hasInternationalSales"
                 checked={watchedData.hasInternationalSales || false}
-                onCheckedChange={(checked) => setValue('hasInternationalSales', checked as boolean)}
+                onCheckedChange={(checked) => setValue('hasInternationalSales', !!checked)}
               />
               <Label htmlFor="hasInternationalSales" className="flex items-center gap-1">
                 <Globe className="h-3 w-3" />
