@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import DocumentManagement from '@/components/documents/document-management';
 

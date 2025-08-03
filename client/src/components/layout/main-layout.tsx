@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import React, { useState } from 'react';
+import { useAuth } from '@/context/auth-context';
 import { useNavigation } from '@/context/navigation-context';
 import Sidebar from './sidebar';
 import TopBar from './topbar';

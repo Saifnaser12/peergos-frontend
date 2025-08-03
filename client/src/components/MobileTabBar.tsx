@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { Home, BookOpen, FileText, BarChart3, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
