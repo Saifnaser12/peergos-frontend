@@ -968,12 +968,29 @@ Company ID: ${req.user.companyId}
     }
   });
 
-  // Data import routes
-  app.use('/api/data-import', dataImportRoutes);
-
   // Calculation Audit Routes
   const calculationAuditRoutes = await import("./routes/calculation-audit");
   app.use("/api/calculation-audit", calculationAuditRoutes.default);
+
+  // Integration Routes
+  const integrationRoutes = await import("./routes/integrations");
+  app.use("/api/integrations", integrationRoutes.default);
+
+  // Data Export Routes
+  const dataExportRoutes = await import("./routes/data-export");
+  app.use("/api/data-export", dataExportRoutes.default);
+
+  // Data Import Routes
+  const dataImportRoutes = await import("./routes/data-import");
+  app.use("/api/data-import", dataImportRoutes.default);
+
+  // Webhook Routes
+  const webhookRoutes = await import("./routes/webhooks");
+  app.use("/api/webhooks", webhookRoutes.default);
+
+  // Sync Service Routes
+  const syncServiceRoutes = await import("./routes/sync-service");
+  app.use("/api/sync", syncServiceRoutes.default);
 
   // Note: Do not add catch-all error handlers here in development
   // The Vite middleware needs to handle static routes after this

@@ -390,3 +390,126 @@ export const insertTransferPricingDocumentationSchema = createInsertSchema(trans
 
 export type TransferPricingDocumentation = typeof transferPricingDocumentation.$inferSelect;
 export type InsertTransferPricingDocumentation = z.infer<typeof insertTransferPricingDocumentationSchema>;
+
+// Integrations Tables for API connectivity
+export const integrations = pgTable("integrations", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // ACCOUNTING_SOFTWARE, ERP, BANKING, E_COMMERCE, CUSTOM
+  apiUrl: text("api_url"),
+  apiKey: text("api_key"),
+  webhookUrl: text("webhook_url"),
+  settings: jsonb("settings"),
+  status: text("status").default("INACTIVE"), // ACTIVE, INACTIVE, ERROR
+  lastSync: timestamp("last_sync"),
+  lastTestDate: timestamp("last_test_date"),
+  testResult: jsonb("test_result"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const syncJobs = pgTable("sync_jobs", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").notNull(),
+  direction: text("direction").notNull(), // IMPORT, EXPORT, BIDIRECTIONAL
+  dataTypes: text("data_types").array().notNull(),
+  status: text("status").notNull(), // PENDING, RUNNING, COMPLETED, COMPLETED_WITH_CONFLICTS, FAILED, CANCELLED
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  recordsProcessed: integer("records_processed").default(0),
+  recordsSuccess: integer("records_success").default(0),
+  recordsError: integer("records_error").default(0),
+  errorMessage: text("error_message"),
+  triggeredBy: integer("triggered_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const exportJobs = pgTable("export_jobs", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  userId: integer("user_id").notNull(),
+  config: jsonb("config").notNull(),
+  status: text("status").notNull(), // PROCESSING, COMPLETED, FAILED
+  filename: text("filename"),
+  fileSize: integer("file_size"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const importJobs = pgTable("import_jobs", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  userId: integer("user_id").notNull(),
+  filename: text("filename").notNull(),
+  fileSize: integer("file_size").notNull(),
+  dataType: text("data_type").notNull(),
+  config: jsonb("config").notNull(),
+  status: text("status").notNull(), // PROCESSING, COMPLETED, VALIDATED, FAILED
+  totalRows: integer("total_rows").default(0),
+  validRows: integer("valid_rows").default(0),
+  errorRows: integer("error_rows").default(0),
+  validationErrors: jsonb("validation_errors"),
+  processingErrors: jsonb("processing_errors"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const webhooks = pgTable("webhooks", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  events: text("events").array().notNull(),
+  isActive: boolean("is_active").default(true),
+  secret: text("secret").notNull(),
+  headers: jsonb("headers"),
+  retryPolicy: jsonb("retry_policy"),
+  lastTriggered: timestamp("last_triggered"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const webhookDeliveries = pgTable("webhook_deliveries", {
+  id: serial("id").primaryKey(),
+  webhookId: integer("webhook_id").notNull(),
+  event: text("event").notNull(),
+  payload: jsonb("payload").notNull(),
+  status: text("status").notNull(), // PENDING, SUCCESS, FAILED
+  statusCode: integer("status_code"),
+  responseTime: integer("response_time"),
+  error: text("error"),
+  retryCount: integer("retry_count").default(0),
+  deliveredAt: timestamp("delivered_at"),
+  lastRetryAt: timestamp("last_retry_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const syncConflicts = pgTable("sync_conflicts", {
+  id: serial("id").primaryKey(),
+  syncJobId: integer("sync_job_id").notNull(),
+  recordId: text("record_id").notNull(),
+  conflictType: text("conflict_type").notNull(), // DATA_MISMATCH, DUPLICATE_RECORD, MISSING_DEPENDENCY
+  field: text("field"),
+  sourceValue: jsonb("source_value"),
+  targetValue: jsonb("target_value"),
+  status: text("status").default("PENDING"), // PENDING, RESOLVED
+  resolution: jsonb("resolution"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Integration types
+export type Integration = typeof integrations.$inferSelect;
+export type InsertIntegration = typeof integrations.$inferInsert;
+export type SyncJob = typeof syncJobs.$inferSelect;
+export type InsertSyncJob = typeof syncJobs.$inferInsert;
+export type ExportJob = typeof exportJobs.$inferSelect;
+export type InsertExportJob = typeof exportJobs.$inferInsert;
+export type ImportJob = typeof importJobs.$inferSelect;
+export type InsertImportJob = typeof importJobs.$inferInsert;
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhook = typeof webhooks.$inferInsert;
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+export type InsertWebhookDelivery = typeof webhookDeliveries.$inferInsert;
+export type SyncConflict = typeof syncConflicts.$inferSelect;
+export type InsertSyncConflict = typeof syncConflicts.$inferInsert;

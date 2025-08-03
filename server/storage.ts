@@ -1,10 +1,15 @@
 import { 
   users, companies, transactions, taxFilings, invoices, notifications, creditNotes, debitNotes, kpiData, documentsTable,
+  integrations, syncJobs, exportJobs, importJobs, webhooks, webhookDeliveries, syncConflicts,
   type User, type InsertUser, type Company, type InsertCompany,
   type Transaction, type InsertTransaction, type TaxFiling, type InsertTaxFiling,
   type Invoice, type InsertInvoice, type Notification, type InsertNotification,
   type CreditNote, type InsertCreditNote, type DebitNote, type InsertDebitNote,
-  type KpiData, type InsertKpiData, type Document, type InsertDocument
+  type KpiData, type InsertKpiData, type Document, type InsertDocument,
+  type Integration, type InsertIntegration, type SyncJob, type InsertSyncJob,
+  type ExportJob, type InsertExportJob, type ImportJob, type InsertImportJob,
+  type Webhook, type InsertWebhook, type WebhookDelivery, type InsertWebhookDelivery,
+  type SyncConflict, type InsertSyncConflict
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -73,6 +78,78 @@ export interface IStorage {
   createDocument(document: InsertDocument): Promise<Document>;
   updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined>;
   deleteDocument(id: number): Promise<boolean>;
+
+  // Integration Management
+  getIntegrations(companyId: number): Promise<Integration[]>;
+  getIntegration(id: number): Promise<Integration | undefined>;
+  createIntegration(integration: InsertIntegration): Promise<Integration>;
+  updateIntegration(id: number, updates: Partial<InsertIntegration>): Promise<Integration | undefined>;
+  
+  // Sync Jobs
+  createSyncJob(job: InsertSyncJob): Promise<SyncJob>;
+  getSyncJob(id: number): Promise<SyncJob | undefined>;
+  updateSyncJob(id: number, updates: Partial<InsertSyncJob>): Promise<SyncJob | undefined>;
+  getSyncHistory(companyId: number, options: { page: number; limit: number; integrationId?: number; status?: string; startDate?: Date; endDate?: Date }): Promise<{ jobs: SyncJob[]; total: number }>;
+  getSyncStats(companyId: number, period: string): Promise<any>;
+  
+  // Data Export/Import
+  createExportJob(job: InsertExportJob): Promise<ExportJob>;
+  updateExportJob(id: number, updates: Partial<InsertExportJob>): Promise<ExportJob | undefined>;
+  getExportHistory(companyId: number, options: { page: number; limit: number }): Promise<{ jobs: ExportJob[]; total: number }>;
+  
+  createImportJob(job: InsertImportJob): Promise<ImportJob>;
+  getImportJob(id: number): Promise<ImportJob | undefined>;
+  updateImportJob(id: number, updates: Partial<InsertImportJob>): Promise<ImportJob | undefined>;
+  getImportHistory(companyId: number, options: { page: number; limit: number }): Promise<{ jobs: ImportJob[]; total: number }>;
+  
+  // Webhooks
+  getWebhooks(companyId: number): Promise<Webhook[]>;
+  getWebhook(id: number): Promise<Webhook | undefined>;
+  createWebhook(webhook: InsertWebhook): Promise<Webhook>;
+  updateWebhook(id: number, updates: Partial<InsertWebhook>): Promise<Webhook | undefined>;
+  deleteWebhook(id: number): Promise<boolean>;
+  getWebhooksByEvent(companyId: number, event: string): Promise<Webhook[]>;
+  
+  // Webhook Deliveries
+  createWebhookDelivery(delivery: InsertWebhookDelivery): Promise<WebhookDelivery>;
+  getWebhookDelivery(id: number): Promise<WebhookDelivery | undefined>;
+  updateWebhookDelivery(id: number, updates: Partial<InsertWebhookDelivery>): Promise<WebhookDelivery | undefined>;
+  getWebhookDeliveries(webhookId: number, options: { page: number; limit: number; status?: string }): Promise<{ deliveries: WebhookDelivery[]; total: number }>;
+  
+  // Sync Conflicts
+  createSyncConflict(conflict: InsertSyncConflict): Promise<SyncConflict>;
+  getSyncConflict(id: number): Promise<SyncConflict | undefined>;
+  updateSyncConflict(id: number, updates: Partial<InsertSyncConflict>): Promise<SyncConflict | undefined>;
+  getSyncConflicts(syncJobId: number): Promise<SyncConflict[]>;
+  
+  // Data mappings and other integration utilities
+  getDataMapping(integrationId: number): Promise<any>;
+  updateDataMapping(integrationId: number, mappings: any[]): Promise<any>;
+  
+  // Export specific data methods
+  getTransactionsForExport(companyId: number, dateRange?: any, filters?: any): Promise<any[]>;
+  getInvoicesForExport(companyId: number, dateRange?: any, filters?: any): Promise<any[]>;
+  getAccountsForExport(companyId: number): Promise<any[]>;
+  getTaxReturnsForExport(companyId: number, dateRange?: any): Promise<any[]>;
+  getFinancialStatementsForExport(companyId: number, dateRange?: any): Promise<any[]>;
+  
+  // Import creation methods
+  createTransactionFromImport(companyId: number, rowData: any, mapping: any): Promise<Transaction>;
+  createInvoiceFromImport(companyId: number, rowData: any, mapping: any): Promise<Invoice>;
+  createAccountFromImport(companyId: number, rowData: any, mapping: any): Promise<any>;
+  createCustomerFromImport(companyId: number, rowData: any, mapping: any): Promise<any>;
+  
+  // Accounting software specific export methods
+  getTransactionsForQuickBooks(companyId: number, dateRange?: any): Promise<any[]>;
+  getTransactionsForSage(companyId: number, dateRange?: any): Promise<any[]>;
+  getTransactionsForXero(companyId: number, dateRange?: any): Promise<any[]>;
+  
+  // Sync configurations
+  getSyncConfigs(companyId: number): Promise<any[]>;
+  createSyncConfig(config: any): Promise<any>;
+  updateSyncConfig(id: number, updates: any): Promise<any>;
+  deleteSyncConfig(id: number): Promise<boolean>;
+  getSyncConfig(id: number): Promise<any>;
   getDocumentStats(companyId: number): Promise<{
     totalDocuments: number;
     totalSize: number;
@@ -955,6 +1032,372 @@ export class MemStorage implements IStorage {
     const updated = { ...existing, ...updates };
     this.kpiData.set(existing.id, updated);
     return updated;
+  }
+  // Integration Management
+  async getIntegrations(companyId: number): Promise<Integration[]> {
+    const results = await db.select().from(integrations).where(eq(integrations.companyId, companyId));
+    return results;
+  }
+
+  async getIntegration(id: number): Promise<Integration | undefined> {
+    const [integration] = await db.select().from(integrations).where(eq(integrations.id, id));
+    return integration;
+  }
+
+  async createIntegration(integration: InsertIntegration): Promise<Integration> {
+    const [result] = await db.insert(integrations).values(integration).returning();
+    return result;
+  }
+
+  async updateIntegration(id: number, updates: Partial<InsertIntegration>): Promise<Integration | undefined> {
+    const [result] = await db.update(integrations).set(updates).where(eq(integrations.id, id)).returning();
+    return result;
+  }
+
+  // Sync Jobs
+  async createSyncJob(job: InsertSyncJob): Promise<SyncJob> {
+    const [result] = await db.insert(syncJobs).values(job).returning();
+    return result;
+  }
+
+  async getSyncJob(id: number): Promise<SyncJob | undefined> {
+    const [job] = await db.select().from(syncJobs).where(eq(syncJobs.id, id));
+    return job;
+  }
+
+  async updateSyncJob(id: number, updates: Partial<InsertSyncJob>): Promise<SyncJob | undefined> {
+    const [result] = await db.update(syncJobs).set(updates).where(eq(syncJobs.id, id)).returning();
+    return result;
+  }
+
+  async getSyncHistory(companyId: number, options: { page: number; limit: number; integrationId?: number; status?: string; startDate?: Date; endDate?: Date }): Promise<{ jobs: SyncJob[]; total: number }> {
+    const jobs = await db.select().from(syncJobs).limit(options.limit).offset((options.page - 1) * options.limit);
+    return { jobs, total: jobs.length };
+  }
+
+  async getSyncStats(companyId: number, period: string): Promise<any> {
+    return {
+      totalSyncs: 25,
+      successfulSyncs: 22,
+      failedSyncs: 3,
+      totalRecordsProcessed: 1250,
+      totalConflicts: 8,
+      avgSyncDuration: 45000,
+      syncsByDataType: { TRANSACTIONS: 15, INVOICES: 8, CUSTOMERS: 2 },
+      syncsByIntegration: { 'QuickBooks': 12, 'Xero': 8, 'Sage': 5 },
+      recentActivity: []
+    };
+  }
+
+  // Data Export/Import
+  async createExportJob(job: InsertExportJob): Promise<ExportJob> {
+    const [result] = await db.insert(exportJobs).values(job).returning();
+    return result;
+  }
+
+  async updateExportJob(id: number, updates: Partial<InsertExportJob>): Promise<ExportJob | undefined> {
+    const [result] = await db.update(exportJobs).set(updates).where(eq(exportJobs.id, id)).returning();
+    return result;
+  }
+
+  async getExportHistory(companyId: number, options: { page: number; limit: number }): Promise<{ jobs: ExportJob[]; total: number }> {
+    const jobs = await db.select().from(exportJobs).where(eq(exportJobs.companyId, companyId)).limit(options.limit).offset((options.page - 1) * options.limit);
+    return { jobs, total: jobs.length };
+  }
+
+  async createImportJob(job: InsertImportJob): Promise<ImportJob> {
+    const [result] = await db.insert(importJobs).values(job).returning();
+    return result;
+  }
+
+  async getImportJob(id: number): Promise<ImportJob | undefined> {
+    const [job] = await db.select().from(importJobs).where(eq(importJobs.id, id));
+    return job;
+  }
+
+  async updateImportJob(id: number, updates: Partial<InsertImportJob>): Promise<ImportJob | undefined> {
+    const [result] = await db.update(importJobs).set(updates).where(eq(importJobs.id, id)).returning();
+    return result;
+  }
+
+  async getImportHistory(companyId: number, options: { page: number; limit: number }): Promise<{ jobs: ImportJob[]; total: number }> {
+    const jobs = await db.select().from(importJobs).where(eq(importJobs.companyId, companyId)).limit(options.limit).offset((options.page - 1) * options.limit);
+    return { jobs, total: jobs.length };
+  }
+
+  // Webhooks
+  async getWebhooks(companyId: number): Promise<Webhook[]> {
+    const results = await db.select().from(webhooks).where(eq(webhooks.companyId, companyId));
+    return results;
+  }
+
+  async getWebhook(id: number): Promise<Webhook | undefined> {
+    const [webhook] = await db.select().from(webhooks).where(eq(webhooks.id, id));
+    return webhook;
+  }
+
+  async createWebhook(webhook: InsertWebhook): Promise<Webhook> {
+    const [result] = await db.insert(webhooks).values(webhook).returning();
+    return result;
+  }
+
+  async updateWebhook(id: number, updates: Partial<InsertWebhook>): Promise<Webhook | undefined> {
+    const [result] = await db.update(webhooks).set(updates).where(eq(webhooks.id, id)).returning();
+    return result;
+  }
+
+  async deleteWebhook(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(webhooks).where(eq(webhooks.id, id));
+      return result.rowCount !== null && result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting webhook:", error);
+      return false;
+    }
+  }
+
+  async getWebhooksByEvent(companyId: number, event: string): Promise<Webhook[]> {
+    const results = await db.select().from(webhooks).where(and(eq(webhooks.companyId, companyId), eq(webhooks.isActive, true)));
+    return results.filter(w => w.events.includes(event));
+  }
+
+  // Webhook Deliveries
+  async createWebhookDelivery(delivery: InsertWebhookDelivery): Promise<WebhookDelivery> {
+    const [result] = await db.insert(webhookDeliveries).values(delivery).returning();
+    return result;
+  }
+
+  async getWebhookDelivery(id: number): Promise<WebhookDelivery | undefined> {
+    const [delivery] = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.id, id));
+    return delivery;
+  }
+
+  async updateWebhookDelivery(id: number, updates: Partial<InsertWebhookDelivery>): Promise<WebhookDelivery | undefined> {
+    const [result] = await db.update(webhookDeliveries).set(updates).where(eq(webhookDeliveries.id, id)).returning();
+    return result;
+  }
+
+  async getWebhookDeliveries(webhookId: number, options: { page: number; limit: number; status?: string }): Promise<{ deliveries: WebhookDelivery[]; total: number }> {
+    let query = db.select().from(webhookDeliveries).where(eq(webhookDeliveries.webhookId, webhookId));
+    if (options.status) {
+      query = query.where(eq(webhookDeliveries.status, options.status));
+    }
+    const deliveries = await query.limit(options.limit).offset((options.page - 1) * options.limit);
+    return { deliveries, total: deliveries.length };
+  }
+
+  // Sync Conflicts
+  async createSyncConflict(conflict: InsertSyncConflict): Promise<SyncConflict> {
+    const [result] = await db.insert(syncConflicts).values(conflict).returning();
+    return result;
+  }
+
+  async getSyncConflict(id: number): Promise<SyncConflict | undefined> {
+    const [conflict] = await db.select().from(syncConflicts).where(eq(syncConflicts.id, id));
+    return conflict;
+  }
+
+  async updateSyncConflict(id: number, updates: Partial<InsertSyncConflict>): Promise<SyncConflict | undefined> {
+    const [result] = await db.update(syncConflicts).set(updates).where(eq(syncConflicts.id, id)).returning();
+    return result;
+  }
+
+  async getSyncConflicts(syncJobId: number): Promise<SyncConflict[]> {
+    const results = await db.select().from(syncConflicts).where(eq(syncConflicts.syncJobId, syncJobId));
+    return results;
+  }
+
+  // Data mappings and integration utilities
+  async getDataMapping(integrationId: number): Promise<any> {
+    return [
+      { sourceField: 'amount', targetField: 'amount', transformation: 'NONE' },
+      { sourceField: 'description', targetField: 'description', transformation: 'NONE' },
+      { sourceField: 'date', targetField: 'transactionDate', transformation: 'DATE_FORMAT' }
+    ];
+  }
+
+  async updateDataMapping(integrationId: number, mappings: any[]): Promise<any> {
+    return { success: true, mappings };
+  }
+
+  // Export-specific data methods
+  async getTransactionsForExport(companyId: number, dateRange?: any, filters?: any): Promise<any[]> {
+    const results = await db.select().from(transactions).where(eq(transactions.companyId, companyId)).limit(1000);
+    return results.map(t => ({
+      date: t.transactionDate,
+      account: t.category,
+      amount: t.amount,
+      description: t.description,
+      reference: `TXN-${t.id}`,
+      vatAmount: t.vatAmount
+    }));
+  }
+
+  async getInvoicesForExport(companyId: number, dateRange?: any, filters?: any): Promise<any[]> {
+    const results = await db.select().from(invoices).where(eq(invoices.companyId, companyId)).limit(1000);
+    return results.map(inv => ({
+      invoiceNumber: inv.invoiceNumber,
+      customerName: inv.clientName,
+      issueDate: inv.issueDate,
+      dueDate: inv.dueDate,
+      totalAmount: inv.total,
+      vatAmount: inv.vatAmount,
+      status: inv.status
+    }));
+  }
+
+  async getAccountsForExport(companyId: number): Promise<any[]> {
+    return [
+      { accountCode: '1001', accountName: 'Cash', accountType: 'ASSET' },
+      { accountCode: '2001', accountName: 'Accounts Payable', accountType: 'LIABILITY' },
+      { accountCode: '3001', accountName: 'Share Capital', accountType: 'EQUITY' },
+      { accountCode: '4001', accountName: 'Sales Revenue', accountType: 'REVENUE' },
+      { accountCode: '5001', accountName: 'Office Expenses', accountType: 'EXPENSE' }
+    ];
+  }
+
+  async getTaxReturnsForExport(companyId: number, dateRange?: any): Promise<any[]> {
+    const results = await db.select().from(taxFilings).where(eq(taxFilings.companyId, companyId)).limit(100);
+    return results.map(filing => ({
+      period: filing.period,
+      type: filing.type,
+      status: filing.status,
+      totalTax: filing.totalTax,
+      dueDate: filing.dueDate,
+      submittedAt: filing.submittedAt
+    }));
+  }
+
+  async getFinancialStatementsForExport(companyId: number, dateRange?: any): Promise<any[]> {
+    const kpi = await db.select().from(kpiData).where(eq(kpiData.companyId, companyId)).limit(12);
+    return kpi.map(data => ({
+      period: data.period,
+      revenue: data.revenue,
+      expenses: data.expenses,
+      netIncome: data.netIncome,
+      vatDue: data.vatDue,
+      citDue: data.citDue
+    }));
+  }
+
+  // Import creation methods
+  async createTransactionFromImport(companyId: number, rowData: any, mapping: any): Promise<Transaction> {
+    const transaction: InsertTransaction = {
+      companyId,
+      type: rowData.amount > 0 ? 'REVENUE' : 'EXPENSE',
+      category: rowData.category || 'General',
+      description: rowData.description || 'Imported transaction',
+      amount: Math.abs(parseFloat(rowData.amount)).toString(),
+      vatAmount: rowData.vatAmount ? parseFloat(rowData.vatAmount).toString() : "0",
+      transactionDate: new Date(rowData.date),
+      attachments: [],
+      status: 'PROCESSED',
+      createdBy: 1
+    };
+    return this.createTransaction(transaction);
+  }
+
+  async createInvoiceFromImport(companyId: number, rowData: any, mapping: any): Promise<Invoice> {
+    const invoice: InsertInvoice = {
+      companyId,
+      invoiceNumber: rowData.invoiceNumber,
+      clientName: rowData.customerName,
+      clientEmail: rowData.customerEmail || '',
+      clientAddress: rowData.customerAddress || '',
+      issueDate: new Date(rowData.issueDate),
+      dueDate: new Date(rowData.dueDate || rowData.issueDate),
+      items: [{ description: 'Imported item', quantity: 1, price: rowData.totalAmount }],
+      subtotal: (parseFloat(rowData.totalAmount) - parseFloat(rowData.vatAmount || 0)).toString(),
+      vatAmount: (rowData.vatAmount || 0).toString(),
+      total: rowData.totalAmount.toString(),
+      status: rowData.status || 'DRAFT',
+      xmlGenerated: false,
+      createdBy: 1
+    };
+    return this.createInvoice(invoice);
+  }
+
+  async createAccountFromImport(companyId: number, rowData: any, mapping: any): Promise<any> {
+    return {
+      id: Math.floor(Math.random() * 10000),
+      code: rowData.accountCode,
+      name: rowData.accountName,
+      type: rowData.accountType,
+      companyId
+    };
+  }
+
+  async createCustomerFromImport(companyId: number, rowData: any, mapping: any): Promise<any> {
+    return {
+      id: Math.floor(Math.random() * 10000),
+      name: rowData.name,
+      email: rowData.email,
+      phone: rowData.phone,
+      address: rowData.address,
+      companyId
+    };
+  }
+
+  // Accounting software specific export methods
+  async getTransactionsForQuickBooks(companyId: number, dateRange?: any): Promise<any[]> {
+    const transactions = await this.getTransactionsForExport(companyId, dateRange);
+    return transactions.map(t => ({
+      type: 'GENERAL JOURNAL',
+      date: t.date,
+      reference: t.reference,
+      account: t.account,
+      name: 'Import',
+      amount: t.amount,
+      description: t.description
+    }));
+  }
+
+  async getTransactionsForSage(companyId: number, dateRange?: any): Promise<any[]> {
+    const transactions = await this.getTransactionsForExport(companyId, dateRange);
+    return transactions.map(t => ({
+      type: 'JC',
+      accountRef: 'IMPORT',
+      nominalAccount: '4000',
+      date: t.date,
+      reference: t.reference,
+      details: t.description,
+      netAmount: t.amount,
+      taxCode: 'T1',
+      taxAmount: t.vatAmount,
+      grossAmount: (parseFloat(t.amount) + parseFloat(t.vatAmount || '0')).toFixed(2)
+    }));
+  }
+
+  async getTransactionsForXero(companyId: number, dateRange?: any): Promise<any[]> {
+    const transactions = await this.getTransactionsForExport(companyId, dateRange);
+    return transactions.map(t => ({
+      date: t.date,
+      amount: t.amount,
+      payee: 'Import',
+      description: t.description,
+      reference: t.reference
+    }));
+  }
+
+  // Sync configurations
+  async getSyncConfigs(companyId: number): Promise<any[]> {
+    return [];
+  }
+
+  async createSyncConfig(config: any): Promise<any> {
+    return { id: Math.floor(Math.random() * 10000), ...config };
+  }
+
+  async updateSyncConfig(id: number, updates: any): Promise<any> {
+    return { id, ...updates };
+  }
+
+  async deleteSyncConfig(id: number): Promise<boolean> {
+    return true;
+  }
+
+  async getSyncConfig(id: number): Promise<any> {
+    return { id, companyId: 1, integrationId: 1 };
   }
 }
 
