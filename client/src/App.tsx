@@ -32,6 +32,7 @@ import Documents from "./pages/documents";
 import EnhancedDataEntryPage from "./pages/enhanced-data-entry";
 import CreditDebitNotes from "./components/financial/credit-debit-notes";
 import CalculationTransparencyPage from "./pages/calculation-transparency";
+import CalculationAudit from "./pages/calculation-audit";
 import VisualDesignDemo from "./pages/visual-design-demo";
 import NotFound from "@/pages/not-found";
 
@@ -67,6 +68,7 @@ function Router() {
           <Route path="/documents" component={Documents} />
           <Route path="/enhanced-data-entry" component={EnhancedDataEntryPage} />
           <Route path="/calculation-transparency" component={CalculationTransparencyPage} />
+          <Route path="/calculation-audit" component={CalculationAudit} />
           <Route path="/visual-design-demo" component={VisualDesignDemo} />
           <Route component={NotFound} />
         </Switch>
