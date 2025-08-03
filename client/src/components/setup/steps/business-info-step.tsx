@@ -50,31 +50,45 @@ const UAE_INDUSTRIES = [
 ];
 
 export default function BusinessInfoStep() {
-  const { formData, updateFormData } = useSetup();
+  const { businessInfo, updateBusinessInfo, updateStepValidation } = useSetup();
 
   const form = useForm<BusinessInfoData>({
     resolver: zodResolver(businessInfoSchema),
-    defaultValues: formData.businessInfo || {
-      companyName: '',
-      trn: '',
-      businessLicense: '',
-      address: '',
-      phone: '+971',
-      email: '',
-      industry: '',
+    defaultValues: {
+      companyName: businessInfo.companyName || '',
+      trn: businessInfo.tradeLicenseNumber || '',
+      businessLicense: businessInfo.businessActivity || '',
+      address: businessInfo.address || '',
+      phone: businessInfo.contactPhone || '+971',
+      email: businessInfo.contactEmail || '',
+      industry: businessInfo.businessActivity || '',
     },
   });
 
-  const { watch, formState: { errors } } = form;
+  const { watch, formState: { errors, isValid } } = form;
   const watchedValues = watch();
+
+  // Update step validation based on form validity
+  useEffect(() => {
+    updateStepValidation(1, isValid);
+  }, [isValid, updateStepValidation]);
 
   // Auto-save form data as user types
   useEffect(() => {
     const subscription = form.watch((value) => {
-      updateFormData('businessInfo', value);
+      updateBusinessInfo({
+        companyName: value.companyName,
+        tradeLicenseNumber: value.trn,
+        businessActivity: value.industry,
+        address: value.address,
+        contactPhone: value.phone,
+        contactEmail: value.email,
+        establishmentDate: new Date().toISOString().split('T')[0], // Default to today
+        emirate: 'DUBAI', // Default emirate
+      });
     });
     return () => subscription.unsubscribe();
-  }, [form, updateFormData]);
+  }, [form, updateBusinessInfo]);
 
   const formatTRN = (value: string) => {
     // Remove non-digits and limit to 15 characters
