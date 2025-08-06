@@ -1439,6 +1439,137 @@ Company ID: ${req.user.companyId}
     }
   });
 
+  // UAE Pass Integration API endpoints (placeholder/mock)
+  app.get('/api/admin/uae-pass/config', async (req, res) => {
+    try {
+      // Mock UAE Pass configuration
+      const mockConfig = {
+        isEnabled: false,
+        environment: 'sandbox',
+        autoUserCreation: true,
+        requireVerification: true,
+        allowedNationalities: ['UAE', 'GCC'],
+        clientId: undefined
+      };
+      
+      res.json(mockConfig);
+    } catch (error) {
+      console.error('Error fetching UAE Pass config:', error);
+      res.status(500).json({ error: 'Failed to fetch UAE Pass configuration' });
+    }
+  });
+
+  app.get('/api/admin/uae-pass/users', async (req, res) => {
+    try {
+      // Mock UAE Pass connected users
+      const mockUsers = [
+        {
+          id: 'uaepass_001',
+          emiratesId: '784-1985-1234567',
+          fullNameEn: 'Ahmed Mohammed Al Rashid',
+          fullNameAr: 'أحمد محمد الراشد',
+          email: 'ahmed.rashid@example.ae',
+          phoneNumber: '+971501234567',
+          nationality: 'UAE',
+          gender: 'M',
+          dateOfBirth: '1985-03-15',
+          isVerified: true,
+          lastLogin: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          connectedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'uaepass_002',
+          emiratesId: '784-1990-9876543',
+          fullNameEn: 'Fatima Ali Hassan',
+          fullNameAr: 'فاطمة علي حسن',
+          email: 'fatima.hassan@example.ae',
+          phoneNumber: '+971557654321',
+          nationality: 'UAE',
+          gender: 'F',
+          dateOfBirth: '1990-07-22',
+          isVerified: true,
+          lastLogin: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          connectedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+      
+      res.json(mockUsers);
+    } catch (error) {
+      console.error('Error fetching UAE Pass users:', error);
+      res.status(500).json({ error: 'Failed to fetch UAE Pass users' });
+    }
+  });
+
+  app.post('/api/admin/uae-pass/test-connection', async (req, res) => {
+    try {
+      // Simulate connection test with random success/failure
+      const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1800));
+      
+      if (isSuccess) {
+        res.json({
+          success: true,
+          message: 'UAE Pass API connection test successful',
+          environment: 'sandbox',
+          responseTime: Math.floor(Math.random() * 800) + 300,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.json({
+          success: false,
+          message: 'UAE Pass API connection test failed - invalid client credentials',
+          error: 'INVALID_CREDENTIALS',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error testing UAE Pass connection:', error);
+      res.status(500).json({ error: 'Failed to test UAE Pass connection' });
+    }
+  });
+
+  // Mock UAE Pass OAuth flow simulation
+  app.post('/api/admin/uae-pass/mock-login', async (req, res) => {
+    try {
+      // Simulate OAuth flow delay
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
+      // Random success/failure for demo
+      const isSuccess = Math.random() > 0.15; // 85% success rate
+      
+      if (isSuccess) {
+        const mockUser = {
+          emiratesId: '784-' + (1980 + Math.floor(Math.random() * 25)) + '-' + Math.floor(Math.random() * 9999999).toString().padStart(7, '0'),
+          fullNameEn: 'Test User ' + Math.floor(Math.random() * 1000),
+          fullNameAr: 'مستخدم تجريبي ' + Math.floor(Math.random() * 1000),
+          email: 'testuser' + Math.floor(Math.random() * 1000) + '@example.ae',
+          nationality: 'UAE',
+          gender: Math.random() > 0.5 ? 'M' : 'F',
+          isVerified: Math.random() > 0.1 // 90% verified
+        };
+        
+        res.json({
+          success: true,
+          user: mockUser,
+          accessToken: 'mock_token_' + Date.now(),
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          error: 'USER_CANCELLED',
+          message: 'User cancelled authentication or provided invalid credentials',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error in mock UAE Pass login:', error);
+      res.status(500).json({ error: 'Failed to simulate UAE Pass login' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

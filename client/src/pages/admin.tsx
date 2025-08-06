@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Settings, Users, Building2, Palette, Globe, Shield, Link } from 'lucide-react';
 import { FTAIntegrationStatus } from '@/components/admin/fta-integration-status';
+import { UAEPassIntegration } from '@/components/admin/uae-pass-integration';
 import { cn } from '@/lib/utils';
 
 export default function Admin() {
@@ -103,6 +104,10 @@ export default function Admin() {
                 <Building2 size={16} />
                 Company
               </TabsTrigger>
+              <TabsTrigger value="users" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Users size={16} />
+                Users
+              </TabsTrigger>
               <TabsTrigger value="fta" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
                 <Link size={16} />
                 FTA
@@ -114,10 +119,6 @@ export default function Admin() {
               <TabsTrigger value="localization" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
                 <Globe size={16} />
                 Localization
-              </TabsTrigger>
-              <TabsTrigger value="users" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Users size={16} />
-                Users
               </TabsTrigger>
             </TabsList>
             
@@ -208,6 +209,10 @@ export default function Admin() {
                   {updateCompanyMutation.isPending ? 'Saving...' : 'Save Company Settings'}
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="users" className="mt-6">
+              <UAEPassIntegration />
             </TabsContent>
 
             <TabsContent value="fta" className="mt-6">
