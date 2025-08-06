@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import EnhancedTransactionForm from '@/components/forms/enhanced-transaction-form';
 import DataImport from '@/components/forms/data-import';
+import POSIntegrationPanel from '@/components/integrations/pos-integration-panel';
 
 interface DataEntryStats {
   totalTransactions: number;
@@ -140,7 +141,7 @@ export default function EnhancedDataEntry() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="manual-entry" className="flex items-center gap-2">
                 <PlusCircle className="h-4 w-4" />
                 Enhanced Manual Entry
@@ -148,6 +149,10 @@ export default function EnhancedDataEntry() {
               <TabsTrigger value="bulk-import" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 Bulk Data Import
+              </TabsTrigger>
+              <TabsTrigger value="pos-integration" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                POS Integration
               </TabsTrigger>
             </TabsList>
 
@@ -191,6 +196,11 @@ export default function EnhancedDataEntry() {
 
                 <DataImport onImportComplete={handleImportComplete} />
               </div>
+            </TabsContent>
+
+            {/* POS Integration Tab */}
+            <TabsContent value="pos-integration" className="space-y-6">
+              <POSIntegrationPanel />
             </TabsContent>
           </Tabs>
         </CardContent>

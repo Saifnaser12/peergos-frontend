@@ -1570,6 +1570,218 @@ Company ID: ${req.user.companyId}
     }
   });
 
+  // POS Integration API endpoints (placeholder/mock)
+  app.get('/api/pos/systems', async (req, res) => {
+    try {
+      // Mock POS systems data
+      const mockPOSSystems = [
+        {
+          id: 'square',
+          name: 'Square',
+          description: 'Complete POS solution for retail and restaurants',
+          isConnected: true,
+          lastSync: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          transactionCount: 145,
+          status: 'connected',
+          supportedFeatures: ['Sales', 'Inventory', 'Customers', 'VAT', 'Receipts']
+        },
+        {
+          id: 'shopify_pos',
+          name: 'Shopify POS',
+          description: 'Unified commerce platform for online and offline sales',
+          isConnected: false,
+          transactionCount: 0,
+          status: 'disconnected',
+          supportedFeatures: ['Sales', 'Inventory', 'Multi-location', 'Online Sync']
+        },
+        {
+          id: 'lightspeed',
+          name: 'Lightspeed Retail',
+          description: 'Cloud-based POS for retail businesses',
+          isConnected: true,
+          lastSync: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+          transactionCount: 89,
+          status: 'connected',
+          supportedFeatures: ['Sales', 'Inventory', 'Reporting', 'E-commerce']
+        },
+        {
+          id: 'clover',
+          name: 'Clover POS',
+          description: 'Full-service POS and business management system',
+          isConnected: false,
+          transactionCount: 0,
+          status: 'disconnected',
+          supportedFeatures: ['Sales', 'Payments', 'Inventory', 'Staff Management']
+        },
+        {
+          id: 'toast',
+          name: 'Toast POS',
+          description: 'Restaurant-specific POS solution',
+          isConnected: true,
+          lastSync: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+          transactionCount: 67,
+          status: 'connected',
+          supportedFeatures: ['Orders', 'Kitchen Display', 'Online Ordering', 'Delivery']
+        },
+        {
+          id: 'loyverse',
+          name: 'Loyverse POS',
+          description: 'Free POS system for small businesses',
+          isConnected: false,
+          transactionCount: 0,
+          status: 'disconnected',
+          supportedFeatures: ['Sales', 'Loyalty Programs', 'Analytics', 'Multi-store']
+        }
+      ];
+      
+      res.json(mockPOSSystems);
+    } catch (error) {
+      console.error('Error fetching POS systems:', error);
+      res.status(500).json({ error: 'Failed to fetch POS systems' });
+    }
+  });
+
+  app.get('/api/pos/transactions', async (req, res) => {
+    try {
+      // Mock POS transactions data
+      const mockTransactions = [
+        {
+          id: 'txn_001',
+          posSystemId: 'square',
+          transactionDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          amount: 125.50,
+          currency: 'AED',
+          paymentMethod: 'Card',
+          items: [
+            { name: 'Coffee', quantity: 2, unitPrice: 15.00, vatRate: 0.05 },
+            { name: 'Sandwich', quantity: 1, unitPrice: 45.00, vatRate: 0.05 },
+            { name: 'Juice', quantity: 3, unitPrice: 18.50, vatRate: 0.05 }
+          ],
+          vatAmount: 5.98,
+          receiptNumber: 'SQ-2025-001234',
+          location: 'Dubai Mall Branch'
+        },
+        {
+          id: 'txn_002',
+          posSystemId: 'lightspeed',
+          transactionDate: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+          amount: 89.25,
+          currency: 'AED',
+          paymentMethod: 'Cash',
+          items: [
+            { name: 'T-Shirt', quantity: 1, unitPrice: 85.00, vatRate: 0.05 }
+          ],
+          vatAmount: 4.25,
+          receiptNumber: 'LS-2025-005678',
+          location: 'Marina Walk Store'
+        },
+        {
+          id: 'txn_003',
+          posSystemId: 'toast',
+          transactionDate: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          amount: 234.75,
+          currency: 'AED',
+          paymentMethod: 'Card',
+          items: [
+            { name: 'Margherita Pizza', quantity: 1, unitPrice: 65.00, vatRate: 0.05 },
+            { name: 'Caesar Salad', quantity: 2, unitPrice: 45.00, vatRate: 0.05 },
+            { name: 'Soft Drink', quantity: 3, unitPrice: 12.00, vatRate: 0.05 },
+            { name: 'Tiramisu', quantity: 1, unitPrice: 32.00, vatRate: 0.05 }
+          ],
+          vatAmount: 11.18,
+          receiptNumber: 'TST-2025-009876',
+          customerId: 'cust_789',
+          location: 'JBR Restaurant'
+        },
+        {
+          id: 'txn_004',
+          posSystemId: 'square',
+          transactionDate: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          amount: 67.50,
+          currency: 'AED',
+          paymentMethod: 'Digital Wallet',
+          items: [
+            { name: 'Laptop Bag', quantity: 1, unitPrice: 64.29, vatRate: 0.05 }
+          ],
+          vatAmount: 3.21,
+          receiptNumber: 'SQ-2025-001235',
+          location: 'Dubai Mall Branch'
+        }
+      ];
+      
+      res.json(mockTransactions);
+    } catch (error) {
+      console.error('Error fetching POS transactions:', error);
+      res.status(500).json({ error: 'Failed to fetch POS transactions' });
+    }
+  });
+
+  app.post('/api/pos/connect', async (req, res) => {
+    try {
+      const { posSystemId } = req.body;
+      
+      // Simulate connection process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Random success/failure for demo
+      const isSuccess = Math.random() > 0.2; // 80% success rate
+      
+      if (isSuccess) {
+        res.json({
+          success: true,
+          message: `Successfully connected to ${posSystemId}`,
+          connectionId: `conn_${Date.now()}`,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: 'CONNECTION_FAILED',
+          message: 'Failed to establish connection - check credentials',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error connecting POS system:', error);
+      res.status(500).json({ error: 'Failed to connect POS system' });
+    }
+  });
+
+  app.post('/api/pos/sync', async (req, res) => {
+    try {
+      const { posSystemId } = req.body;
+      
+      // Simulate sync process with longer delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Random success/failure for demo
+      const isSuccess = Math.random() > 0.1; // 90% success rate
+      
+      if (isSuccess) {
+        const transactionCount = Math.floor(Math.random() * 50) + 10; // 10-60 transactions
+        
+        res.json({
+          success: true,
+          message: `Successfully synced transactions from ${posSystemId}`,
+          transactionCount,
+          newTransactions: transactionCount,
+          duplicatesSkipped: Math.floor(Math.random() * 5),
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: 'SYNC_FAILED',
+          message: 'Sync failed - POS system temporarily unavailable',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing POS transactions:', error);
+      res.status(500).json({ error: 'Failed to sync POS transactions' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
