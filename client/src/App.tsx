@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./context/auth-context";
 import { LanguageProvider } from "./context/language-context";
+import { DataSyncProvider } from "./context/data-sync-context";
 import { NotificationProvider } from "./context/notification-context";
 import { TaxClassificationProvider } from "./context/tax-classification-context";
 import { NavigationProvider } from "./context/navigation-context";
@@ -88,14 +89,16 @@ function App() {
         <TooltipProvider>
           <AuthProvider>
             <LanguageProvider>
-              <NotificationProvider>
-                <TaxClassificationProvider>
-                  <NavigationProvider>
-                    <Toaster />
-                    <Router />
-                  </NavigationProvider>
-                </TaxClassificationProvider>
-              </NotificationProvider>
+              <DataSyncProvider>
+                <NotificationProvider>
+                  <TaxClassificationProvider>
+                    <NavigationProvider>
+                      <Toaster />
+                      <Router />
+                    </NavigationProvider>
+                  </TaxClassificationProvider>
+                </NotificationProvider>
+              </DataSyncProvider>
             </LanguageProvider>
           </AuthProvider>
         </TooltipProvider>

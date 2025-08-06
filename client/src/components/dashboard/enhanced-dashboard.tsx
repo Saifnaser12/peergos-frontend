@@ -20,6 +20,9 @@ import { NextStepRecommendations } from '@/components/navigation/next-step-recom
 import { WorkflowBreadcrumb } from '@/components/navigation/workflow-breadcrumb';
 import { ContinueWorkflowButton } from '@/components/navigation/continue-workflow-button';
 import { ContextualHelp } from '@/components/navigation/contextual-help';
+import { ValidationWarnings } from '@/components/data-sync/validation-warnings';
+import { RealTimeIndicator } from '@/components/data-sync/real-time-indicator';
+import { AutoPopulationStatus } from '@/components/data-sync/auto-population-status';
 import { 
   Settings, 
   Plus, 
@@ -250,7 +253,10 @@ export default function EnhancedDashboard() {
               </h1>
               <p className="text-gray-600">{company?.name || 'Tax Compliance Overview'}</p>
             </div>
-            <ContextualHelp module="dashboard" className="self-start" />
+            <div className="flex items-center gap-2">
+              <RealTimeIndicator module="dashboard" />
+              <ContextualHelp module="dashboard" className="self-start" />
+            </div>
           </div>
         </div>
         
@@ -359,12 +365,18 @@ export default function EnhancedDashboard() {
         </Card>
       )}
 
+      {/* Validation Warnings */}
+      <ValidationWarnings module="dashboard" compact />
+
       {/* Dashboard Widgets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {widgets
           .sort((a, b) => a.position - b.position)
           .map(renderWidget)}
       </div>
+
+      {/* Auto-Population Status */}
+      <AutoPopulationStatus className="mt-6" />
 
       {/* Next Step Recommendations and Continue Workflow */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
