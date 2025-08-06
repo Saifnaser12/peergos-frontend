@@ -53,7 +53,7 @@ export default function Sidebar({
         { path: '/documents', icon: FolderOpen, label: t('nav.documents'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/workflows/templates', icon: BookTemplate, label: 'Workflow Templates', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/enhanced-data-entry', icon: PlusCircle, label: t('nav.data_entry'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
-        { path: '/calculation-transparency', icon: Calculator, label: t('nav.calculation_audit'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
+        { path: '/calculation-audit', icon: Calculator, label: t('nav.calculation_audit'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/financials', icon: BarChart3, label: t('nav.reports'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/tax-assistant', icon: Bot, label: t('nav.assistant'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/admin', icon: Settings, label: t('nav.admin'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
