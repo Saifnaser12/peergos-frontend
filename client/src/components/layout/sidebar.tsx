@@ -3,7 +3,7 @@ import { useAuth } from '@/context/auth-context';
 import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Tooltip } from '@/components/ui/tooltip';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   BarChart3,
   Calendar,
@@ -190,9 +190,16 @@ export default function Sidebar({
 
                   if (isCollapsed) {
                     return (
-                      <Tooltip key={item.path} content={item.label} position="right">
-                        {navItem}
-                      </Tooltip>
+                      <TooltipProvider key={item.path}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {navItem}
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {item.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     );
                   }
 
