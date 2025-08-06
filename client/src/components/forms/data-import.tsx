@@ -84,12 +84,18 @@ export default function DataImport({ onImportComplete }: DataImportProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useMutation<ImportResult, Error, FormData>({
     mutationFn: async (formData: FormData) => {
-      return apiRequest('/api/data-import/upload', {
+      const response = await fetch('/api/data-import/upload', {
         method: 'POST',
         body: formData,
       });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (result: ImportResult) => {
       setImportResult(result);
@@ -165,20 +171,26 @@ export default function DataImport({ onImportComplete }: DataImportProps) {
         setUploadProgress(prev => Math.min(prev + 20, 90));
       }, 200);
 
-      const response = await apiRequest('/api/data-import/preview', {
+      const response = await fetch('/api/data-import/preview', {
         method: 'POST',
         body: formData,
       });
 
+      if (!response.ok) {
+        throw new Error('Preview failed');
+      }
+
+      const result = await response.json();
+      
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      setPreviewData(response.data);
+      setPreviewData(result.data);
       setShowPreview(true);
       
       toast({
         title: 'Preview Ready',
-        description: `Loaded ${response.data.length} rows for preview`,
+        description: `Loaded ${result.data.length} rows for preview`,
       });
     } catch (error: any) {
       toast({

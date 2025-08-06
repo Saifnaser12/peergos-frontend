@@ -95,10 +95,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
         vatAmount: autoCalculatedVAT || data.vatAmount || '0',
         attachments: data.attachments || [],
       };
-      return apiRequest('/api/transactions', {
-        method: 'POST',
-        body: JSON.stringify(transactionData),
-      });
+      return apiRequest('/api/transactions', transactionData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
