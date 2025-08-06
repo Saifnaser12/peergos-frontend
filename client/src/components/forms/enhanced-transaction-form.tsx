@@ -149,7 +149,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
       showProgress={false}
     >
       <Form {...form}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mobile-form-group">
           {/* Transaction Type */}
           <FormField
             control={form.control}
@@ -159,7 +159,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
                 <FormLabel>Transaction Type *</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="mobile-input h-12 text-base">
                       <SelectValue placeholder="Select transaction type" />
                     </SelectTrigger>
                   </FormControl>
@@ -182,7 +182,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
                 <FormLabel>Category *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="mobile-input h-12 text-base">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                   </FormControl>
@@ -217,6 +217,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
                       example="1500.00"
                       format="AED 0.00"
                       realTimeValidation={true}
+                      className="mobile-input h-12 text-base"
                       validationRules={{
                         required: true,
                         custom: (value) => {
@@ -299,6 +300,7 @@ export default function EnhancedTransactionForm({ onSuccess }: EnhancedTransacti
                       hint="Provide clear details about the transaction"
                       example="Office supplies from ABC Stationery"
                       realTimeValidation={true}
+                      className="mobile-input h-12 text-base"
                       validationRules={{
                         required: true,
                         minLength: 3,

@@ -120,9 +120,12 @@ export default function EnhancedDashboard() {
 
     const baseClasses = cn(
       "transition-all duration-200",
-      widget.size === 'small' && "col-span-1",
-      widget.size === 'medium' && "col-span-2",
-      widget.size === 'large' && "col-span-3"
+      // Desktop layout
+      widget.size === 'small' && "md:col-span-1",
+      widget.size === 'medium' && "md:col-span-2", 
+      widget.size === 'large' && "md:col-span-3",
+      // Mobile layout - single column
+      "col-span-1"
     );
 
     switch (widget.type) {
@@ -185,7 +188,7 @@ export default function EnhancedDashboard() {
         </div>
 
         {/* Setup Options */}
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowSetupWizard(true)}>
             <div className="flex items-start gap-4">
               <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
@@ -220,7 +223,7 @@ export default function EnhancedDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">5</div>
             <div className="text-sm text-gray-600">Minutes to Setup</div>
@@ -295,7 +298,7 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* Quick Overview Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -348,7 +351,7 @@ export default function EnhancedDashboard() {
             <h3 className="font-semibold text-gray-900">Customize Dashboard</h3>
             <p className="text-sm text-gray-600">Toggle widgets on/off</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mobile-form-group">
             {widgets.map(widget => (
               <Button
                 key={widget.id}
@@ -379,7 +382,7 @@ export default function EnhancedDashboard() {
       <AutoPopulationStatus className="mt-6" />
 
       {/* Next Step Recommendations and Continue Workflow */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mt-6">
         <div className="lg:col-span-2">
           <NextStepRecommendations currentModule="dashboard" />
         </div>
