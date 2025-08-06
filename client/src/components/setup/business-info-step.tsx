@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { businessInfoSchema, BusinessInfo, UAE_EMIRATES } from '@/lib/setup-validation';
+import { companyInfoSchema, UAE_EMIRATES } from '@/lib/setup-validation';
 import { useSetup } from '@/context/setup-context';
 import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,9 @@ export default function BusinessInfoStep() {
   const { businessInfo, updateBusinessInfo, updateStepValidation } = useSetup();
   const { language } = useLanguage();
 
-  const form = useForm<BusinessInfo>({
-    resolver: zodResolver(businessInfoSchema),
-    defaultValues: businessInfo as BusinessInfo,
+  const form = useForm({
+    resolver: zodResolver(companyInfoSchema),
+    defaultValues: businessInfo,
     mode: 'onChange',
   });
 

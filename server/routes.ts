@@ -993,6 +993,52 @@ Company ID: ${req.user.companyId}
   const syncServiceRoutes = await import("./routes/sync-service");
   app.use("/api/sync", syncServiceRoutes.default);
 
+  // Setup wizard completion endpoint
+  app.post("/api/setup/complete", asyncHandler(async (req, res) => {
+    const setupData = req.body;
+    const userId = 1; // Mock user ID - would get from session
+    const companyId = 1; // Mock company ID - would get from session
+
+    // Update company with setup data
+    const updatedCompany = await storage.updateCompany(companyId, {
+      name: setupData.companyInfo.name,
+      address: setupData.companyInfo.address,
+      phone: setupData.companyInfo.phone,
+      email: setupData.companyInfo.email,
+      emirate: setupData.companyInfo.emirate,
+      industry: setupData.companyInfo.industry,
+      trn: setupData.companyInfo.trn,
+      expectedAnnualRevenue: setupData.revenueThreshold.expectedAnnualRevenue,
+      hasInternationalSales: setupData.revenueThreshold.hasInternationalSales,
+      internationalSalesPercentage: setupData.revenueThreshold.internationalPercentage,
+      vatRegistered: setupData.taxRegistration.vatRegistered,
+      citRegistrationRequired: setupData.taxRegistration.citRegistrationRequired,
+      freeZone: setupData.taxRegistration.freeZone,
+      qfzpStatus: setupData.taxRegistration.qfzpStatus,
+      accountingMethod: setupData.accountingBasis.accountingMethod,
+      financialYearEnd: setupData.accountingBasis.financialYearEnd,
+      setupCompleted: true,
+      setupCompletedAt: new Date(),
+    });
+
+    // Create initial notification about successful setup
+    await storage.createNotification({
+      companyId,
+      userId,
+      type: 'setup',
+      title: 'Setup Complete',
+      message: `Company setup completed successfully. ${setupData.taxRegistration.vatRegistered ? 'VAT registration required.' : ''} ${setupData.accountingBasis.accountingMethod === 'accrual' ? 'Accrual accounting method selected.' : 'Cash basis accounting available.'}`,
+      priority: 'medium',
+      read: false,
+    });
+
+    res.json({
+      success: true,
+      message: 'Setup completed successfully',
+      company: updatedCompany,
+    });
+  }));
+
   // Note: Do not add catch-all error handlers here in development
   // The Vite middleware needs to handle static routes after this
   const httpServer = createServer(app);

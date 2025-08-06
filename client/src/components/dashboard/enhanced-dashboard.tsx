@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { cn } from '@/lib/utils';
+import EnhancedSetupWizard from '@/components/setup/enhanced-setup-wizard';
 import { formatCurrency } from '@/lib/business-logic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Calendar,
-  Calculator
+  Calculator,
+  Rocket
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -52,6 +54,7 @@ export default function EnhancedDashboard() {
   const { company, user } = useAuth();
   const [customizeMode, setCustomizeMode] = useState(false);
   const [widgets, setWidgets] = useState<DashboardWidget[]>(defaultWidgets);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   // Fetch dashboard data
   const { data: kpiData = [] } = useQuery({
@@ -73,6 +76,10 @@ export default function EnhancedDashboard() {
   const currentKpi = Array.isArray(kpiData) && kpiData.length > 0 ? kpiData[0] : null;
   const hasData = currentKpi && (parseFloat(currentKpi.revenue || '0') > 0);
   
+  // Check if company setup is complete
+  const isSetupComplete = company?.setupCompleted || (company?.trn && company?.accountingMethod);
+  const canSkipSetup = hasData || isSetupComplete;
+  
   const tasksArray = Array.isArray(tasks) ? tasks : [];
   const notificationsArray = Array.isArray(notifications) ? notifications : [];
   
@@ -86,6 +93,17 @@ export default function EnhancedDashboard() {
         ? { ...widget, visible: !widget.visible }
         : widget
     ));
+  };
+
+  // Handle setup wizard completion
+  const handleSetupComplete = () => {
+    setShowSetupWizard(false);
+    // Refresh user data
+    window.location.reload();
+  };
+
+  const handleSetupSkip = () => {
+    setShowSetupWizard(false);
   };
 
   const renderWidget = (widget: DashboardWidget) => {
@@ -134,28 +152,72 @@ export default function EnhancedDashboard() {
     }
   };
 
-  // Empty state for new users
-  if (!hasData) {
+  // Show setup wizard for new users or if setup is not complete
+  if (!isSetupComplete && !hasData) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <Building2 size={48} className="mx-auto mb-4 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to Peergos</h2>
-          <p className="text-gray-600 mb-6">Start by adding your first transaction to see your comprehensive tax dashboard</p>
-          <div className="flex gap-3 justify-center">
-            <Link href="/accounting">
-              <Button className="flex items-center gap-2">
-                <Plus size={16} />
-                Add First Transaction
-              </Button>
-            </Link>
-            <Link href="/setup">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Settings size={16} />
-                Complete Setup
-              </Button>
-            </Link>
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-6">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 rounded-full p-3">
+              <Rocket className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold mb-1">Welcome to Peergos</h2>
+              <p className="text-blue-100">Let's get your UAE tax compliance setup in just 5 minutes</p>
+            </div>
           </div>
+        </div>
+
+        {/* Setup Options */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowSetupWizard(true)}>
+            <div className="flex items-start gap-4">
+              <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
+                <Settings className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Complete Setup Wizard</h3>
+                <p className="text-sm text-gray-600 mb-3">Guided setup with auto-configuration for UAE tax requirements</p>
+                <Button size="sm" className="w-full">
+                  Start Setup Wizard
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-4">
+              <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
+                <Plus className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Start with Transactions</h3>
+                <p className="text-sm text-gray-600 mb-3">Jump right in and add your first business transaction</p>
+                <Link href="/accounting">
+                  <Button variant="outline" size="sm" className="w-full">
+                    Add Transaction
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">5</div>
+            <div className="text-sm text-gray-600">Minutes to Setup</div>
+          </Card>
+          <Card className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">100%</div>
+            <div className="text-sm text-gray-600">FTA Compliant</div>
+          </Card>
+          <Card className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-600">Auto</div>
+            <div className="text-sm text-gray-600">Configuration</div>
+          </Card>
         </div>
       </div>
     );
@@ -283,6 +345,24 @@ export default function EnhancedDashboard() {
           .sort((a, b) => a.position - b.position)
           .map(renderWidget)}
       </div>
+      
+      {/* Setup Wizard Modal/Overlay */}
+      {showSetupWizard && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-auto">
+            <div className="p-6">
+              <EnhancedSetupWizard
+                onComplete={() => {
+                  setShowSetupWizard(false);
+                  window.location.reload();
+                }}
+                onSkip={() => setShowSetupWizard(false)}
+                canSkip={canSkipSetup}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

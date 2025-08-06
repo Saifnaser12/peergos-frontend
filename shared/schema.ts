@@ -28,8 +28,18 @@ export const companies = pgTable("companies", {
   phone: text("phone"),
   email: text("email"),
   industry: text("industry"),
+  emirate: text("emirate"), // UAE Emirate
   freeZone: boolean("free_zone").default(false),
   vatRegistered: boolean("vat_registered").default(false),
+  citRegistrationRequired: boolean("cit_registration_required").default(true),
+  qfzpStatus: boolean("qfzp_status").default(false), // Qualifying Free Zone Person
+  expectedAnnualRevenue: decimal("expected_annual_revenue", { precision: 15, scale: 2 }).default("0"),
+  hasInternationalSales: boolean("has_international_sales").default(false),
+  internationalSalesPercentage: integer("international_sales_percentage").default(0),
+  accountingMethod: text("accounting_method").default("cash"), // cash or accrual
+  financialYearEnd: text("financial_year_end").default("12-31"), // MM-DD format
+  setupCompleted: boolean("setup_completed").default(false),
+  setupCompletedAt: timestamp("setup_completed_at"),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color").default("#1976d2"),
   language: text("language").default("en"),

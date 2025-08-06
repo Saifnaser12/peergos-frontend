@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { 
-  businessInfoSchema,
-  revenueDeclarationSchema,
-  freeZoneLicenseSchema,
-  trnUploadSchema,
-  summaryReviewSchema,
-  validateStep
+  companyInfoSchema,
+  revenueThresholdSchema,
+  taxRegistrationSchema,
+  accountingBasisSchema
 } from '@/lib/setup-validation';
 
 describe('Setup Validation', () => {
@@ -22,7 +20,7 @@ describe('Setup Validation', () => {
         contactPhone: '+971501234567',
       };
 
-      const result = businessInfoSchema.safeParse(validData);
+      const result = companyInfoSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
@@ -33,7 +31,7 @@ describe('Setup Validation', () => {
         emirate: 'Dubai',
       };
 
-      const result = businessInfoSchema.safeParse(invalidData);
+      const result = companyInfoSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
   });
@@ -42,27 +40,21 @@ describe('Setup Validation', () => {
     it('should validate revenue declaration with no international sales', () => {
       const validData = {
         expectedAnnualRevenue: 500000,
-        revenueCategory: 'BETWEEN_375K_3M' as const,
-        mainRevenueSource: 'Consulting Services',
-        businessModel: 'B2B' as const,
         hasInternationalSales: false,
       };
 
-      const result = revenueDeclarationSchema.safeParse(validData);
+      const result = revenueThresholdSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
     it('should validate revenue declaration with international sales', () => {
       const validData = {
         expectedAnnualRevenue: 1200000,
-        revenueCategory: 'BETWEEN_375K_3M' as const,
-        mainRevenueSource: 'Trading and Export',
-        businessModel: 'MIXED' as const,
         hasInternationalSales: true,
-        internationalSalesPercentage: 25,
+        internationalPercentage: 25,
       };
 
-      const result = revenueDeclarationSchema.safeParse(validData);
+      const result = revenueThresholdSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
