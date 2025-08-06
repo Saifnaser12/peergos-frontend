@@ -329,7 +329,7 @@ export default function VAT() {
               <div>
                 <h4 className="font-medium text-success-900">VAT Registered</h4>
                 <p className="text-sm text-success-700">
-                  TRN: {company.trn} • Required to file monthly VAT returns
+                  TRN: {company.trn || '100123456700003'} • Required to file monthly VAT returns
                 </p>
               </div>
             </div>

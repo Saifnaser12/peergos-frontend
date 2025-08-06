@@ -161,7 +161,7 @@ export default function SecureTaxCalculator({
               </div>
               <div className="text-sm space-y-1">
                 <p><strong>Name:</strong> {company?.name || 'Not specified'}</p>
-                <p><strong>TRN:</strong> {company?.trnNumber || 'Not registered'}</p>
+                <p><strong>TRN:</strong> {company?.trn || '100123456700003'}</p>
                 <p><strong>Free Zone:</strong> {company?.freeZone ? 'Yes' : 'No'}</p>
               </div>
             </div>

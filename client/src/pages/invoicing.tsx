@@ -68,7 +68,7 @@ export default function Invoicing() {
         
         <div class="company-info">
           <h3>${company?.name || 'Demo Company'}</h3>
-          <p>TRN: ${company?.trn || 'TRN123456789'}</p>
+          <p>TRN: ${company?.trn || '100123456700003'}</p>
           <p>${company?.address || 'Address not available'}</p>
         </div>
         

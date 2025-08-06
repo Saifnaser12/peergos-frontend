@@ -165,7 +165,7 @@ export default function SummaryReviewStep() {
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </div>
               <div className="pl-6 space-y-1 text-sm">
-                <p><strong>TRN Status:</strong> {trnUpload.hasTRN ? 'Registered' : 'Not yet registered'}</p>
+                <p><strong>TRN Status:</strong> {trnUpload.hasTRN ? 'Registered (100123456700003)' : 'Pending Registration'}</p>
                 {trnUpload.hasTRN && <p><strong>TRN:</strong> {trnUpload.trnNumber}</p>}
                 <p><strong>CIT Required:</strong> {trnUpload.citRegistrationRequired ? 'Yes' : 'No'}</p>
                 <p><strong>Tax Agent:</strong> {trnUpload.taxAgentAppointed ? trnUpload.taxAgentName : 'None'}</p>
