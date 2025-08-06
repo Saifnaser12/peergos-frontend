@@ -22,7 +22,8 @@ import {
   Calculator,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  BookTemplate
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -50,6 +51,7 @@ export default function Sidebar({
         { path: '/bookkeeping', icon: Wallet, label: t('nav.bookkeeping'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/taxes', icon: FileText, label: t('nav.taxes'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/documents', icon: FolderOpen, label: t('nav.documents'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/workflows/templates', icon: BookTemplate, label: 'Workflow Templates', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/enhanced-data-entry', icon: PlusCircle, label: t('nav.data_entry'), roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
         { path: '/calculation-transparency', icon: Calculator, label: t('nav.calculation_audit'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },
         { path: '/financials', icon: BarChart3, label: t('nav.reports'), roles: ['ADMIN', 'ACCOUNTANT', 'SME_CLIENT'] },

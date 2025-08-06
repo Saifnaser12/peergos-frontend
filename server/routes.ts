@@ -18,6 +18,9 @@ import {
   sanitizeInput 
 } from "./middleware/security";
 
+// Import workflow template routes
+import { registerWorkflowTemplateRoutes } from "./workflow-template-routes";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Apply security middleware
@@ -26,6 +29,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(requestLogger);
   app.use(sanitizeInput);
   app.use(generalRateLimit);
+
+  // Register workflow template routes
+  registerWorkflowTemplateRoutes(app);
 
   // Workflow Status API
   app.get('/api/workflow-status', async (req, res) => {

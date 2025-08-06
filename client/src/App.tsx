@@ -35,6 +35,7 @@ import CreditDebitNotes from "./components/financial/credit-debit-notes";
 import CalculationTransparencyPage from "./pages/calculation-transparency";
 import CalculationAudit from "./pages/calculation-audit";
 import VisualDesignDemo from "./pages/visual-design-demo";
+import WorkflowTemplatesPage from "./pages/workflows/templates";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -67,6 +68,7 @@ function Router() {
           <Route path="/setup" component={Setup} />
           <Route path="/workflow" component={Workflow} />
           <Route path="/documents" component={Documents} />
+          <Route path="/workflows/templates" component={WorkflowTemplatesPage} />
           <Route path="/enhanced-data-entry" component={EnhancedDataEntryPage} />
           <Route path="/calculation-transparency" component={CalculationTransparencyPage} />
           <Route path="/calculation-audit" component={CalculationAudit} />
