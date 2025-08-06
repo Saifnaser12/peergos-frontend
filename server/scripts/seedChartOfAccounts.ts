@@ -1,15 +1,4 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-
-neonConfig.webSocketConstructor = ws;
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
-}
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle({ client: pool });
+import { pool, db } from '../db.js';
 
 // UAE Chart of Accounts with tax metadata
 const chartOfAccounts = [
@@ -148,9 +137,8 @@ async function seedChartOfAccounts() {
     console.log(`✅ Successfully seeded ${chartOfAccounts.length} chart of accounts records`);
   } catch (error) {
     console.error('❌ Error seeding Chart of Accounts:', error);
-    throw error;
-  } finally {
-    await pool.end();
+    // Don't throw the error to prevent application crash
+    // Just log it and continue with application startup
   }
 }
 

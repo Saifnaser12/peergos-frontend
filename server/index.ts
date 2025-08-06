@@ -40,15 +40,24 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Seed database with initial data
-  await seedDatabase();
-  
-  // Seed Chart of Accounts
-  await seedChartOfAccounts();
-  
-  // Start notification scheduler
-  notificationScheduler.start();
-  await notificationScheduler.seedDevelopmentDeadlines();
+  try {
+    // Seed database with initial data
+    await seedDatabase();
+    
+    // Seed Chart of Accounts (with error handling to prevent crash)
+    try {
+      await seedChartOfAccounts();
+    } catch (error) {
+      console.error('⚠️ Chart of Accounts seeding failed, but continuing application startup:', error);
+    }
+    
+    // Start notification scheduler
+    notificationScheduler.start();
+    await notificationScheduler.seedDevelopmentDeadlines();
+  } catch (error) {
+    console.error('❌ Error during application initialization:', error);
+    // Don't exit the process, try to continue with server startup
+  }
   
   const server = await registerRoutes(app);
 
