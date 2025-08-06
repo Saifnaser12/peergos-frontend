@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Settings, Users, Building2, Palette, Globe, Shield } from 'lucide-react';
+import { Settings, Users, Building2, Palette, Globe, Shield, Link } from 'lucide-react';
+import { FTAIntegrationStatus } from '@/components/admin/fta-integration-status';
 import { cn } from '@/lib/utils';
 
 export default function Admin() {
@@ -97,10 +98,14 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="company" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
                 <Building2 size={16} />
                 Company
+              </TabsTrigger>
+              <TabsTrigger value="fta" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Link size={16} />
+                FTA
               </TabsTrigger>
               <TabsTrigger value="appearance" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
                 <Palette size={16} />
@@ -203,6 +208,10 @@ export default function Admin() {
                   {updateCompanyMutation.isPending ? 'Saving...' : 'Save Company Settings'}
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="fta" className="mt-6">
+              <FTAIntegrationStatus />
             </TabsContent>
             
             <TabsContent value="appearance" className="mt-6">

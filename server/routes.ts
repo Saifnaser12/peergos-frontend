@@ -1257,6 +1257,188 @@ Company ID: ${req.user.companyId}
     }
   });
 
+  // FTA Integration API endpoints (placeholder/mock)
+  app.get('/api/fta/status', async (req, res) => {
+    try {
+      // Mock FTA connection status
+      const mockStatus = {
+        isConnected: false,
+        lastConnectionTest: new Date().toISOString(),
+        status: 'inactive',
+        environment: 'sandbox',
+        apiVersion: 'v2.0',
+        lastSuccessfulSubmission: null
+      };
+      
+      res.json(mockStatus);
+    } catch (error) {
+      console.error('Error fetching FTA status:', error);
+      res.status(500).json({ error: 'Failed to fetch FTA status' });
+    }
+  });
+
+  app.post('/api/fta/test-connection', async (req, res) => {
+    try {
+      // Simulate connection test with random success/failure
+      const isSuccess = Math.random() > 0.3; // 70% success rate for demo
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (isSuccess) {
+        res.json({
+          success: true,
+          message: 'FTA API connection test successful',
+          responseTime: Math.floor(Math.random() * 500) + 200,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.json({
+          success: false,
+          message: 'FTA API connection test failed - timeout or invalid credentials',
+          error: 'CONNECTION_TIMEOUT',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error testing FTA connection:', error);
+      res.status(500).json({ error: 'Failed to test FTA connection' });
+    }
+  });
+
+  app.get('/api/fta/submissions', async (req, res) => {
+    try {
+      // Mock submission logs
+      const mockSubmissions = [
+        {
+          id: 'sub_001',
+          submissionType: 'vat-return',
+          status: 'accepted',
+          submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          responseTime: 1234,
+          ftaReferenceNumber: 'FTA-VAT-2025-001234',
+          documentId: 'VAT-Q1-2025'
+        },
+        {
+          id: 'sub_002',
+          submissionType: 'e-invoice',
+          status: 'pending',
+          submittedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          responseTime: 856,
+          documentId: 'INV-2025-0157'
+        },
+        {
+          id: 'sub_003',
+          submissionType: 'cit-return',
+          status: 'rejected',
+          submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          responseTime: 2145,
+          errorMessage: 'Invalid business activity code',
+          documentId: 'CIT-2024-ANNUAL'
+        },
+        {
+          id: 'sub_004',
+          submissionType: 'e-invoice',
+          status: 'accepted',
+          submittedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          responseTime: 623,
+          ftaReferenceNumber: 'FTA-INV-2025-005678',
+          documentId: 'INV-2025-0156'
+        }
+      ];
+      
+      res.json(mockSubmissions);
+    } catch (error) {
+      console.error('Error fetching FTA submissions:', error);
+      res.status(500).json({ error: 'Failed to fetch FTA submissions' });
+    }
+  });
+
+  app.get('/api/fta/notifications', async (req, res) => {
+    try {
+      // Mock FTA notifications
+      const mockNotifications = [
+        {
+          id: 'notif_001',
+          type: 'submission_success',
+          title: 'VAT Return Accepted',
+          message: 'Your Q1 2025 VAT return has been successfully submitted and accepted by FTA.',
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          isRead: true,
+          severity: 'success'
+        },
+        {
+          id: 'notif_002',
+          type: 'api_status',
+          title: 'FTA API Maintenance',
+          message: 'Scheduled maintenance on FTA systems from 2:00 AM to 4:00 AM GST on Sunday.',
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          isRead: false,
+          severity: 'info'
+        },
+        {
+          id: 'notif_003',
+          type: 'submission_error',
+          title: 'CIT Return Rejected',
+          message: 'Your annual CIT return was rejected due to invalid business activity code. Please review and resubmit.',
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          isRead: false,
+          severity: 'error'
+        },
+        {
+          id: 'notif_004',
+          type: 'compliance_alert',
+          title: 'Filing Deadline Reminder',
+          message: 'VAT return for the current period is due in 5 days. Ensure all transactions are recorded.',
+          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          isRead: false,
+          severity: 'warning'
+        }
+      ];
+      
+      res.json(mockNotifications);
+    } catch (error) {
+      console.error('Error fetching FTA notifications:', error);
+      res.status(500).json({ error: 'Failed to fetch FTA notifications' });
+    }
+  });
+
+  // Mock FTA submission endpoint
+  app.post('/api/fta/submit', async (req, res) => {
+    try {
+      const { submissionType, documentId, data } = req.body;
+      
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Random success/failure for demo
+      const isSuccess = Math.random() > 0.2; // 80% success rate
+      
+      if (isSuccess) {
+        const ftaReferenceNumber = `FTA-${submissionType.toUpperCase()}-${new Date().getFullYear()}-${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}`;
+        
+        res.json({
+          success: true,
+          ftaReferenceNumber,
+          submissionId: `sub_${Date.now()}`,
+          status: 'submitted',
+          message: 'Document successfully submitted to FTA',
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: 'Document validation failed - missing required fields',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting to FTA:', error);
+      res.status(500).json({ error: 'Failed to submit to FTA' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
