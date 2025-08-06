@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { notificationScheduler } from "./notification-scheduler";
 import { seedChartOfAccounts } from "./scripts/seedChartOfAccounts";
+import path from "path";
 
 const app = express();
 app.use(express.json());
@@ -71,8 +72,46 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
   console.log('✅ Routes registered successfully');
 
-  // Setup Vite middleware for development
-  await setupVite(app, server);
+  // Check if we're in production mode or development mode
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  console.log(`🌍 Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+  
+  if (!isProduction) {
+    console.log('🔧 Setting up Vite middleware for development...');
+    await setupVite(app, server);
+    console.log('✅ Vite middleware setup complete');
+  } else {
+    console.log('🏗️ Setting up static file serving for production...');
+    
+    // Serve static files from dist/public in production
+    app.use(express.static(path.join(process.cwd(), 'dist', 'public')));
+    
+    // Health check endpoint (before catch-all)
+    app.get('/health', (req, res) => {
+      res.json({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'unknown'
+      });
+    });
+    
+    // Catch-all handler for SPA routing in production
+    app.get('*', (req, res, next) => {
+      // Skip API routes and health checks
+      if (req.path.startsWith('/api')) {
+        next();
+        return;
+      }
+      
+      // Serve index.html for all other routes
+      const indexPath = path.join(process.cwd(), 'dist', 'public', 'index.html');
+      console.log(`📄 Serving SPA route ${req.path} with ${indexPath}`);
+      res.sendFile(indexPath);
+    });
+    
+    console.log('✅ Production static serving setup complete');
+  }
 
   // Add global error handler after Vite setup
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
