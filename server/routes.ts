@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
+import { healthCheck } from "./health";
 
 // Import security and error handling middleware
 import { 
@@ -32,6 +33,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register workflow template routes
   registerWorkflowTemplateRoutes(app);
+
+  // Health check endpoint
+  app.get('/health', healthCheck);
+  app.get('/api/health', healthCheck);
 
   // Workflow Status API
   app.get('/api/workflow-status', async (req, res) => {

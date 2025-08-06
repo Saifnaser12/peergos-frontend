@@ -4,6 +4,9 @@
 Peergos is a web-based SaaS platform for UAE SME tax compliance, offering end-to-end tax management for Corporate Income Tax (CIT) and VAT, alongside accounting and financial reporting. Built with React and Node.js/Express, it targets the UAE market with full Arabic RTL support, aiming to simplify tax obligations for small to medium-sized enterprises. The platform provides comprehensive features from transaction entry to FTA submission readiness, including e-invoicing and smart compliance tools, with a vision to become the leading tax compliance solution in the region.
 
 ## Recent Changes (August 2025)
+- **Database Connection Pool Issues Fixed**: Resolved "Called end on pool more than once" error causing deployment crashes by removing duplicate pool creation and using shared database instance
+- **Enhanced Error Handling**: Added comprehensive logging, health check endpoints (/health, /api/health), and improved global error handling to prevent application crashes
+- **Production Deployment Ready**: Application now starts successfully without database connection errors and includes proper error recovery mechanisms
 - **Workflow Templates System**: Complete implementation of industry-specific workflow templates with browser, customizer, and sharing capabilities
 - **Template Infrastructure**: Added comprehensive server routes, shared template definitions, and navigation integration
 - **Industry Templates**: Pre-built templates for retail, consulting, manufacturing, tech startups, and UAE free zone businesses

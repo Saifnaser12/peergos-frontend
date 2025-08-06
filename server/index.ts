@@ -41,36 +41,63 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    console.log('🚀 Starting application initialization...');
+    
     // Seed database with initial data
+    console.log('📊 Initializing database...');
     await seedDatabase();
+    console.log('✅ Database seeding completed');
     
     // Seed Chart of Accounts (with error handling to prevent crash)
     try {
+      console.log('📈 Seeding Chart of Accounts...');
       await seedChartOfAccounts();
+      console.log('✅ Chart of Accounts seeding completed');
     } catch (error) {
       console.error('⚠️ Chart of Accounts seeding failed, but continuing application startup:', error);
     }
     
     // Start notification scheduler
+    console.log('⏰ Starting notification scheduler...');
     notificationScheduler.start();
     await notificationScheduler.seedDevelopmentDeadlines();
+    console.log('✅ Notification scheduler started');
   } catch (error) {
     console.error('❌ Error during application initialization:', error);
     // Don't exit the process, try to continue with server startup
   }
   
+  console.log('🔧 Registering routes...');
   const server = await registerRoutes(app);
+  console.log('✅ Routes registered successfully');
 
   // Setup Vite middleware for development
   await setupVite(app, server);
 
   // Add global error handler after Vite setup
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    
+    // Log detailed error information for debugging
+    console.error('❌ Global error handler caught:', {
+      error: err,
+      stack: err.stack,
+      url: req.url,
+      method: req.method,
+      headers: req.headers,
+      body: req.body
+    });
 
-    res.status(status).json({ message });
-    throw err;
+    res.status(status).json({ 
+      message,
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: err.stack,
+        details: err 
+      })
+    });
+    
+    // Don't throw the error again to prevent crash
   });
 
   // ALWAYS serve the app on port 5000

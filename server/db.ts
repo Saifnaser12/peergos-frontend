@@ -11,5 +11,12 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+console.log('🔗 Initializing database connection...');
+
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle({ client: pool, schema });
+
+// Test database connection on startup
+pool.query('SELECT 1 as test')
+  .then(() => console.log('✅ Database connection established'))
+  .catch((error) => console.error('❌ Database connection failed:', error));
