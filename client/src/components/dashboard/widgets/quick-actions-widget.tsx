@@ -16,6 +16,7 @@ import {
   Search
 } from 'lucide-react';
 import { Link } from 'wouter';
+import { WorkflowShortcuts } from '../workflow-shortcuts';
 
 interface QuickAction {
   id: string;

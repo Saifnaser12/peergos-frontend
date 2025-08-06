@@ -16,6 +16,10 @@ import { ProgressTrackingWidget } from '@/components/dashboard/widgets/progress-
 import { QuickActionsWidget } from '@/components/dashboard/widgets/quick-actions-widget';
 import { CustomizableWidget } from '@/components/dashboard/widgets/customizable-widget';
 import { WorkflowStatusWidget } from './workflow-status-widget';
+import { NextStepRecommendations } from '@/components/navigation/next-step-recommendations';
+import { WorkflowBreadcrumb } from '@/components/navigation/workflow-breadcrumb';
+import { ContinueWorkflowButton } from '@/components/navigation/continue-workflow-button';
+import { ContextualHelp } from '@/components/navigation/contextual-help';
 import { 
   Settings, 
   Plus, 
@@ -233,13 +237,21 @@ export default function EnhancedDashboard() {
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
+      {/* Workflow Breadcrumb Navigation */}
+      <WorkflowBreadcrumb currentPath="/" className="mb-4" />
+      
       {/* Header with Customization Controls */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {user?.firstName ? `Welcome back, ${user.firstName}` : 'Dashboard'}
-          </h1>
-          <p className="text-gray-600">{company?.name || 'Tax Compliance Overview'}</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {user?.firstName ? `Welcome back, ${user.firstName}` : 'Dashboard'}
+              </h1>
+              <p className="text-gray-600">{company?.name || 'Tax Compliance Overview'}</p>
+            </div>
+            <ContextualHelp module="dashboard" className="self-start" />
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
@@ -352,6 +364,16 @@ export default function EnhancedDashboard() {
         {widgets
           .sort((a, b) => a.position - b.position)
           .map(renderWidget)}
+      </div>
+
+      {/* Next Step Recommendations and Continue Workflow */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="lg:col-span-2">
+          <NextStepRecommendations currentModule="dashboard" />
+        </div>
+        <div>
+          <ContinueWorkflowButton currentModule="dashboard" />
+        </div>
       </div>
       
       {/* Setup Wizard Modal/Overlay */}

@@ -7,6 +7,7 @@ import { useKeyboardNavigation, useFocusManagement, commonShortcuts } from '@/ho
 import Sidebar from './sidebar';
 import Breadcrumb, { useBreadcrumb } from '@/components/navigation/breadcrumb';
 import GlobalSearch from '@/components/navigation/global-search';
+import { WorkflowBreadcrumb } from '@/components/navigation/workflow-breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { 
