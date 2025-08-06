@@ -89,42 +89,42 @@ export function WorkflowTemplateBrowser({ onSelectTemplate }: WorkflowTemplateBr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Workflow Templates</h2>
-          <p className="text-gray-600">Choose from industry-specific templates to get started quickly</p>
+          <h3 className="text-lg font-medium text-gray-900">Browse Templates</h3>
+          <p className="text-sm text-gray-600">Select from UAE-compliant workflow templates</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Heart className="h-4 w-4 mr-2" />
-            Favorites
+          <Button variant="outline" size="sm" className="h-8 px-3">
+            <Heart className="h-3 w-3 mr-2" />
+            Saved
           </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="h-8 px-3">
+            <Share2 className="h-3 w-3 mr-2" />
             Share
           </Button>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-3">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search templates, industries, or tags..."
+              placeholder="Search by template name, industry, or features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9"
             />
           </div>
         </div>
         
         <div className="flex gap-2">
           <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Industry" />
             </SelectTrigger>
             <SelectContent>

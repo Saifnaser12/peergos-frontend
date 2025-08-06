@@ -63,67 +63,67 @@ export default function WorkflowTemplatesPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <BookTemplate className="h-8 w-8 text-blue-600" />
+          <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-3">
+            <BookTemplate className="h-6 w-6 text-emerald-600" />
             Workflow Templates
           </h1>
-          <p className="text-lg text-gray-600 mt-2">
-            Get started quickly with industry-specific workflow templates designed for UAE businesses
+          <p className="text-gray-600 mt-1">
+            Industry-specific templates to accelerate your UAE business compliance setup
           </p>
         </div>
         
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={handleStartFromScratch}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleStartFromScratch} className="h-9 px-3">
             <Plus className="h-4 w-4 mr-2" />
-            Start from Scratch
+            Custom Workflow
           </Button>
-          <Button>
+          <Button className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700">
             <Sparkles className="h-4 w-4 mr-2" />
-            Create Template
+            New Template
           </Button>
         </div>
       </div>
 
       {/* Features Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-blue-100 rounded-full p-2">
-                <Target className="h-5 w-5 text-blue-600" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-emerald-100 rounded-lg p-2">
+                <Target className="h-4 w-4 text-emerald-600" />
               </div>
-              <h3 className="font-semibold text-gray-900">Industry Specific</h3>
+              <h3 className="font-medium text-gray-900">Industry Specific</h3>
             </div>
             <p className="text-sm text-gray-600">
-              Templates tailored for retail, manufacturing, professional services, and more
+              UAE-compliant templates for retail, manufacturing, services, and free zones
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-green-100 rounded-full p-2">
-                <Clock className="h-5 w-5 text-green-600" />
+        <Card className="border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-blue-100 rounded-lg p-2">
+                <Clock className="h-4 w-4 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900">Quick Setup</h3>
+              <h3 className="font-medium text-gray-900">Rapid Deployment</h3>
             </div>
             <p className="text-sm text-gray-600">
-              Get up and running in minutes with pre-configured workflows
+              Pre-configured workflows with FTA compliance and automated steps
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-purple-100 rounded-full p-2">
-                <Users className="h-5 w-5 text-purple-600" />
+        <Card className="border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-amber-100 rounded-lg p-2">
+                <Users className="h-4 w-4 text-amber-600" />
               </div>
-              <h3 className="font-semibold text-gray-900">Community Driven</h3>
+              <h3 className="font-medium text-gray-900">Peer Reviewed</h3>
             </div>
             <p className="text-sm text-gray-600">
-              Templates created and refined by the business community
+              Templates validated by UAE accounting professionals and SME users
             </p>
           </CardContent>
         </Card>

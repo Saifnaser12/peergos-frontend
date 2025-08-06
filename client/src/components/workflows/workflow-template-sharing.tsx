@@ -107,11 +107,11 @@ export function WorkflowTemplateSharing({ template, isOpen, onClose }: WorkflowT
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5" />
+            <Share2 className="h-5 w-5 text-emerald-600" />
             Share Workflow Template
           </DialogTitle>
           <DialogDescription>
-            Share "{template.name}" with others and control how they can use it
+            Share "{template.name}" with colleagues and control access permissions
           </DialogDescription>
         </DialogHeader>
 

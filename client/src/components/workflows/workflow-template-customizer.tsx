@@ -116,24 +116,24 @@ export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: Workf
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Customize Workflow Template</h2>
-          <p className="text-gray-600">Adapt this template to match your specific business needs</p>
+          <h3 className="text-lg font-medium text-gray-900">Customize Workflow Template</h3>
+          <p className="text-sm text-gray-600">Adapt this template to match your business requirements</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Eye className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="h-8 px-3">
+            <Eye className="h-3 w-3 mr-2" />
             Preview
           </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="h-8 px-3">
+            <Share2 className="h-3 w-3 mr-2" />
             Share
           </Button>
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} className="h-9 px-3">
             Cancel
           </Button>
-          <Button onClick={() => onSave(customTemplate)}>
+          <Button onClick={() => onSave(customTemplate)} className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700">
             <Save className="h-4 w-4 mr-2" />
-            Save Template
+            Save Changes
           </Button>
         </div>
       </div>
