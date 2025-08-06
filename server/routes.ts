@@ -27,6 +27,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(sanitizeInput);
   app.use(generalRateLimit);
 
+  // Workflow Status API
+  app.get('/api/workflow-status', async (req, res) => {
+    try {
+      const userId = req.session?.userId || 1; // Default for demo
+      
+      // Get user's company and setup status
+      const user = await storage.getUser(userId);
+      const companyId = user?.companyId || 1;
+      
+      // Calculate current workflow position based on company data
+      const company = companyId ? await storage.getCompany(companyId) : null;
+      const setupComplete = company?.setupCompleted || false;
+      
+      // Determine current step
+      let currentStep = 0;
+      let overallProgress = 0;
+      
+      if (setupComplete) {
+        currentStep = 1;
+        overallProgress = 50; // Setup complete, data entry current
+      } else {
+        overallProgress = 25; // Setup in progress
+      }
+      
+      // Build workflow steps based on current state
+      const steps = [
+        {
+          id: 'setup',
+          title: 'Initial Setup',
+          description: 'Company registration, VAT setup, chart of accounts',
+          status: setupComplete ? 'completed' : 'current',
+          completionDate: setupComplete ? '2024-08-01' : undefined,
+          nextAction: setupComplete ? 'Review company settings' : 'Complete setup wizard',
+          estimatedTime: '5 min'
+        },
+        {
+          id: 'data-entry',
+          title: 'Data Entry',
+          description: 'Record transactions, invoices, and expenses',
+          status: setupComplete ? 'current' : 'pending',
+          nextAction: 'Upload pending invoices and receipts',
+          estimatedTime: '2 hours'
+        },
+        {
+          id: 'calculation',
+          title: 'Tax Calculation',
+          description: 'VAT and CIT calculations, compliance checks',
+          status: 'pending',
+          nextAction: 'Review and validate calculations',
+          estimatedTime: '30 min'
+        },
+        {
+          id: 'filing',
+          title: 'FTA Filing',
+          description: 'Submit returns and maintain compliance',
+          status: 'pending',
+          nextAction: 'Submit VAT return by 28th',
+          estimatedTime: '15 min'
+        }
+      ];
+      
+      // Calculate next deadline (28th of next month for VAT)
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 28);
+      
+      const workflowData = {
+        currentStep,
+        overallProgress,
+        taxPeriod: now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+        nextDeadline: nextMonth.toISOString().split('T')[0],
+        steps
+      };
+      
+      res.json(workflowData);
+    } catch (error) {
+      console.error('Error fetching workflow status:', error);
+      res.status(500).json({ error: 'Failed to fetch workflow status' });
+    }
+  });
 
   
   // Authentication routes

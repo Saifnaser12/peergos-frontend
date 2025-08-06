@@ -15,6 +15,7 @@ import { DeadlineAlertsWidget } from '@/components/dashboard/widgets/deadline-al
 import { ProgressTrackingWidget } from '@/components/dashboard/widgets/progress-tracking-widget';
 import { QuickActionsWidget } from '@/components/dashboard/widgets/quick-actions-widget';
 import { CustomizableWidget } from '@/components/dashboard/widgets/customizable-widget';
+import { WorkflowStatusWidget } from './workflow-status-widget';
 import { 
   Settings, 
   Plus, 
@@ -35,7 +36,7 @@ import { Link } from 'wouter';
 
 interface DashboardWidget {
   id: string;
-  type: 'metrics' | 'deadlines' | 'progress' | 'actions' | 'custom';
+  type: 'metrics' | 'deadlines' | 'progress' | 'actions' | 'workflow' | 'custom';
   title: string;
   visible: boolean;
   position: number;
@@ -44,9 +45,10 @@ interface DashboardWidget {
 
 const defaultWidgets: DashboardWidget[] = [
   { id: 'key-metrics', type: 'metrics', title: 'Key Metrics', visible: true, position: 0, size: 'large' },
-  { id: 'deadline-alerts', type: 'deadlines', title: 'Tax Deadlines', visible: true, position: 1, size: 'medium' },
-  { id: 'progress-tracking', type: 'progress', title: 'Task Progress', visible: true, position: 2, size: 'medium' },
-  { id: 'quick-actions', type: 'actions', title: 'Quick Actions', visible: true, position: 3, size: 'small' },
+  { id: 'workflow-status', type: 'workflow', title: 'Workflow Status', visible: true, position: 1, size: 'large' },
+  { id: 'deadline-alerts', type: 'deadlines', title: 'Tax Deadlines', visible: true, position: 2, size: 'medium' },
+  { id: 'progress-tracking', type: 'progress', title: 'Task Progress', visible: true, position: 3, size: 'medium' },
+  { id: 'quick-actions', type: 'actions', title: 'Quick Actions', visible: true, position: 4, size: 'small' },
 ];
 
 export default function EnhancedDashboard() {
@@ -139,6 +141,12 @@ export default function EnhancedDashboard() {
         return (
           <div key={widget.id} className={baseClasses}>
             <QuickActionsWidget />
+          </div>
+        );
+      case 'workflow':
+        return (
+          <div key={widget.id} className={baseClasses}>
+            <WorkflowStatusWidget />
           </div>
         );
       case 'custom':
