@@ -15,7 +15,10 @@ interface TaxCalculationResult {
   type: 'VAT' | 'CIT';
   amount: number;
   period: string;
-  breakdown: any;
+  breakdown?: any;
+  totalAmount?: number;
+  netVatDue?: number;
+  citDue?: number;
 }
 
 export default function TaxCalculationsPage() {
@@ -74,7 +77,7 @@ export default function TaxCalculationsPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">VAT Payable:</span>
                     <span className="font-bold text-blue-600">
-                      {formatCurrency(vatResult.amount, 'AED', 'en-AE')}
+                      {formatCurrency(vatResult.amount || vatResult.netVatDue || 0, 'AED', 'en-AE')}
                     </span>
                   </div>
                   <div className="pt-2 border-t">
@@ -105,7 +108,7 @@ export default function TaxCalculationsPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">CIT Payable:</span>
                     <span className="font-bold text-purple-600">
-                      {formatCurrency(citResult.amount, 'AED', 'en-AE')}
+                      {formatCurrency(citResult.amount || citResult.citDue || 0, 'AED', 'en-AE')}
                     </span>
                   </div>
                   <div className="pt-2 border-t">
@@ -154,7 +157,7 @@ export default function TaxCalculationsPage() {
 
               <SecureTaxCalculator 
                 type="VAT"
-                onResultUpdate={(result) => setVatResult(result)}
+                onResultUpdate={(result) => setVatResult(result as any)}
                 className="max-w-4xl"
               />
             </TabsContent>
@@ -171,7 +174,7 @@ export default function TaxCalculationsPage() {
 
               <SecureTaxCalculator 
                 type="CIT"
-                onResultUpdate={(result) => setCitResult(result)}
+                onResultUpdate={(result) => setCitResult(result as any)}
                 className="max-w-4xl"
               />
             </TabsContent>
