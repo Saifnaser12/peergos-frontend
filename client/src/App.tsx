@@ -36,6 +36,7 @@ import CalculationTransparencyPage from "./pages/calculation-transparency";
 import CalculationAudit from "./pages/calculation-audit";
 import VisualDesignDemo from "./pages/visual-design-demo";
 import WorkflowTemplatesPage from "./pages/workflows/templates";
+import TaxCalculationsPage from "./pages/tax-calculations";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -49,6 +50,7 @@ function Router() {
           {/* New flat navigation routes */}
           <Route path="/bookkeeping" component={Bookkeeping} />
           <Route path="/taxes" component={Taxes} />
+          <Route path="/tax-calculations" component={TaxCalculationsPage} />
           <Route path="/reports" component={Financials} />
           <Route path="/ai" component={TaxAssistant} />
           <Route path="/roadmap" component={ComingSoonPage} />
