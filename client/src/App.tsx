@@ -49,6 +49,7 @@ function Router() {
           {/* New flat navigation routes */}
           <Route path="/bookkeeping" component={Bookkeeping} />
           <Route path="/taxes" component={Taxes} />
+          <Route path="/reports" component={Financials} />
           <Route path="/ai" component={TaxAssistant} />
           <Route path="/roadmap" component={ComingSoonPage} />
           

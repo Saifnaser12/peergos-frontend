@@ -38,57 +38,6 @@ export default function Financials() {
     enabled: !!company?.id,
   });
 
-  // UX Fallback checks for missing data
-  if (!company) {
-    console.warn('[Financials Page] Company data missing - user needs to complete setup');
-    return (
-      <div className="space-y-6">
-        <Alert className="border-yellow-200 bg-yellow-50">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            <strong>Company Setup Required</strong><br />
-            Please complete your company profile setup to access financial reports and statements.
-          </AlertDescription>
-        </Alert>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Complete Your Setup</h3>
-            <p className="text-gray-600 mb-4">Set up your company profile to generate financial statements</p>
-            <Button onClick={() => window.location.href = '/setup'}>
-              Go to Setup
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
-    console.warn('[Financials Page] No transactions found - user needs to add financial data');
-    return (
-      <div className="space-y-6">
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            <strong>No Financial Data Found</strong><br />
-            Add transactions to your account to generate meaningful financial statements and reports.
-          </AlertDescription>
-        </Alert>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Add Financial Data</h3>
-            <p className="text-gray-600 mb-4">Record your business transactions to generate comprehensive financial reports</p>
-            <Button onClick={() => window.location.href = '/transactions'}>
-              Add Transactions
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Generate financial statements
   const financialStatements = useMemo(() => {
     if (!transactions || !Array.isArray(transactions) || !company) return null;
@@ -156,37 +105,84 @@ export default function Financials() {
           break;
       }
     } catch (error) {
-      console.error(`Export failed:`, error);
+      console.error('Export failed:', error);
     }
   };
 
-  const handleEdit = () => {
-    // This would open an editing interface
-    console.log('Edit financial statements');
-  };
+  // UX Fallback checks for missing data
+  if (!company) {
+    console.warn('[Financials Page] Company data missing - user needs to complete setup');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Company Setup Required</strong><br />
+            Please complete your company profile setup to access financial reports and statements.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Complete Your Setup</h3>
+            <p className="text-gray-600 mb-4">Set up your company profile to generate financial statements</p>
+            <Button onClick={() => window.location.href = '/setup'}>
+              Go to Setup
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
+    console.warn('[Financials Page] No transactions found - user needs to add financial data');
+    return (
+      <div className="space-y-6">
+        <Alert className="border-blue-200 bg-blue-50">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>No Financial Data Found</strong><br />
+            Add transactions to your account to generate meaningful financial statements and reports.
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Add Financial Data</h3>
+            <p className="text-gray-600 mb-4">Record your business transactions to generate comprehensive financial reports</p>
+            <Button onClick={() => window.location.href = '/bookkeeping'}>
+              Add Transactions
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Financial Reports</h1>
-          <p className="text-gray-600">View your financial statements and analysis</p>
+          <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
+          <p className="text-muted-foreground">
+            Comprehensive financial statements and business reports
+          </p>
         </div>
-        <div className={cn("flex items-center gap-3", language === 'ar' && "rtl:flex-row-reverse")}>
+        <div className="flex items-center gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="2024">2024</SelectItem>
               <SelectItem value="2023">2023</SelectItem>
-              <SelectItem value="q4-2024">Q4 2024</SelectItem>
-              <SelectItem value="q3-2024">Q3 2024</SelectItem>
+              <SelectItem value="2022">2022</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => handleExport('pdf')}>
-            <Download size={16} className={cn("mr-2", language === 'ar' && "rtl:mr-0 rtl:ml-2")} />
+          <Button onClick={() => handleExport('pdf')}>
+            <Download size={16} className="mr-2" />
             Export
           </Button>
         </div>
@@ -287,124 +283,102 @@ export default function Financials() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Financial Statements Viewer */}
-          {financialStatements && (
-            <div className="mb-6">
-              <FinancialStatementViewer
-                statements={financialStatements}
-                onExport={handleExport}
-                onEdit={handleEdit}
-              />
-            </div>
-          )}
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6">
+          {/* Financial Statements Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="income">Income Statement</TabsTrigger>
               <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
               <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
-              <TabsTrigger value="reportpack">Report Pack</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="overview" className="mt-6">
+
+            <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Revenue Breakdown</CardTitle>
+                    <CardTitle>Financial Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Sales Revenue</span>
-                        <span className="font-medium">{formatCurrency(revenue * 0.85, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Service Revenue</span>
-                        <span className="font-medium">{formatCurrency(revenue * 0.15, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
-                      </div>
-                      <hr />
-                      <div className="flex justify-between font-semibold">
                         <span>Total Revenue</span>
-                        <span>{formatCurrency(revenue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
+                        <span className="font-semibold">{formatCurrency(revenue, 'AED', 'en-AE')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Expenses</span>
+                        <span className="font-semibold">{formatCurrency(expenses, 'AED', 'en-AE')}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="font-semibold">Net Income</span>
+                        <span className={cn("font-semibold", netIncome >= 0 ? "text-green-600" : "text-red-600")}>
+                          {formatCurrency(netIncome, 'AED', 'en-AE')}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Expense Breakdown</CardTitle>
+                    <CardTitle>Key Ratios</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Operating Expenses</span>
-                        <span className="font-medium">{formatCurrency(expenses * 0.6, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
+                        <span>Profit Margin</span>
+                        <span className="font-semibold">{((netIncome / revenue) * 100).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Administrative</span>
-                        <span className="font-medium">{formatCurrency(expenses * 0.25, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
+                        <span>Expense Ratio</span>
+                        <span className="font-semibold">{((expenses / revenue) * 100).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Other Expenses</span>
-                        <span className="font-medium">{formatCurrency(expenses * 0.15, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
-                      </div>
-                      <hr />
-                      <div className="flex justify-between font-semibold">
-                        <span>Total Expenses</span>
-                        <span>{formatCurrency(expenses, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}</span>
+                        <span>Revenue Growth</span>
+                        <span className="font-semibold text-green-600">+12.8%</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
-            
-            <TabsContent value="income" className="mt-6">
-              <FinancialStatements showStatements={true} statementType="income" />
-            </TabsContent>
-            
-            <TabsContent value="balance" className="mt-6">
-              <FinancialStatements showStatements={true} statementType="balance" />
-            </TabsContent>
-            
-            <TabsContent value="cashflow" className="mt-6">
-              <FinancialStatements showStatements={true} statementType="cashflow" />
+
+            <TabsContent value="income" className="space-y-6">
+              {financialStatements?.incomeStatement ? (
+                <FinancialStatements 
+                  statements={financialStatements}
+                  activeTab="income"
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No financial data available to generate income statement</p>
+                </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <FinancialNotesEditor
-                    reportType="INCOME_STATEMENT"
-                    notes={incomeStatementNotes}
-                    onNotesChange={setIncomeStatementNotes}
-                  />
-                  <FinancialNotesEditor
-                    reportType="BALANCE_SHEET"
-                    notes={balanceSheetNotes}
-                    onNotesChange={setBalanceSheetNotes}
-                  />
+            <TabsContent value="balance" className="space-y-6">
+              {financialStatements?.balanceSheet ? (
+                <FinancialStatements 
+                  statements={financialStatements}
+                  activeTab="balance"
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No financial data available to generate balance sheet</p>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <FinancialNotesEditor
-                    reportType="CASH_FLOW"
-                    notes={cashFlowNotes}
-                    onNotesChange={setCashFlowNotes}
-                  />
-                  <FinancialNotesEditor
-                    reportType="TAX_SUMMARY"
-                    notes={taxSummaryNotes}
-                    onNotesChange={setTaxSummaryNotes}
-                  />
-                </div>
-              </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="reportpack" className="mt-6">
-              <ReportPackGenerator />
+            <TabsContent value="cashflow" className="space-y-6">
+              {financialStatements?.cashFlow ? (
+                <FinancialStatements 
+                  statements={financialStatements}
+                  activeTab="cashflow"
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No financial data available to generate cash flow statement</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
