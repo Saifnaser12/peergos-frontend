@@ -33,10 +33,12 @@ export function WorkflowTemplateBrowser({ onSelectTemplate }: WorkflowTemplateBr
   const [selectedComplexity, setSelectedComplexity] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: templates = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['/api/workflow-templates', searchQuery, selectedIndustry, selectedBusinessType, selectedComplexity],
   });
 
+  const templates = (data as any)?.templates || [];
+  
   const filteredTemplates = templates.filter((template: WorkflowTemplate) => {
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
