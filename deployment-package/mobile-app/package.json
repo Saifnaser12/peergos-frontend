@@ -1,0 +1,25 @@
+{
+  "name": "peergos-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "echo 'Mobile app ready for development with Expo'",
+    "web": "echo 'Use expo start --web to run mobile app'",
+    "dev": "echo 'Mobile app development server'"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.73.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~18.3.12",
+    "typescript": "^5.3.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": ["react-native-safe-area-context"]
+    }
+  },
+  "private": true
+}
