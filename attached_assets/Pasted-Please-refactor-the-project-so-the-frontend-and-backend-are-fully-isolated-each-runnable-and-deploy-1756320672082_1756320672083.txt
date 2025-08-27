@@ -1,0 +1,123 @@
+Please refactor the project so the frontend and backend are fully isolated, each runnable and deployable on its own, and produce two clean deployment archives. Follow these steps exactly:
+Create isolated folders and move code
+If they already exist, rename frontend-deployment/ → frontend/ and backend-deployment/ → backend/. Otherwise, create frontend/ and backend/ and move the correct files into each.
+Ensure no shared node_modules at repo root. Each app should contain its own package.json, lockfile, tsconfig, and build output folder (dist for both; backend may also have build/ if using ts-node/tsc).
+Backend hardening (Node/Express + Postgres)
+Inside backend/:
+Add/update package.json scripts:
+{
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "seed:coa": "node dist/scripts/seed-coa.js",
+    "health": "node -e \"console.log('ok')\""
+  }
+}
+Create .env.example with production-ready keys:
+NODE_ENV=production
+PORT=8080
+DATABASE_URL=postgres://user:pass@host:5432/peergos
+SESSION_SECRET=change_me
+CORS_ORIGIN=https://app.peergos.ae
+JWT_ISSUER=peergos
+Ensure an Express /health endpoint exists:
+app.get('/health', (_req, res) => res.status(200).json({status:'ok'}));
+Enable strict CORS using CORS_ORIGIN (comma-separated allowed origins):
+import cors from 'cors';
+app.use(cors({
+  origin: (process.env.CORS_ORIGIN || '').split(','),
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+Set cookies (if used) to secure:true and sameSite:'none' for cross-subdomain auth.
+Confirm DB migration/seed scripts run from the backend folder:
+npm run db:push
+npm run seed:coa (only if the seed exists; otherwise add a simple seed script under src/scripts/seed-coa.ts compiling to dist/scripts/seed-coa.js).
+Frontend isolation (React + Vite)
+Inside frontend/:
+Add/update package.json scripts:
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  }
+}
+Create .env.example:
+VITE_API_BASE_URL=https://api.peergos.ae
+VITE_APP_ENV=production
+Ensure API calls use import.meta.env.VITE_API_BASE_URL and do not hard-code localhost:5000.
+Build output must be /frontend/dist only (no SSR needed).
+Load-balancer readiness (Docker files)
+Add backend/Dockerfile:
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY dist ./dist
+EXPOSE 8080
+CMD ["node","dist/server.js"]
+Add frontend/Dockerfile (Nginx static):
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx","-g","daemon off;"]
+Add sample Nginx upstream snippet at backend/DEPLOYMENT_NOTES.md to show reverse proxying to port 8080.
+CI/CD readiness
+In each folder, ensure README.md and PRODUCTION_SETUP.md include:
+Required env vars
+Build & start commands
+Health endpoint (/health)
+Expected public URL (api.peergos.ae for backend, app.peergos.ae for frontend)
+Database migration steps (backend only)
+Clean dev ports (local dev)
+Backend dev port: 8080
+Frontend dev port: 5173
+Add a top-level .gitignore that excludes **/node_modules, **/dist, logs, .env, .DS_Store.
+Verification
+Run from /home/runner/workspace:
+set -e
+cd backend
+npm ci
+npm run build
+node dist/server.js & sleep 2
+curl -sI http://localhost:8080/health | head -n1
+kill %1
+
+cd ../frontend
+npm ci
+npm run build
+test -d dist
+Expect HTTP/1.1 200 from the backend health check and a built frontend/dist.
+Create separate deployment archives
+From /home/runner/workspace run:
+set -e
+TS=$(date +%Y%m%d-%H%M)
+tar -czf "peergos-backend-$TS.tar.gz" \
+  --exclude="node_modules" --exclude="dist/*.map" --exclude=".git" --exclude="*.log" \
+  backend/
+
+tar -czf "peergos-frontend-$TS.tar.gz" \
+  --exclude="node_modules" --exclude="dist/*.map" --exclude=".git" --exclude="*.log" \
+  frontend/
+
+echo "=== PACKAGES ==="
+ls -lh peergos-backend-$TS.tar.gz peergos-frontend-$TS.tar.gz
+echo "Location: /home/runner/workspace/"
+Output a summary
+Print:
+Folder tree (one level) for /frontend and /backend
+Exact env keys required for each app
+The two tarball names, sizes, and file counts
+Goal: After this, backend can be hosted on a secured server (and scaled/load-balanced) and frontend can be hosted publicly (CDN/static). Both must run in isolation with no shared runtime.
