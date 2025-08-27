@@ -86,7 +86,7 @@ export default function EnhancedDashboard() {
   const hasData = currentKpi && (parseFloat(currentKpi.revenue || '0') > 0);
   
   // Check if company setup is complete
-  const isSetupComplete = company?.trn && company?.name;
+  const isSetupComplete = company?.setupCompleted || (company?.trn && company?.accountingMethod);
   const canSkipSetup = hasData || isSetupComplete;
   
   const tasksArray = Array.isArray(tasks) ? tasks : [];
@@ -138,13 +138,13 @@ export default function EnhancedDashboard() {
       case 'deadlines':
         return (
           <div key={widget.id} className={baseClasses}>
-            <DeadlineAlertsWidget notifications={Array.isArray(notifications) ? notifications : []} />
+            <DeadlineAlertsWidget notifications={notifications} />
           </div>
         );
       case 'progress':
         return (
           <div key={widget.id} className={baseClasses}>
-            <ProgressTrackingWidget tasks={Array.isArray(tasks) ? tasks : []} />
+            <ProgressTrackingWidget tasks={tasks} />
           </div>
         );
       case 'actions':

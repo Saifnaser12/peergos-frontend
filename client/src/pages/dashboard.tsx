@@ -19,10 +19,10 @@ import {
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 
-import SimplifiedDashboard from '@/components/dashboard/simplified-dashboard';
+import EnhancedDashboard from '@/components/dashboard/enhanced-dashboard';
 
 export default function Dashboard() {
-  return <SimplifiedDashboard />;
+  return <EnhancedDashboard />;
 }
 
 function OriginalDashboard() {
