@@ -137,7 +137,7 @@ router.post("/api/integrations/:id/test", async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: "Connection test failed",
-      error: error.message 
+      error: String(error)
     });
   }
 });
@@ -185,7 +185,8 @@ router.get("/api/integrations/:id/mapping", async (req, res) => {
     }
     
     // Return data mapping from integration settings
-    const mapping = integration.settings?.dataMapping || [];
+    const settings = integration.settings as any || {};
+    const mapping = settings.dataMapping || [];
     res.json(mapping);
   } catch (error) {
     console.error("Error fetching integration mapping:", error);
@@ -211,8 +212,9 @@ router.put("/api/integrations/:id/mapping", async (req, res) => {
     }
     
     // Update integration settings with new mapping
+    const currentSettings = integration.settings as any || {};
     const updatedSettings = {
-      ...integration.settings,
+      ...currentSettings,
       dataMapping: validatedMappings
     };
     

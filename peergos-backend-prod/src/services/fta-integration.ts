@@ -108,12 +108,12 @@ export class FTAIntegrationService {
       console.error('[FTA] VAT return submission failed:', error);
       
       // Update filing status to failed
-      await this.updateFilingStatus(submission.filingId, 'FAILED', null, error.message);
+      await this.updateFilingStatus(submission.filingId, 'FAILED', undefined, String(error));
       
       return {
         status: 'ERROR',
-        message: error.message || 'VAT return submission failed',
-        errors: [{ code: 'SUBMISSION_FAILED', message: error.message }],
+        message: String(error) || 'VAT return submission failed',
+        errors: [{ code: 'SUBMISSION_FAILED', message: String(error) }],
         timestamp: new Date().toISOString()
       };
     }
@@ -146,12 +146,12 @@ export class FTAIntegrationService {
     } catch (error) {
       console.error('[FTA] CIT return submission failed:', error);
       
-      await this.updateFilingStatus(submission.filingId, 'FAILED', null, error.message);
+      await this.updateFilingStatus(submission.filingId, 'FAILED', undefined, String(error));
       
       return {
         status: 'ERROR',
-        message: error.message || 'CIT return submission failed',
-        errors: [{ code: 'SUBMISSION_FAILED', message: error.message }],
+        message: String(error) || 'CIT return submission failed',
+        errors: [{ code: 'SUBMISSION_FAILED', message: String(error) }],
         timestamp: new Date().toISOString()
       };
     }
@@ -259,15 +259,15 @@ export class FTAIntegrationService {
       
       return response.data;
     } catch (error) {
-      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      if ((error as any).code === 'ECONNREFUSED' || (error as any).code === 'ENOTFOUND') {
         throw new Error('FTA API is currently unavailable. Please try again later.');
       }
       
-      if (error.response?.status === 401) {
+      if ((error as any).response?.status === 401) {
         throw new Error('FTA API authentication failed. Please check your credentials.');
       }
       
-      if (error.response?.status === 429) {
+      if ((error as any).response?.status === 429) {
         throw new Error('FTA API rate limit exceeded. Please wait before retrying.');
       }
       

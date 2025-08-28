@@ -133,8 +133,8 @@ router.post("/api/webhooks/:id/test", async (req, res) => {
       const response = await axios.post(webhook.url, testPayload, {
         headers: {
           'Content-Type': 'application/json',
-          'X-Webhook-Signature': generateSignature(testPayload, webhook.secret),
-          ...webhook.headers
+          'X-Webhook-Signature': generateSignature(testPayload, webhook.secret || ''),
+          ...(webhook.headers as any || {})
         },
         timeout: 10000
       });
@@ -327,7 +327,7 @@ export async function triggerWebhook(companyId: number, event: string, payload: 
       .where(eq(webhooks.companyId, companyId));
     
     const applicableWebhooks = companyWebhooks.filter(webhook => 
-      webhook.isActive && webhook.events.includes(event)
+      webhook.isActive && webhook.events && webhook.events.includes(event)
     );
     
     const deliveries = await Promise.allSettled(

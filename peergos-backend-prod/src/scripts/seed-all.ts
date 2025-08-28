@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { seedChartOfAccounts } from '../scripts/seed-chart-of-accounts';
+import { seedUAEChartOfAccounts } from '../scripts/seed-chart-of-accounts';
 
 /**
  * Main seeding script that runs all mandatory seeders
@@ -11,7 +11,7 @@ async function seedAll() {
   try {
     // 1. Seed UAE Chart of Accounts
     console.log('📊 Seeding UAE Chart of Accounts...');
-    await seedChartOfAccounts();
+    await seedUAEChartOfAccounts();
     
     // 2. Add other mandatory seeders here
     console.log('👥 Seeding user data...');

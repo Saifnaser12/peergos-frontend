@@ -142,8 +142,10 @@ router.get("/api/sync-service/status/:jobId", async (req, res) => {
     }
     
     // Calculate progress
-    const progress = job.recordsTotal > 0 
-      ? Math.round((job.recordsProcessed / job.recordsTotal) * 100)
+    const recordsTotal = job.recordsTotal || 0;
+    const recordsProcessed = job.recordsProcessed || 0;
+    const progress = recordsTotal > 0 
+      ? Math.round((recordsProcessed / recordsTotal) * 100)
       : 0;
     
     const response = {
@@ -216,7 +218,7 @@ router.get("/api/sync-service/history", async (req, res) => {
       completedJobs: jobs.filter(job => job.status === 'COMPLETED').length,
       failedJobs: jobs.filter(job => job.status === 'FAILED').length,
       runningJobs: jobs.filter(job => job.status === 'RUNNING').length,
-      totalRecordsProcessed: jobs.reduce((sum, job) => sum + job.recordsProcessed, 0)
+      totalRecordsProcessed: jobs.reduce((sum, job) => sum + (job.recordsProcessed || 0), 0)
     };
     
     res.json({
@@ -262,7 +264,7 @@ router.get("/api/sync-service/stats", async (req, res) => {
       .where(eq(syncJobs.companyId, companyId));
     
     const recentJobs = jobs.filter(job => 
-      new Date(job.createdAt) >= startDate
+      job.createdAt && new Date(job.createdAt) >= startDate
     );
     
     const stats = {
@@ -271,7 +273,7 @@ router.get("/api/sync-service/stats", async (req, res) => {
       successfulSyncs: recentJobs.filter(job => job.status === 'COMPLETED').length,
       failedSyncs: recentJobs.filter(job => job.status === 'FAILED').length,
       averageDuration: calculateAverageDuration(recentJobs),
-      totalRecordsProcessed: recentJobs.reduce((sum, job) => sum + job.recordsProcessed, 0),
+      totalRecordsProcessed: recentJobs.reduce((sum, job) => sum + (job.recordsProcessed || 0), 0),
       dataTypeBreakdown: getDataTypeBreakdown(recentJobs),
       successRate: recentJobs.length > 0 
         ? Math.round((recentJobs.filter(job => job.status === 'COMPLETED').length / recentJobs.length) * 100)
@@ -298,7 +300,7 @@ router.post("/api/sync-service/:jobId/cancel", async (req, res) => {
       return res.status(404).json({ message: "Sync job not found" });
     }
     
-    if (!['PENDING', 'RUNNING'].includes(job.status)) {
+    if (!job.status || !['PENDING', 'RUNNING'].includes(job.status)) {
       return res.status(400).json({ message: "Cannot cancel completed job" });
     }
     

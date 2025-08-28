@@ -128,15 +128,14 @@ export async function seedUAEChartOfAccounts(): Promise<void> {
         await db.insert(chartOfAccounts).values({
           code: account.code,
           name: account.name,
-          vatCode: account.vatCode,
-          citDeductible: account.citDeductible,
-          qualifiesForQFZP: account.qualifiesForQFZP,
-          notes: account.notes
+          type: 'ASSET', // Default type
+          category: 'General',
+          description: account.notes
         });
         insertedCount++;
       } catch (error) {
         // Skip if account already exists (duplicate code)
-        if (error.code !== '23505') { // Not a unique constraint violation
+        if ((error as any).code !== '23505') { // Not a unique constraint violation
           console.error(`Error inserting account ${account.code}:`, error);
         }
       }

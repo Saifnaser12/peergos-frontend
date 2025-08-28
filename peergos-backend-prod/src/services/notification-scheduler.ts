@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import { db } from '../db';
 import { notifications, companies, taxFilings, invoices } from '../db/schema';
 import { eq, and, lt, gte, isNull } from 'drizzle-orm';

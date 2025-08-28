@@ -75,7 +75,7 @@ router.post('/api/sync-modules', async (req, res) => {
         }
       } catch (moduleError) {
         console.error(`Error syncing module ${module}:`, moduleError);
-        syncResults[module] = { status: 'error', error: moduleError.message };
+        syncResults[module] = { status: 'error', error: String(moduleError) };
       }
     }
 

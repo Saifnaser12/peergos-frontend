@@ -377,7 +377,7 @@ export class CITCalculatorService {
     };
 
     for (const [key, value] of Object.entries(items)) {
-      if (value > 0) {
+      if (Number(value) > 0) {
         breakdown.push({
           category: key,
           description: this.getItemDescription(key),

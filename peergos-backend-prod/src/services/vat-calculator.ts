@@ -165,18 +165,20 @@ export class VATCalculatorService {
 
     // Step 3: Apply adjustments
     const adjustments = validatedInput.adjustments || {};
+    const badDebtRelief = (adjustments as any).badDebtRelief || 0;
+    const adjustmentCorrections = (adjustments as any).adjustmentCorrections || 0;
     
     auditTrail.push({
       step: 3,
       description: 'Apply VAT adjustments and corrections',
-      calculation: `Bad Debt Relief: ${adjustments.badDebtRelief}, Corrections: ${adjustments.adjustmentCorrections}`,
-      result: adjustments.badDebtRelief + adjustments.adjustmentCorrections,
+      calculation: `Bad Debt Relief: ${badDebtRelief}, Corrections: ${adjustmentCorrections}`,
+      result: badDebtRelief + adjustmentCorrections,
       regulation: 'UAE VAT Law Article 56'
     });
 
     // Step 4: Calculate net VAT position
-    const netVATDue = Math.max(0, outputVAT - inputVAT + (adjustments.adjustmentCorrections || 0) - (adjustments.badDebtRelief || 0));
-    const refundDue = Math.max(0, inputVAT - outputVAT - (adjustments.adjustmentCorrections || 0) + (adjustments.badDebtRelief || 0));
+    const netVATDue = Math.max(0, outputVAT - inputVAT + adjustmentCorrections - badDebtRelief);
+    const refundDue = Math.max(0, inputVAT - outputVAT - adjustmentCorrections + badDebtRelief);
 
     auditTrail.push({
       step: 4,
