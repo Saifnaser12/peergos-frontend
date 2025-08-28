@@ -1,129 +1,196 @@
-import http from 'http';
-import { db, chartOfAccounts } from '../db';
-import { count } from 'drizzle-orm';
+#!/usr/bin/env node
 
-interface SmokeTestResult {
-  healthCheck: boolean;
-  healthStatus: number;
-  dbConnection: boolean;
-  coaCount: number;
-  success: boolean;
+import http from 'http';
+
+interface TestResult {
+  endpoint: string;
+  status: number;
+  passed: boolean;
+  error?: string;
 }
 
-async function makeRequest(path: string, port: number = 8080): Promise<{ status: number; data: any }> {
+/**
+ * Simple HTTP request helper
+ */
+function httpRequest(options: any): Promise<{ status: number; data: any }> {
   return new Promise((resolve, reject) => {
-    const req = http.request({
-      hostname: 'localhost',
-      port,
-      path,
-      method: 'GET',
-      timeout: 5000
-    }, (res) => {
+    const req = http.request(options, (res) => {
       let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
+      res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try {
-          const jsonData = data ? JSON.parse(data) : {};
-          resolve({ status: res.statusCode || 0, data: jsonData });
-        } catch (error) {
+          const parsedData = data ? JSON.parse(data) : null;
+          resolve({ status: res.statusCode || 0, data: parsedData });
+        } catch {
           resolve({ status: res.statusCode || 0, data: data });
         }
       });
     });
-
-    req.on('error', (error) => {
-      reject(error);
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
-
+    
+    req.on('error', reject);
+    req.setTimeout(5000, () => reject(new Error('Request timeout')));
     req.end();
   });
 }
 
-async function runSmokeTest(): Promise<SmokeTestResult> {
-  const result: SmokeTestResult = {
-    healthCheck: false,
-    healthStatus: 0,
-    dbConnection: false,
-    coaCount: 0,
-    success: false
-  };
-
+/**
+ * Run smoke tests against the API
+ */
+async function smokeTest(): Promise<boolean> {
+  console.log('🔥 Running smoke tests...');
+  
+  const baseUrl = 'localhost';
+  const port = 8080;
+  
+  const tests: TestResult[] = [];
+  
   try {
-    console.log('🔥 Starting smoke test...');
-
-    // Test 1: Health endpoint
+    // Test 1: Health check
     console.log('🏥 Testing health endpoint...');
     try {
-      const healthResponse = await makeRequest('/health');
-      result.healthStatus = healthResponse.status;
-      result.healthCheck = healthResponse.status === 200;
-      console.log(`✅ Health check: ${healthResponse.status} ${result.healthCheck ? 'PASS' : 'FAIL'}`);
+      const healthResult = await httpRequest({
+        hostname: baseUrl,
+        port: port,
+        path: '/health',
+        method: 'GET'
+      });
+      
+      const healthPassed = healthResult.status === 200;
+      tests.push({
+        endpoint: '/health',
+        status: healthResult.status,
+        passed: healthPassed
+      });
+      
+      console.log(`   ${healthPassed ? '✅' : '❌'} Health check: ${healthResult.status}`);
+      
     } catch (error) {
-      console.log(`❌ Health check: FAIL (${error})`);
+      tests.push({
+        endpoint: '/health',
+        status: 0,
+        passed: false,
+        error: (error as Error).message
+      });
+      console.log('   ❌ Health check: Failed to connect');
     }
-
-    // Test 2: Database connection and COA count
-    console.log('📊 Testing database connection and COA count...');
-    try {
-      const coaResult = await db.select({ count: count() }).from(chartOfAccounts);
-      result.coaCount = coaResult[0]?.count || 0;
-      result.dbConnection = result.coaCount > 0;
-      console.log(`✅ Database connection: PASS`);
-      console.log(`📈 COA count: ${result.coaCount} accounts`);
-    } catch (error) {
-      console.log(`❌ Database connection: FAIL (${error})`);
-    }
-
-    // Test 3: COA admin endpoint
-    console.log('🔧 Testing admin COA endpoint...');
-    try {
-      const coaResponse = await makeRequest('/api/admin/coa/count');
-      if (coaResponse.status === 200 && coaResponse.data.count > 0) {
-        console.log(`✅ Admin COA endpoint: PASS (${coaResponse.data.count} accounts)`);
-      } else {
-        console.log(`❌ Admin COA endpoint: FAIL (status: ${coaResponse.status})`);
-      }
-    } catch (error) {
-      console.log(`❌ Admin COA endpoint: FAIL (${error})`);
-    }
-
-    // Overall success
-    result.success = result.healthCheck && result.dbConnection && result.coaCount > 0;
-
-    console.log('🎯 Smoke test completed');
-    console.log(`📊 Results: Health=${result.healthCheck}, DB=${result.dbConnection}, COA=${result.coaCount}`);
     
-    return result;
-
+    // Test 2: API health
+    console.log('🩺 Testing API health endpoint...');
+    try {
+      const apiHealthResult = await httpRequest({
+        hostname: baseUrl,
+        port: port,
+        path: '/api/health',
+        method: 'GET'
+      });
+      
+      const apiHealthPassed = apiHealthResult.status === 200;
+      tests.push({
+        endpoint: '/api/health',
+        status: apiHealthResult.status,
+        passed: apiHealthPassed
+      });
+      
+      console.log(`   ${apiHealthPassed ? '✅' : '❌'} API health: ${apiHealthResult.status}`);
+      
+    } catch (error) {
+      tests.push({
+        endpoint: '/api/health',
+        status: 0,
+        passed: false,
+        error: (error as Error).message
+      });
+      console.log('   ❌ API health: Failed to connect');
+    }
+    
+    // Test 3: COA count endpoint
+    console.log('📊 Testing COA count endpoint...');
+    try {
+      const coaResult = await httpRequest({
+        hostname: baseUrl,
+        port: port,
+        path: '/admin/coa/count',
+        method: 'GET'
+      });
+      
+      const coaPassed = coaResult.status === 200 && 
+                       coaResult.data && 
+                       coaResult.data.count > 0;
+      
+      tests.push({
+        endpoint: '/admin/coa/count',
+        status: coaResult.status,
+        passed: coaPassed
+      });
+      
+      const count = coaResult.data?.count || 0;
+      console.log(`   ${coaPassed ? '✅' : '❌'} COA count: ${coaResult.status} (${count} accounts)`);
+      
+    } catch (error) {
+      tests.push({
+        endpoint: '/admin/coa/count',
+        status: 0,
+        passed: false,
+        error: (error as Error).message
+      });
+      console.log('   ❌ COA count: Failed to connect');
+    }
+    
+    // Test 4: Sample API endpoint
+    console.log('🔧 Testing sample API endpoint...');
+    try {
+      const workflowResult = await httpRequest({
+        hostname: baseUrl,
+        port: port,
+        path: '/api/workflow-status',
+        method: 'GET'
+      });
+      
+      const workflowPassed = workflowResult.status === 200;
+      tests.push({
+        endpoint: '/api/workflow-status',
+        status: workflowResult.status,
+        passed: workflowPassed
+      });
+      
+      console.log(`   ${workflowPassed ? '✅' : '❌'} Workflow API: ${workflowResult.status}`);
+      
+    } catch (error) {
+      tests.push({
+        endpoint: '/api/workflow-status',
+        status: 0,
+        passed: false,
+        error: (error as Error).message
+      });
+      console.log('   ❌ Workflow API: Failed to connect');
+    }
+    
+    // Summary
+    const passedTests = tests.filter(t => t.passed).length;
+    const totalTests = tests.length;
+    const allPassed = passedTests === totalTests;
+    
+    console.log('\n📋 SMOKE TEST SUMMARY:');
+    console.log(`   Passed: ${passedTests}/${totalTests}`);
+    console.log(`   Score: ${Math.round((passedTests/totalTests)*100)}%`);
+    console.log(`   Result: ${allPassed ? '✅ PASS' : '❌ FAIL'}`);
+    
+    return allPassed;
+    
   } catch (error) {
-    console.error('❌ Smoke test failed:', error);
-    return result;
+    console.error('❌ Smoke test suite failed:', error);
+    return false;
   }
 }
 
-// Run smoke test if called directly
+// Run if called directly
 if (require.main === module) {
-  runSmokeTest()
-    .then((result) => {
-      console.log('\n=== SMOKE TEST RESULTS ===');
-      console.log(`Health Check: ${result.healthCheck ? 'PASS' : 'FAIL'} (${result.healthStatus})`);
-      console.log(`Database: ${result.dbConnection ? 'PASS' : 'FAIL'}`);
-      console.log(`COA Count: ${result.coaCount}`);
-      console.log(`Overall: ${result.success ? 'PASS' : 'FAIL'}`);
-      
-      process.exit(result.success ? 0 : 1);
-    })
-    .catch((error) => {
-      console.error('Smoke test error:', error);
-      process.exit(1);
-    });
+  smokeTest().then(passed => {
+    process.exit(passed ? 0 : 1);
+  }).catch(error => {
+    console.error('💥 Fatal smoke test error:', error);
+    process.exit(1);
+  });
 }
 
-export default runSmokeTest;
+export { smokeTest };
