@@ -1,0 +1,116 @@
+[
+  {
+    "path": "/",
+    "name": "Dashboard",
+    "type": "private",
+    "component": "Dashboard"
+  },
+  {
+    "path": "/login",
+    "name": "Login",
+    "type": "public",
+    "component": "Login"
+  },
+  {
+    "path": "/dashboard",
+    "name": "Dashboard",
+    "type": "private",
+    "component": "Dashboard"
+  },
+  {
+    "path": "/tax/cit",
+    "name": "CIT Calculator",
+    "type": "private",
+    "component": "CITCalculator"
+  },
+  {
+    "path": "/tax/vat",
+    "name": "VAT Calculator",
+    "type": "private",
+    "component": "VATCalculator"
+  },
+  {
+    "path": "/financials",
+    "name": "Financial Reports",
+    "type": "private",
+    "component": "Financials"
+  },
+  {
+    "path": "/bookkeeping",
+    "name": "Bookkeeping",
+    "type": "private",
+    "component": "Bookkeeping"
+  },
+  {
+    "path": "/transactions",
+    "name": "Transactions",
+    "type": "private",
+    "component": "Transactions"
+  },
+  {
+    "path": "/invoices",
+    "name": "Invoices",
+    "type": "private",
+    "component": "Invoices"
+  },
+  {
+    "path": "/compliance",
+    "name": "Compliance",
+    "type": "private",
+    "component": "Compliance"
+  },
+  {
+    "path": "/transfer-pricing",
+    "name": "Transfer Pricing",
+    "type": "private",
+    "component": "TransferPricing"
+  },
+  {
+    "path": "/calendar",
+    "name": "Calendar",
+    "type": "private",
+    "component": "Calendar"
+  },
+  {
+    "path": "/settings",
+    "name": "Settings",
+    "type": "private",
+    "component": "Settings"
+  },
+  {
+    "path": "/admin",
+    "name": "Admin",
+    "type": "private",
+    "component": "Admin"
+  },
+  {
+    "path": "/setup",
+    "name": "Setup Wizard",
+    "type": "private",
+    "component": "Setup"
+  },
+  {
+    "path": "/tax-assistant",
+    "name": "Tax Assistant",
+    "type": "private",
+    "component": "TaxAssistant"
+  },
+  {
+    "path": "/workflow-templates",
+    "name": "Workflow Templates",
+    "type": "private", 
+    "component": "WorkflowTemplates"
+  },
+  {
+    "path": "/reports",
+    "name": "Reports",
+    "type": "private",
+    "component": "Reports"
+  },
+  {
+    "path": "/tax-calculations",
+    "name": "Tax Calculations",
+    "type": "private",
+    "component": "TaxCalculations"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "path": "/favicon.ico",
+    "type": "icon",
+    "required": true
+  },
+  {
+    "path": "/logo.svg",
+    "type": "logo",
+    "required": true
+  },
+  {
+    "path": "/logo-dark.svg", 
+    "type": "logo",
+    "required": true
+  },
+  {
+    "path": "/manifest.json",
+    "type": "manifest",
+    "required": true
+  },
+  {
+    "path": "/robots.txt",
+    "type": "seo",
+    "required": false
+  }
+]

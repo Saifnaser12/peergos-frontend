@@ -1,0 +1,128 @@
+Objective: Extract the frontend only into a brand-new project peergos-frontend-prod (Vite + React + TypeScript) with 100% parity to the current system. Prove completeness via FRONTEND_PARITY_REPORT.md and MANIFEST_FRONTEND.json. Only create a deployable tarball if all checks pass (TS=0, routes/i18n/assets/RTL/links/API base all PASS).
+0) Create isolated project
+Create a new Replit project named peergos-frontend-prod using Vite + React + TypeScript.
+Copy frontend code only from the main system:
+src/ (pages, routes, components, hooks, context, state, api client)
+public/ (icons, manifest, images, fonts)
+index.html, vite.config.ts, tsconfig*.json, package.json
+Tailwind & PostCSS configs, ESLint/Prettier configs, any shadcn/ui setup
+Exclude all backend/mobile files. Ensure no Node/Express/DB scripts remain.
+1) Environment & config
+Create .env.example with all used keys:
+VITE_API_BASE_URL=https://api.peergos.ae
+VITE_APP_ENV=production
+VITE_BUILD_SHA=
+VITE_BUILD_TIME=
+Verify every API call uses import.meta.env.VITE_API_BASE_URL. Fail if any hard-coded http://localhost or unknown host exists.
+Dev port: 5173; Preview port: 4173 (vite preview --port 4173).
+2) Scripts (package.json)
+Add/normalize:
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc --noEmit --pretty false",
+    "verify:env": "node scripts/verify-env.js",
+    "verify:api": "node scripts/verify-api-usage.js",
+    "verify:routes": "node scripts/verify-routes.js",
+    "verify:i18n": "node scripts/verify-i18n.js",
+    "verify:rtl": "node scripts/verify-rtl.js",
+    "verify:assets": "node scripts/verify-assets.js",
+    "verify:links": "node scripts/verify-links.js",
+    "verify:all": "node scripts/verify-all.js",
+    "report:manifest": "node scripts/export-manifest.js",
+    "report:parity": "node scripts/export-parity-report.js",
+    "package:frontend": "node scripts/package-frontend.js"
+  }
+}
+Create a scripts/ folder for these Node scripts (implement real checks, not stubs).
+3) Reference snapshots (from the main repo)
+Generate/save under scripts/:
+REFERENCE_PAGES.json – list of expected routes/pages (public + private)
+REFERENCE_I18N_KEYS.json – complete set of translation keys (EN+AR)
+REFERENCE_ASSETS.json – required assets (logos, icons, fonts, key images)
+REFERENCE_LINKS.json – expected internal navigation targets
+REFERENCE_RTL_RULES.json – required RTL classes/selectors (Tailwind rtl: or [dir="rtl"] styles)
+If not present, scan the main repo to build these references first.
+4) Build & typecheck
+npm ci
+npm run typecheck
+npm run build
+Print: TYPECHECK_ERRORS=<number> (must be 0). Ensure dist/ contains index.html + assets.
+5) Implement verifications
+scripts/verify-env.js
+Scan code for import.meta.env.*; ensure every key exists in .env.example.
+Print: ENV_COVERAGE=PASS|FAIL MISSING=[...]
+scripts/verify-api-usage.js
+Grep for fetch/axios usage; FAIL if any hard-coded host (e.g., localhost, IPs).
+Print: API_BASE_USAGE=PASS|FAIL HARDCODED=[...]
+scripts/verify-routes.js
+Read router config, enumerate all routes. Compare to REFERENCE_PAGES.json.
+Print: ROUTE_PARITY=PASS|FAIL REF=<n> APP=<m> MISSING=[...] EXTRA=[...]
+scripts/verify-i18n.js
+Build set of used keys by scanning TSX/TS for t('...')/i18n.t('...').
+Ensure every used key exists in EN & AR dictionaries.
+Print: I18N_COVERAGE=PASS|FAIL MISSING_EN=[...] MISSING_AR=[...]
+scripts/verify-rtl.js
+Confirm RTL enablement (app sets dir="rtl" for Arabic or uses Tailwind rtl: utilities).
+Print: RTL_SUPPORT=PASS|FAIL
+scripts/verify-assets.js
+Ensure each file listed in REFERENCE_ASSETS.json exists under public/ or src/assets/.
+Print: ASSET_PARITY=PASS|FAIL MISSING=[...]
+scripts/verify-links.js
+Start preview and request a set of critical routes. SPA fallback (200 with index) is acceptable.
+Print: LINKS_OK=PASS|FAIL BROKEN=[...]
+scripts/verify-all.js
+Run all verifiers; exit non-zero on any failure.
+scripts/export-manifest.js → MANIFEST_FRONTEND.json with:
+name/version, build timestamp
+node/typescript/vite versions
+dependency list
+route count, i18n key counts (EN/AR), assets count
+rtl:true/false, apiBase from .env.example
+scripts/export-parity-report.js → FRONTEND_PARITY_REPORT.md summarizing:
+Route parity diffs
+i18n coverage results (missing keys lists)
+RTL support checks
+Asset parity (missing/extra)
+API base usage (no hard-coded hosts)
+Links crawl summary (HTTP codes)
+Build artifacts summary (dist/ contents)
+Final verdict: PASS/FAIL
+6) Preview smoke (port 4173)
+npm run preview & echo $! > /tmp/fe.pid
+sleep 2
+curl -s -o /dev/null -w "PREVIEW_ROOT_HTTP=%{http_code}\n" http://localhost:4173/
+for p in / /login /dashboard /tax/cit /tax/vat /financials ; do
+  curl -s -o /dev/null -w "ROUTE:$p:%{http_code}\n" "http://localhost:4173$p"
+done
+kill $(cat /tmp/fe.pid) || true
+7) Reports & final printout
+node scripts/export-manifest.js
+node scripts/export-parity-report.js
+Print exactly:
+TYPECHECK_ERRORS=<n>
+ROUTE_PARITY=<PASS|FAIL> REF=<n> APP=<m>
+I18N_COVERAGE=<PASS|FAIL>
+RTL_SUPPORT=<PASS|FAIL>
+ASSET_PARITY=<PASS|FAIL>
+API_BASE_USAGE=<PASS|FAIL>
+LINKS_OK=<PASS|FAIL>
+PREVIEW_ROOT_HTTP=<code>
+FRONTEND_PARITY_FINAL=<PASS|FAIL>
+8) Package only if all green
+Conditions: TYPECHECK_ERRORS=0, FRONTEND_PARITY_FINAL=PASS, PREVIEW_ROOT_HTTP=200
+TS=$(date +%Y%m%d-%H%M)
+tar -czf "peergos-frontend-$TS.tar.gz" \
+  --exclude="node_modules" --exclude=".git" --exclude="*.map" --exclude="*.log" \
+  dist index.html package.json package-lock.json vite.config.ts tsconfig*.json \
+  .env.example MANIFEST_FRONTEND.json FRONTEND_PARITY_REPORT.md README.md
+ls -lh "peergos-frontend-$TS.tar.gz"
+tar -tzf "peergos-frontend-$TS.tar.gz" | wc -l | xargs echo "PACKAGE_FILECOUNT"
+echo "PACKAGE_PATH=$(pwd)/peergos-frontend-$TS.tar.gz"
+If any check fails: do not package—print failing sections and fix, then re-run steps 4–8.
+Deliverables:
+FRONTEND_PARITY_REPORT.md (PASS)
+MANIFEST_FRONTEND.json
+peergos-frontend-YYYYMMDD-HHMM.tar.gz (deploy-ready)
