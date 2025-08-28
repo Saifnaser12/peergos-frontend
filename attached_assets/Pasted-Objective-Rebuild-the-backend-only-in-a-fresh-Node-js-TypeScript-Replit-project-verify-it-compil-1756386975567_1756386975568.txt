@@ -1,0 +1,123 @@
+Objective: Rebuild the backend only in a fresh Node.js (TypeScript) Replit project, verify it compiles with 0 TypeScript errors, confirm all required features and data (including UAE Chart of Accounts) are present, and produce a deployment tarball with a manifest and Integrity Report. Also, run a smoke test to confirm the API works end-to-end.
+1) New project & isolation
+Create a new Replit project named peergos-backend-prod using the Node.js template (no React).
+Add the backend code only (controllers, services, routes, db, utils, tax logic). No frontend files.
+Use CommonJS unless a true ESM setup is required. Prefer CommonJS for simplicity.
+2) Minimal structure
+/src
+  server.ts
+  routes/index.ts
+  config/env.ts
+  db/index.ts
+  tax/ (VAT/CIT logic)
+  scripts/seed-coa.ts        # UAE Chart of Accounts seeding
+tsconfig.json
+package.json
+.env.example
+README.md
+3) package.json (scripts)
+{
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit --pretty false",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "seed:coa": "tsx scripts/seed-coa.ts",
+    "test:smoke": "node dist/scripts/smoke-test.js"
+  }
+}
+(Install only the dependencies actually used—express, cors, dotenv, ORM + pg or Prisma, zod, etc. Dev deps: typescript, tsx, @types/node, @types/express.)
+4) tsconfig.json (strict but pragmatic)
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "rootDir": "src",
+    "outDir": "dist",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "scripts"]
+}
+5) env & server
+.env.example:
+NODE_ENV=production
+PORT=8080
+DATABASE_URL=postgres://user:pass@host:5432/peergos
+SESSION_SECRET=change_me
+CORS_ORIGIN=https://app.peergos.ae
+src/config/env.ts reads + exports these vars.
+src/server.ts:
+Express, JSON, CORS (from CORS_ORIGIN).
+GET /health → {status:'ok'} (200).
+Mount real API routes.
+6) Database & UAE Chart of Accounts
+Ensure migrations exist and run via npm run db:push or db:migrate.
+Include the UAE Chart of Accounts seeding:
+scripts/seed-coa.ts must insert all COA entries required by the app.
+After seeding, log the exact count of accounts inserted (e.g., Inserted 168 accounts).
+Add a read-only endpoint to verify COA presence:
+GET /admin/coa/count → {count:number}
+7) Compile & fix errors
+Run npm run typecheck and fix all TypeScript errors (target: 0 errors).
+Remove any frontend/Vite imports or types.
+8) Build & smoke test (automated)
+Build: npm run build
+Add dist/scripts/smoke-test.js (compiled from src/scripts/smoke-test.ts) that:
+Calls http://localhost:8080/health and expects 200.
+Queries the DB for 1 simple row or version, and calls /admin/coa/count expecting count > 0.
+Start server, run smoke, stop server:
+node dist/server.js & echo $! > /tmp/api.pid
+sleep 2
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/health
+npm run test:smoke
+kill $(cat /tmp/api.pid) || true
+Output the HTTP status code and the smoke test result.
+9) Integrity Report & Manifest (very important)
+Generate a MANIFEST.json at project root with:
+App name, version, build timestamp
+Commit/ref (if available)
+Node & TypeScript versions
+Dependency list (name + version)
+Files included in the tarball (paths + sizes)
+COA seed status: seeder filename, expected account count, inserted count, last run timestamp
+Health endpoint path and result (200)
+Generate INTEGRITY_REPORT.md summarizing:
+TypeScript errors: 0 (or list if any remain)
+Migrations applied (list)
+COA seeding result (expected vs actual counts)
+Smoke test results (health OK, DB OK, /admin/coa/count value)
+Any missing documents or scripts found and how they were resolved
+10) Package for deployment (backend-only)
+TS=$(date +%Y%m%d-%H%M)
+npm run build
+# Create a clean tarball with binaries, examples, and docs:
+tar -czf "peergos-backend-$TS.tar.gz" \
+  --exclude="node_modules" --exclude=".git" --exclude="*.log" \
+  dist package.json package-lock.json tsconfig.json .env.example \
+  MANIFEST.json INTEGRITY_REPORT.md README.md
+ls -lh "peergos-backend-$TS.tar.gz"
+Print the tarball name, size, and file count inside it.
+11) Final verification & outputs (post-build)
+Print these lines clearly:
+TYPECHECK: <result> (must be 0 errors)
+HEALTH_STATUS: <HTTP code> (must be 200)
+COA_COUNT: <number> (must be > 0)
+PACKAGE: peergos-backend-YYYYMMDD-HHMM.tar.gz <size>
+LOCATION: /home/runner/<project>/
+Also print the first 20 lines of INTEGRITY_REPORT.md.
+12) If anything is missing or fails
+Stop and fix. Do not deliver a tarball if:
+TypeScript errors > 0
+/health ≠ 200
+COA_COUNT ≤ 0
+Explain the fix you made and re-run steps 8–11.
+Deliverables:
+Running API (/health 200) and /admin/coa/count > 0 in the new project.
+peergos-backend-YYYYMMDD-HHMM.tar.gz with MANIFEST.json and INTEGRITY_REPORT.md.
+Console output confirming 0 TS errors, health 200, COA count, tarball name/size/location.
