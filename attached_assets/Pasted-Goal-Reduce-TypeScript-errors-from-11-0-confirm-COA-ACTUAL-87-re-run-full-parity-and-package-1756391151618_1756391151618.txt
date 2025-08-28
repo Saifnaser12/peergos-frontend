@@ -1,0 +1,60 @@
+Goal: Reduce TypeScript errors from 11 → 0, confirm COA_ACTUAL = 87, re-run full parity, and package only if all checks pass.
+1) Show & fix the remaining TypeScript errors
+Run and print the full error list:
+npm run typecheck || true
+Fix errors by category (loop until 0):
+Missing types → add @types packages actually used (examples):
+@types/express @types/cors @types/cookie @types/jsonwebtoken @types/node
+Path alias / module not found → either replace with relative imports or add baseUrl:"src" and correct "paths"; then update imports.
+ESM/CJS mixing → keep "type":"commonjs", "module":"CommonJS", esModuleInterop:true; adjust default vs named imports.
+Implicit any / mismatched types → add interfaces/types; avoid any unless unavoidable, then add minimal zod runtime guards where relevant.
+Unused / unreachable / duplicate exports → clean them up.
+Re-run until 0 errors:
+npm run typecheck
+Print: TYPECHECK_ERRORS=<number>
+2) Prove COA is fully seeded (exactly 87)
+Run migrations & build:
+npm run db:push || npm run db:migrate
+npm run build
+Seed COA (idempotent upsert by account_code):
+node dist/scripts/seed-coa.js
+Query and print:
+COA_EXPECTED=87
+COA_ACTUAL=<n>
+COA_MISSING_IDS=[...] (first 10 if any)
+COA_EXTRA_IDS=[...] (first 10 if any)
+5 sample rows (code + name) ordered by code ascending
+3) Health + parity re-run (must pass)
+node dist/server.js & echo $! > /tmp/api.pid
+sleep 2
+curl -s -o /dev/null -w "HEALTH_HTTP=%{http_code}\n" http://localhost:8080/health
+curl -s http://localhost:8080/admin/coa/count | sed -e 's/.*/COA_COUNT_JSON=&/'
+kill $(cat /tmp/api.pid) || true
+
+node dist/scripts/generate-openapi.js
+node dist/scripts/verify-env.js
+node dist/scripts/verify-routes.js
+node dist/scripts/verify-schemas.js
+node dist/scripts/verify-seeds.js
+node dist/scripts/verify-auth.js
+node dist/scripts/verify-jobs.js
+node dist/scripts/verify-config.js
+node dist/scripts/verify-all.js
+Print at end (exact lines):
+TYPECHECK_ERRORS=<n>
+HEALTH_HTTP=<code>
+COA_EXPECTED=87
+COA_ACTUAL=<n>
+PARITY_FINAL=<PASS|FAIL>
+4) Package only if all green
+Conditions: TYPECHECK_ERRORS=0, HEALTH_HTTP=200, COA_ACTUAL=87, PARITY_FINAL=PASS
+If met:
+TS=$(date +%Y%m%d-%H%M)
+tar -czf "peergos-backend-$TS-fixed.tar.gz" \
+  --exclude="node_modules" --exclude=".git" --exclude="*.map" --exclude="*.log" \
+  dist package.json package-lock.json tsconfig.json .env.example \
+  MANIFEST.json PARITY_REPORT.md README.md
+ls -lh "peergos-backend-$TS-fixed.tar.gz"
+tar -tzf "peergos-backend-$TS-fixed.tar.gz" | wc -l | xargs echo "PACKAGE_FILECOUNT"
+echo "PACKAGE_PATH=$(pwd)/peergos-backend-$TS-fixed.tar.gz"
+If any condition fails: do not package. Print failing sections and keep errors visible for immediate fixes.

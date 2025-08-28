@@ -9,7 +9,7 @@ import path from 'path';
 /**
  * Seeds exactly 87 UAE Chart of Accounts entries as required for parity
  */
-export async function seedExact87COAAccounts(): Promise<void> {
+async function seedExact87COAAccounts(): Promise<void> {
   console.log('🔄 Seeding exact 87 UAE Chart of Accounts...');
   
   try {
@@ -103,4 +103,4 @@ if (require.main === module) {
   });
 }
 
-export { seedExact87COAAccounts };
+export default seedExact87COAAccounts;
