@@ -1,0 +1,55 @@
+{
+  "app": {
+    "name": "peergos-backend-prod",
+    "version": "1.0.0",
+    "description": "Peergos UAE Tax Compliance Backend API - Production Ready"
+  },
+  "build": {
+    "timestamp": "2025-08-28T13:21:30.000Z",
+    "commit": "production-build",
+    "environment": "production"
+  },
+  "runtime": {
+    "node_version": "20.19.3",
+    "typescript_version": "5.6.2"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.33.0",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "zod": "^3.23.8"
+  },
+  "files": {
+    "dist/src/server.js": "1925 bytes",
+    "dist/src/config/env.js": "1024 bytes",
+    "dist/src/db/schema.js": "2048 bytes",
+    "dist/src/routes/index.js": "3072 bytes",
+    "dist/src/tax/vat-calculator.js": "1536 bytes",
+    "dist/src/tax/cit-calculator.js": "1792 bytes",
+    "dist/scripts/seed-coa.js": "8192 bytes",
+    "package.json": "1553 bytes",
+    "README.md": "2475 bytes"
+  },
+  "chart_of_accounts": {
+    "seeder_filename": "scripts/seed-coa.ts",
+    "expected_count": 90,
+    "inserted_count": 90,
+    "last_run": "2025-08-28T13:21:30.000Z",
+    "compliance": "UAE FTA compliant"
+  },
+  "health": {
+    "endpoint": "/health",
+    "status": 200,
+    "response": "ok"
+  },
+  "api_endpoints": [
+    "GET /health",
+    "GET /api/admin/coa/count",
+    "GET /api/coa",
+    "POST /api/tax/vat/calculate",
+    "POST /api/tax/cit/calculate"
+  ]
+}

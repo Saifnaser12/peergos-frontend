@@ -2,11 +2,11 @@
   "name": "peergos-backend-prod",
   "version": "1.0.0",
   "description": "Peergos UAE Tax Compliance Backend API - Production",
-  "main": "dist/src/server.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "typecheck": "tsc --noEmit --pretty false",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
