@@ -10,8 +10,21 @@
     "typecheck": "tsc --noEmit --pretty false",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "seed:coa": "tsx scripts/seed-coa.ts",
-    "test:smoke": "node dist/scripts/smoke-test.js"
+    "db:seed:all": "node dist/scripts/seed-all.js",
+    "db:seed:coa": "node dist/scripts/seed-coa.js",
+    "gen:openapi": "node dist/scripts/generate-openapi.js",
+    "verify:routes": "node dist/scripts/verify-routes.js",
+    "verify:schemas": "node dist/scripts/verify-schemas.js",
+    "verify:seeds": "node dist/scripts/verify-seeds.js",
+    "verify:env": "node dist/scripts/verify-env.js",
+    "verify:auth": "node dist/scripts/verify-auth.js",
+    "verify:jobs": "node dist/scripts/verify-jobs.js",
+    "verify:cfg": "node dist/scripts/verify-config.js",
+    "verify:all": "node dist/scripts/verify-all.js",
+    "test:smoke": "node dist/scripts/smoke-test.js",
+    "report:manifest": "node dist/scripts/export-manifest.js",
+    "report:parity": "node dist/scripts/export-parity-report.js",
+    "package:backend": "node dist/scripts/package-backend.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
