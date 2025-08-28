@@ -1,0 +1,14 @@
+{
+  "/api/auth/login": {"public": true},
+  "/health": {"public": true},
+  "/api/health": {"public": true},
+  "/api/users/me": {"roles": ["ADMIN", "ACCOUNTANT", "ASSISTANT", "SME_CLIENT"]},
+  "/api/companies/:id": {"roles": ["ADMIN", "ACCOUNTANT", "SME_CLIENT"]},
+  "/api/transactions": {"roles": ["ADMIN", "ACCOUNTANT", "SME_CLIENT"]},
+  "/api/tax-filings": {"roles": ["ADMIN", "ACCOUNTANT", "SME_CLIENT"]},
+  "/api/invoices": {"roles": ["ADMIN", "ACCOUNTANT", "SME_CLIENT"]},
+  "/api/notifications": {"roles": ["ADMIN", "ACCOUNTANT", "ASSISTANT", "SME_CLIENT"]},
+  "/api/admin/*": {"roles": ["ADMIN"]},
+  "/api/fta/*": {"roles": ["ADMIN", "ACCOUNTANT"]},
+  "/admin/coa/count": {"roles": ["ADMIN", "ACCOUNTANT"]}
+}

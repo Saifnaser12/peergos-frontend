@@ -1,0 +1,97 @@
+Objective: Prove the extracted backend is functionally identical to the main system. Run a full parity audit, print concrete results (counts, diffs, HTTP codes), and package only if all checks pass. Also, switch service port to 8080 (not 5000) and confirm all docs (incl. UAE COA) are present.
+0) Normalize runtime
+Ensure server listens on PORT=8080. Update .env.example and src/config/env.ts if needed.
+Confirm npm start binds to :8080.
+1) Reference snapshots (from the MAIN system)
+Generate and save the following reference JSON files under src/scripts/ (overwrite if they exist), extracted from the main monorepo:
+REFERENCE_ROUTES.json – array of {method, path, controller}
+REFERENCE_SCHEMAS.json – tables, columns (type/null/default), PK/FK/indexes, enums
+REFERENCE_ENV_KEYS.json – every process.env.X used by main backend
+REFERENCE_PERMISSIONS.json – route → required roles/permissions
+REFERENCE_JOBS.json – job names, schedules, handlers
+REFERENCE_COA.json – full UAE Chart of Accounts (exact entries + expected total)
+2) Fresh build & DB prep
+npm ci
+npm run typecheck
+npm run build
+npm run db:push || npm run db:migrate
+node dist/scripts/seed-all.js
+Print: TYPECHECK_ERRORS=<number> (must be 0)
+3) Parity verifications (run & print results)
+Execute the verification scripts (create/repair as needed so they run cleanly):
+node dist/scripts/generate-openapi.js
+node dist/scripts/verify-env.js
+node dist/scripts/verify-routes.js
+node dist/scripts/verify-schemas.js
+node dist/scripts/verify-seeds.js
+node dist/scripts/verify-auth.js
+node dist/scripts/verify-jobs.js
+node dist/scripts/verify-config.js
+node dist/scripts/verify-all.js
+Each script must print a PASS/FAIL line and a short diff summary if FAIL.
+4) Deterministic COA proof
+Run a DB query to count COA rows and compare to REFERENCE_COA.json.length.
+Print exactly:
+COA_EXPECTED=<n>
+COA_ACTUAL=<n>
+COA_MISSING_IDS=[...] (first 10 if any)
+COA_EXTRA_IDS=[...] (first 10 if any)
+Also print 5 sample account codes/descriptions to prove content.
+5) Live API smoke (on :8080)
+node dist/server.js & echo $! > /tmp/api.pid
+sleep 2
+curl -s -o /dev/null -w "HEALTH_HTTP=%{http_code}\n" http://localhost:8080/health
+curl -s http://localhost:8080/admin/coa/count | sed -e 's/.*/COA_COUNT_JSON=&/'
+# If auth exists, hit 1 protected route with test creds (print HTTP code)
+kill $(cat /tmp/api.pid) || true
+6) Manifest + Parity Report (must reflect facts)
+node dist/scripts/export-manifest.js    # writes MANIFEST.json
+node dist/scripts/export-parity-report.js  # writes PARITY_REPORT.md
+MANIFEST.json must include:
+app name, version, build timestamp
+node & typescript versions
+dependency list with versions
+routes count, tables count, jobs count
+COA_EXPECTED/COA_ACTUAL and status
+health endpoint result (HTTP 200)
+PARITY_REPORT.md must include:
+Route parity: totals + any diffs (missing/extra)
+Schema parity: table/column/index diffs (if any)
+Env coverage: missing/unused keys
+Auth/permission matrix summary
+Jobs/cron parity
+Config parity (ports, CORS, rate limits, session flags)
+Smoke results (HTTP codes)
+Final verdict: PASS/FAIL
+7) Hard evidence printout (in console)
+Print these exact lines at the end:
+TYPECHECK_ERRORS=<n>
+ROUTE_PARITY=<PASS|FAIL> TOTAL=<main_total> EXTRACTED=<extracted_total> MISSING=<m> EXTRA=<e>
+SCHEMA_PARITY=<PASS|FAIL> TABLES_MAIN=<n> TABLES_EXTRACTED=<n> DIFFS=<k>
+ENV_COVERAGE=<PASS|FAIL> MISSING_KEYS=[...]
+AUTH_PARITY=<PASS|FAIL>
+JOBS_PARITY=<PASS|FAIL>
+CONFIG_PARITY=<PASS|FAIL>
+HEALTH_HTTP=<code>
+COA_EXPECTED=<n>
+COA_ACTUAL=<n>
+PARITY_FINAL=<PASS|FAIL>
+8) Package only if everything passes
+Condition to package:
+TYPECHECK_ERRORS=0
+HEALTH_HTTP=200
+PARITY_FINAL=PASS
+COA_ACTUAL == COA_EXPECTED
+If conditions met:
+TS=$(date +%Y%m%d-%H%M)
+tar -czf "peergos-backend-$TS.tar.gz" \
+  --exclude="node_modules" --exclude=".git" --exclude="*.map" --exclude="*.log" \
+  dist package.json package-lock.json tsconfig.json .env.example \
+  MANIFEST.json PARITY_REPORT.md README.md
+ls -lh "peergos-backend-$TS.tar.gz"
+tar -tzf "peergos-backend-$TS.tar.gz" | wc -l | xargs echo "PACKAGE_FILECOUNT"
+echo "PACKAGE_PATH=$(pwd)/peergos-backend-$TS.tar.gz"
+Else: do not package—print failing sections and fix before retrying.
+9) Port note
+If any script or config still references port 5000, replace with 8080 and re-run steps 2–8.
+If any line in the final printout shows FAIL, stop and fix; don’t create a tarball. This gives you hard numbers your IT team can trust (especially COA_EXPECTED vs COA_ACTUAL) and a clean package only after verifiable PASS.
