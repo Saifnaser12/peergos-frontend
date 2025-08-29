@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
+import apiRoutes from './routes/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,18 +43,49 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'peergos-development-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Health check endpoint (enhanced)
 app.get('/health', (req, res) => {
-  res.json({ status: "ok" });
+  const healthStatus = {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    version: "1.0.0",
+    uptime: process.uptime()
+  };
+  res.json(healthStatus);
 });
+
+// Mount API routes
+app.use('/api', apiRoutes);
 
 // Default route
 app.get('/', (req, res) => {
   res.json({ 
-    message: "Express server is running",
+    message: "Peergos Backend API",
     environment: process.env.NODE_ENV || 'development',
-    port: PORT
+    port: PORT,
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      api: "/api",
+      version: "/api/version",
+      status: "/api/status"
+    }
   });
 });
 
