@@ -39,10 +39,20 @@ import WorkflowTemplatesPage from "./pages/workflows/templates";
 import TaxCalculationsPage from "./pages/tax-calculations";
 import NotFound from "@/pages/not-found";
 
+function TestEnvironmentBanner() {
+  return (
+    <div className="bg-amber-100 border-b border-amber-200 text-amber-800 text-center py-2 px-4 text-sm font-medium">
+      Test Environment – Do Not Use Real Data
+    </div>
+  );
+}
+
 function Router() {
   return (
-    <EnhancedMainLayout>
-      <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+    <>
+      <TestEnvironmentBanner />
+      <EnhancedMainLayout>
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
@@ -80,6 +90,7 @@ function Router() {
         </Switch>
       </Suspense>
     </EnhancedMainLayout>
+    </>
   );
 }
 

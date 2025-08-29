@@ -66,7 +66,7 @@ export interface RealTimeThresholdMonitoring {
 }
 
 class FTARealTimeAPI {
-  private baseUrl = 'https://eservices.tax.gov.ae/api/v1';
+  private baseUrl = import.meta.env.VITE_FTA_API_URL || 'https://eservices.tax.gov.ae/api/v1';
   private apiKey = import.meta.env.VITE_FTA_API_KEY || '';
 
   /**
