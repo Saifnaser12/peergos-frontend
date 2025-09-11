@@ -39,13 +39,7 @@ export interface TaxCalculationResult {
 export function useTaxCalculation() {
   return useMutation({
     mutationFn: async (request: TaxCalculationRequest): Promise<TaxCalculationResult> => {
-      const response = await apiRequest('/api/calculate-tax', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
+      const response = await apiRequest('POST', '/api/calculate-tax', request);
 
       if (!response.ok) {
         const error = await response.json();
