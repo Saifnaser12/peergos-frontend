@@ -5,6 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { WorkflowTemplateBrowser } from '@/components/workflows/workflow-template-browser';
 import { WorkflowTemplateCustomizer } from '@/components/workflows/workflow-template-customizer';
+import { WorkflowTemplateSharing } from '@/components/workflows/workflow-template-sharing';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { 
   BookTemplate, 
   Plus, 
@@ -17,26 +21,92 @@ import type { WorkflowTemplate } from '@shared/workflow-templates';
 
 export default function WorkflowTemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
+  const [isCreatingNewTemplate, setIsCreatingNewTemplate] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showSharing, setShowSharing] = useState(false);
+  const [templateToShare, setTemplateToShare] = useState<WorkflowTemplate | null>(null);
   const [activeTab, setActiveTab] = useState('browse');
+  const { toast } = useToast();
 
   const handleSelectTemplate = (template: WorkflowTemplate) => {
     setSelectedTemplate(template);
+    setIsCreatingNewTemplate(false);
     setShowCustomizer(true);
   };
 
+  // Mutation for creating new templates
+  const createTemplateMutation = useMutation({
+    mutationFn: async (templateData: Omit<WorkflowTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'rating'>) => {
+      const response = await apiRequest('/api/workflow-templates', {
+        method: 'POST',
+        body: templateData
+      });
+      return response.json();
+    },
+    onSuccess: (newTemplate) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workflow-templates'] });
+      toast({
+        title: "Template Created",
+        description: `"${newTemplate.name}" has been created successfully`
+      });
+      setShowCustomizer(false);
+      setSelectedTemplate(null);
+      setIsCreatingNewTemplate(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation for updating existing templates
+  const updateTemplateMutation = useMutation({
+    mutationFn: async (template: WorkflowTemplate) => {
+      const response = await apiRequest(`/api/workflow-templates/${template.id}`, {
+        method: 'PUT',
+        body: template
+      });
+      return response.json();
+    },
+    onSuccess: (updatedTemplate) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workflow-templates'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/workflow-templates/${updatedTemplate.id}`] });
+      toast({
+        title: "Template Updated",
+        description: `"${updatedTemplate.name}" has been updated successfully`
+      });
+      setShowCustomizer(false);
+      setSelectedTemplate(null);
+      setIsCreatingNewTemplate(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update template",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSaveCustomTemplate = (customizedTemplate: WorkflowTemplate) => {
-    // In a real app, save to backend
-    console.log('Saving customized template:', customizedTemplate);
-    setShowCustomizer(false);
-    setSelectedTemplate(null);
-    // Show success message or redirect
+    if (isCreatingNewTemplate) {
+      // This is a new template, create it (remove auto-generated fields)
+      const { id, createdAt, updatedAt, usageCount, rating, ...templateData } = customizedTemplate;
+      createTemplateMutation.mutate(templateData);
+    } else {
+      // This is an existing template, update it
+      updateTemplateMutation.mutate(customizedTemplate);
+    }
   };
 
   const handleStartFromScratch = () => {
-    // Create a blank template
+    // Create a blank template with a unique timestamp
+    const timestamp = Date.now();
     const blankTemplate: WorkflowTemplate = {
-      id: `custom-${Date.now()}`,
+      id: `new-template-${timestamp}`,
       name: 'Custom Workflow',
       description: 'Build your own custom workflow from scratch',
       industry: 'General',
@@ -55,7 +125,18 @@ export default function WorkflowTemplatesPage() {
     };
     
     setSelectedTemplate(blankTemplate);
+    setIsCreatingNewTemplate(true);
     setShowCustomizer(true);
+  };
+
+  const handleShareTemplate = (template: WorkflowTemplate) => {
+    setTemplateToShare(template);
+    setShowSharing(true);
+  };
+
+  const handleCloseSharing = () => {
+    setShowSharing(false);
+    setTemplateToShare(null);
   };
 
   return (
@@ -73,11 +154,11 @@ export default function WorkflowTemplatesPage() {
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleStartFromScratch} className="h-9 px-3">
+          <Button variant="outline" onClick={handleStartFromScratch} className="h-9 px-3" data-testid="button-custom-workflow">
             <Plus className="h-4 w-4 mr-2" />
             Custom Workflow
           </Button>
-          <Button className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700">
+          <Button className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700" data-testid="button-new-template">
             <Sparkles className="h-4 w-4 mr-2" />
             New Template
           </Button>
@@ -138,7 +219,10 @@ export default function WorkflowTemplatesPage() {
         </TabsList>
 
         <TabsContent value="browse">
-          <WorkflowTemplateBrowser onSelectTemplate={handleSelectTemplate} />
+          <WorkflowTemplateBrowser 
+            onSelectTemplate={handleSelectTemplate}
+            onShareTemplate={handleShareTemplate}
+          />
         </TabsContent>
 
         <TabsContent value="my-templates">
@@ -148,7 +232,7 @@ export default function WorkflowTemplatesPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No custom templates yet</h3>
             <p className="text-gray-600 mb-6">Create your first custom workflow template</p>
-            <Button onClick={handleStartFromScratch}>
+            <Button onClick={handleStartFromScratch} data-testid="button-create-template">
               <Plus className="h-4 w-4 mr-2" />
               Create Template
             </Button>
@@ -180,11 +264,25 @@ export default function WorkflowTemplatesPage() {
             <WorkflowTemplateCustomizer
               template={selectedTemplate}
               onSave={handleSaveCustomTemplate}
-              onCancel={() => setShowCustomizer(false)}
+              onShare={handleShareTemplate}
+              onCancel={() => {
+                setShowCustomizer(false);
+                setSelectedTemplate(null);
+                setIsCreatingNewTemplate(false);
+              }}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Sharing Modal */}
+      {templateToShare && (
+        <WorkflowTemplateSharing
+          template={templateToShare}
+          isOpen={showSharing}
+          onClose={handleCloseSharing}
+        />
+      )}
     </div>
   );
 }

@@ -24,9 +24,10 @@ import type { WorkflowTemplate } from '@shared/workflow-templates';
 
 interface WorkflowTemplateBrowserProps {
   onSelectTemplate: (template: WorkflowTemplate) => void;
+  onShareTemplate?: (template: WorkflowTemplate) => void;
 }
 
-export function WorkflowTemplateBrowser({ onSelectTemplate }: WorkflowTemplateBrowserProps) {
+export function WorkflowTemplateBrowser({ onSelectTemplate, onShareTemplate }: WorkflowTemplateBrowserProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
   const [selectedBusinessType, setSelectedBusinessType] = useState<string>('all');
@@ -253,6 +254,15 @@ export function WorkflowTemplateBrowser({ onSelectTemplate }: WorkflowTemplateBr
                 <Button size="sm" variant="outline">
                   <Eye className="h-3 w-3" />
                 </Button>
+                {onShareTemplate && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => onShareTemplate(template)}
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                )}
                 <Button size="sm" variant="outline">
                   <Download className="h-3 w-3" />
                 </Button>

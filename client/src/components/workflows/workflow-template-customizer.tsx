@@ -8,11 +8,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { 
   Settings, 
   Plus, 
   Minus, 
-  Move,
+  GripVertical,
   Clock,
   AlertCircle,
   CheckCircle2,
@@ -26,10 +45,11 @@ import type { WorkflowTemplate, WorkflowStep } from '@shared/workflow-templates'
 interface WorkflowTemplateCustomizerProps {
   template: WorkflowTemplate;
   onSave: (customizedTemplate: WorkflowTemplate) => void;
+  onShare?: (template: WorkflowTemplate) => void;
   onCancel: () => void;
 }
 
-export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: WorkflowTemplateCustomizerProps) {
+export function WorkflowTemplateCustomizer({ template, onSave, onShare, onCancel }: WorkflowTemplateCustomizerProps) {
   const [customTemplate, setCustomTemplate] = useState<WorkflowTemplate>(template);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
 
@@ -75,19 +95,27 @@ export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: Workf
     }));
   };
 
-  const moveStep = (stepId: string, direction: 'up' | 'down') => {
-    setCustomTemplate(prev => {
-      const steps = [...prev.steps];
-      const index = steps.findIndex(step => step.id === stepId);
-      
-      if (direction === 'up' && index > 0) {
-        [steps[index], steps[index - 1]] = [steps[index - 1], steps[index]];
-      } else if (direction === 'down' && index < steps.length - 1) {
-        [steps[index], steps[index + 1]] = [steps[index + 1], steps[index]];
-      }
-      
-      return { ...prev, steps };
-    });
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCustomTemplate(prev => {
+        const oldIndex = prev.steps.findIndex(step => step.id === active.id);
+        const newIndex = prev.steps.findIndex(step => step.id === over.id);
+        
+        return {
+          ...prev,
+          steps: arrayMove(prev.steps, oldIndex, newIndex)
+        };
+      });
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -111,6 +139,163 @@ export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: Workf
     }
   };
 
+  // Sortable Step Component
+  const SortableStepItem = ({ step, index }: { step: WorkflowStep, index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: step.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} className={cn(isDragging && 'z-50')}>
+        <Card className={cn(
+          "transition-colors",
+          activeStepId === step.id && "ring-2 ring-blue-500",
+          isDragging && "shadow-lg"
+        )}>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div 
+                  {...attributes}
+                  {...listeners}
+                  className="cursor-grab hover:cursor-grabbing p-1 hover:bg-gray-100 rounded"
+                >
+                  <GripVertical className="h-4 w-4 text-gray-400" />
+                </div>
+                <div className="text-sm font-medium text-gray-500">#{index + 1}</div>
+                <Badge variant="secondary" className={getCategoryColor(step.category)}>
+                  {step.category}
+                </Badge>
+                <Badge variant="outline" className={getPriorityColor(step.priority)}>
+                  {step.priority}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveStepId(activeStepId === step.id ? null : step.id)}
+                >
+                  <Settings className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeStep(step.id)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-0">
+            {activeStepId === step.id ? (
+              <div className="space-y-3 border-t pt-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Title</Label>
+                    <Input
+                      value={step.title}
+                      onChange={(e) => updateStep(step.id, 'title', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Estimated Time</Label>
+                    <Input
+                      value={step.estimatedTime}
+                      onChange={(e) => updateStep(step.id, 'estimatedTime', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={step.description}
+                    onChange={(e) => updateStep(step.id, 'description', e.target.value)}
+                    className="text-sm"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Category</Label>
+                    <Select value={step.category} onValueChange={(value) => updateStep(step.id, 'category', value as any)}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SETUP">Setup</SelectItem>
+                        <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+                        <SelectItem value="ACCOUNTING">Accounting</SelectItem>
+                        <SelectItem value="TAX">Tax</SelectItem>
+                        <SelectItem value="REPORTING">Reporting</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Priority</Label>
+                    <Select value={step.priority} onValueChange={(value) => updateStep(step.id, 'priority', value as any)}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LOW">Low</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="CRITICAL">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={step.automated}
+                    onCheckedChange={(checked) => updateStep(step.id, 'automated', checked)}
+                  />
+                  <Label className="text-xs">Automated Step</Label>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">{step.title}</h4>
+                <p className="text-xs text-gray-600 line-clamp-2">{step.description}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {step.estimatedTime}
+                  </span>
+                  {step.automated && (
+                    <Badge variant="outline" className="text-xs">
+                      <CheckCircle2 className="h-2 w-2 mr-1" />
+                      Auto
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -124,10 +309,17 @@ export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: Workf
             <Eye className="h-3 w-3 mr-2" />
             Preview
           </Button>
-          <Button variant="outline" size="sm" className="h-8 px-3">
-            <Share2 className="h-3 w-3 mr-2" />
-            Share
-          </Button>
+          {onShare && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-3"
+              onClick={() => onShare(customTemplate)}
+            >
+              <Share2 className="h-3 w-3 mr-2" />
+              Share
+            </Button>
+          )}
           <Button variant="outline" onClick={onCancel} className="h-9 px-3">
             Cancel
           </Button>
@@ -258,162 +450,22 @@ export function WorkflowTemplateCustomizer({ template, onSave, onCancel }: Workf
             </Button>
           </div>
 
-          <div className="space-y-3">
-            {customTemplate.steps.map((step, index) => (
-              <Card key={step.id} className={cn(
-                "transition-colors",
-                activeStepId === step.id && "ring-2 ring-blue-500"
-              )}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-medium text-gray-500">#{index + 1}</div>
-                      <Badge variant="secondary" className={getCategoryColor(step.category)}>
-                        {step.category}
-                      </Badge>
-                      <Badge variant="outline" className={getPriorityColor(step.priority)}>
-                        {step.priority}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStep(step.id, 'up')}
-                        disabled={index === 0}
-                      >
-                        <Move className="h-3 w-3 rotate-180" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStep(step.id, 'down')}
-                        disabled={index === customTemplate.steps.length - 1}
-                      >
-                        <Move className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setActiveStepId(activeStepId === step.id ? null : step.id)}
-                      >
-                        <Settings className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeStep(step.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  {activeStepId === step.id ? (
-                    <div className="space-y-3 border-t pt-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs">Title</Label>
-                          <Input
-                            value={step.title}
-                            onChange={(e) => updateStep(step.id, 'title', e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Estimated Time</Label>
-                          <Input
-                            value={step.estimatedTime}
-                            onChange={(e) => updateStep(step.id, 'estimatedTime', e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Description</Label>
-                        <Textarea
-                          value={step.description}
-                          onChange={(e) => updateStep(step.id, 'description', e.target.value)}
-                          className="text-sm"
-                          rows={2}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs">Category</Label>
-                          <Select value={step.category} onValueChange={(value) => updateStep(step.id, 'category', value as any)}>
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="SETUP">Setup</SelectItem>
-                              <SelectItem value="COMPLIANCE">Compliance</SelectItem>
-                              <SelectItem value="ACCOUNTING">Accounting</SelectItem>
-                              <SelectItem value="TAX">Tax</SelectItem>
-                              <SelectItem value="REPORTING">Reporting</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Priority</Label>
-                          <Select value={step.priority} onValueChange={(value) => updateStep(step.id, 'priority', value as any)}>
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="LOW">Low</SelectItem>
-                              <SelectItem value="MEDIUM">Medium</SelectItem>
-                              <SelectItem value="HIGH">High</SelectItem>
-                              <SelectItem value="CRITICAL">Critical</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id={`automated-${step.id}`}
-                          checked={step.automated}
-                          onCheckedChange={(checked) => updateStep(step.id, 'automated', checked)}
-                        />
-                        <Label htmlFor={`automated-${step.id}`} className="text-xs">
-                          Automated Step
-                        </Label>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-1">{step.title}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{step.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {step.estimatedTime}
-                        </div>
-                        {step.automated && (
-                          <div className="flex items-center gap-1 text-blue-600">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Automated
-                          </div>
-                        )}
-                        {step.dependencies.length > 0 && (
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <AlertCircle className="h-3 w-3" />
-                            {step.dependencies.length} dependencies
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={customTemplate.steps.map(step => step.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {customTemplate.steps.map((step, index) => (
+                  <SortableStepItem key={step.id} step={step} index={index} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </TabsContent>
 
         <TabsContent value="requirements" className="space-y-4">

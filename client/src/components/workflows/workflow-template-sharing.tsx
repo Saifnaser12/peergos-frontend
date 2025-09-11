@@ -43,13 +43,12 @@ export function WorkflowTemplateSharing({ template, isOpen, onClose }: WorkflowT
 
   const shareMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/workflow-templates/${template.id}/share`, {
-        method: 'POST',
-        body: shareSettings
-      });
+      const res = await apiRequest('POST', `/api/workflow-templates/${template.id}/share`, shareSettings);
+      const json = await res.json();
+      return json;
     },
-    onSuccess: (data) => {
-      setShareLink(data.shareUrl);
+    onSuccess: (json) => {
+      setShareLink(json.shareUrl);
       toast({
         title: "Share Link Generated",
         description: "Template share link has been created successfully"
@@ -237,6 +236,7 @@ export function WorkflowTemplateSharing({ template, isOpen, onClose }: WorkflowT
               onClick={() => shareMutation.mutate()} 
               disabled={shareMutation.isPending}
               className="w-full"
+              data-testid="button-generate-share-link"
             >
               <Share2 className="h-4 w-4 mr-2" />
               {shareMutation.isPending ? 'Generating Link...' : 'Generate Share Link'}
@@ -251,14 +251,14 @@ export function WorkflowTemplateSharing({ template, isOpen, onClose }: WorkflowT
                     readOnly
                     className="flex-1"
                   />
-                  <Button onClick={handleCopyLink} variant="outline">
+                  <Button onClick={handleCopyLink} variant="outline" data-testid="button-copy-link">
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleEmailShare} variant="outline" className="flex-1">
+                <Button onClick={handleEmailShare} variant="outline" className="flex-1" data-testid="button-share-email">
                   <Mail className="h-4 w-4 mr-2" />
                   Share via Email
                 </Button>
@@ -266,6 +266,7 @@ export function WorkflowTemplateSharing({ template, isOpen, onClose }: WorkflowT
                   onClick={() => window.open(`${window.location.origin}${shareLink}`, '_blank')}
                   variant="outline" 
                   className="flex-1"
+                  data-testid="button-preview-link"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Preview Link
