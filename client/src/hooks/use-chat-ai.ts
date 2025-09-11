@@ -200,12 +200,12 @@ export const useChatAI = () => {
 
     const userContext = {
       companyName: company?.name,
-      revenueCategory: company?.annualRevenue ? 
-        (company.annualRevenue <= 375000 ? 'Small Business (≤ AED 375K)' :
-         company.annualRevenue <= 3000000 ? 'Medium Business (AED 375K-3M)' :
+      revenueCategory: (company as any)?.annualRevenue ? 
+        ((company as any).annualRevenue <= 375000 ? 'Small Business (≤ AED 375K)' :
+         (company as any).annualRevenue <= 3000000 ? 'Medium Business (AED 375K-3M)' :
          'Large Business (> AED 3M)') : undefined,
-      isFreeZone: company?.freeZone,
-      businessType: company?.businessType,
+      isFreeZone: (company as any)?.freeZone,
+      businessType: (company as any)?.businessType,
     };
 
     const knowledge = FTA_KNOWLEDGE_BASE[language];
