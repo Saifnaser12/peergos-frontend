@@ -14,6 +14,7 @@ import {
 import { 
   generalRateLimit,
   securityHeaders,
+  corsMiddleware,
   requestId,
   requestLogger,
   sanitizeInput 
@@ -24,7 +25,8 @@ import { registerWorkflowTemplateRoutes } from "./workflow-template-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Apply security middleware
+  // Apply security middleware (CORS must be first)
+  app.use(corsMiddleware);
   app.use(securityHeaders);
   app.use(requestId);
   app.use(requestLogger);

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { rateLimit } from 'express-rate-limit';
 // @ts-ignore - helmet may not have perfect types
 import helmet from 'helmet';
+import cors from 'cors';
 import crypto from 'crypto';
 
 // Rate limiting configuration
@@ -29,6 +30,52 @@ export const generalRateLimit = createRateLimit(15 * 60 * 1000, 100); // 100 req
 export const authRateLimit = createRateLimit(15 * 60 * 1000, 5); // 5 auth attempts per 15 minutes
 export const taxCalculationRateLimit = createRateLimit(60 * 1000, 20); // 20 calculations per minute
 export const fileUploadRateLimit = createRateLimit(60 * 1000, 10); // 10 uploads per minute
+
+// CORS configuration for cross-origin requests
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'https://localhost:3000',
+  'https://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://127.0.0.1:3000',
+  'https://127.0.0.1:5000',
+  /\.replit\.dev$/,
+  /\.replit\.app$/,
+  /\.replit\.co$/,
+  /\.vercel\.app$/,
+  ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : [])
+];
+
+export const corsMiddleware = cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if the origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      }
+      if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log(`CORS: Blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID']
+});
 
 // Security headers middleware with development-friendly CSP
 export const securityHeaders = helmet({

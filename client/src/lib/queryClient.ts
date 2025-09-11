@@ -10,7 +10,11 @@ async function throwIfResNotOk(res: Response) {
 }
 
 function getFullUrl(endpoint: string): string {
-  const baseUrl = API_BASE_URL.replace(/\/$/, ''); // Remove trailing slash
+  if (!endpoint) {
+    throw new Error('Endpoint is required for API requests');
+  }
+  
+  const baseUrl = API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5000'; // Remove trailing slash, fallback to localhost
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${baseUrl}${cleanEndpoint}`;
 }
