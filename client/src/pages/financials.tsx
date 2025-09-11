@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
 import { FinancialStatementsGenerator, CompanyInfo, OpeningBalance } from '@/lib/financial-statements';
-import FinancialStatementViewer from '@/components/financial/financial-statement-viewer';
 import { exportToPDF, exportToExcel, exportToJSON, exportToXML } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -345,8 +344,8 @@ export default function Financials() {
             <TabsContent value="income" className="space-y-6">
               {financialStatements?.incomeStatement ? (
                 <FinancialStatements 
-                  statements={financialStatements}
-                  activeTab="income"
+                  showStatements={true}
+                  statementType="income"
                 />
               ) : (
                 <div className="text-center py-12">
@@ -358,8 +357,8 @@ export default function Financials() {
             <TabsContent value="balance" className="space-y-6">
               {financialStatements?.balanceSheet ? (
                 <FinancialStatements 
-                  statements={financialStatements}
-                  activeTab="balance"
+                  showStatements={true}
+                  statementType="balance"
                 />
               ) : (
                 <div className="text-center py-12">
@@ -371,8 +370,8 @@ export default function Financials() {
             <TabsContent value="cashflow" className="space-y-6">
               {financialStatements?.cashFlow ? (
                 <FinancialStatements 
-                  statements={financialStatements}
-                  activeTab="cashflow"
+                  showStatements={true}
+                  statementType="cashflow"
                 />
               ) : (
                 <div className="text-center py-12">
