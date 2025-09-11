@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import SecureTaxCalculator from '@/components/tax/secure-tax-calculator';
+import CitCalculator from '@/components/tax/cit-calculator';
 import { Calculator, FileText, Building2, TrendingUp, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/i18n';
@@ -172,11 +173,7 @@ export default function TaxCalculationsPage() {
                 </AlertDescription>
               </Alert>
 
-              <SecureTaxCalculator 
-                type="CIT"
-                onResultUpdate={(result) => setCitResult(result as any)}
-                className="max-w-4xl"
-              />
+              <CitCalculator />
             </TabsContent>
           </Tabs>
         </CardContent>
