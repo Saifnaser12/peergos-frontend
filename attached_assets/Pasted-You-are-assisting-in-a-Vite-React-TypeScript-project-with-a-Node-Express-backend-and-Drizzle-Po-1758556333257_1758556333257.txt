@@ -1,0 +1,61 @@
+You are assisting in a Vite + React + TypeScript project with a Node/Express backend and Drizzle (PostgreSQL).
+Do NOT create or modify any files.
+Output code only as chat text, formatted as fenced code blocks with a header line indicating a suggested filename.
+Keep everything local-only (no external APIs). Use TypeScript strict style.
+Goal: Produce three concise, production-quality code snippets (40–90 lines each, excluding imports) for documentation/screenshots:
+Company Setup workflow – a React form using React Hook Form + Zod that captures UAE tax profile fields and validates them.
+Fields: name, trn?, emirate (Abu Dhabi/Dubai/Sharjah/Ajman/UAQ/RAK/Fujairah), freeZone:boolean, qfzpStatus:boolean, vatRegistered:boolean, citRegistrationRequired:boolean, accountingMethod:"cash"|"accrual", financialYearEnd: "MM-DD".
+On submit, just console.log (no network). Clean UI, accessible labels, minimal Tailwind classes.
+VAT workflow – a pure TypeScript function that mirrors our existing style for VAT calculation (base validation → exemptions → rate selection (0% for EXPORT) → VAT = taxable × rate) and returns a step-by-step breakdown suitable for audit.
+Types:
+type VATCalculationInputs = {
+  baseAmount: number;
+  exemptions: number;
+  transactionType: "STANDARD" | "EXPORT" | "EXEMPT";
+  vatRate: number; // default 5
+  currency: "AED";
+};
+type CalculationResult = {
+  totalAmount: number;
+  currency: "AED";
+  breakdown: Array<{
+    stepNumber: number;
+    description: string;
+    formula: string;
+    inputs: Record<string, unknown>;
+    calculation: string;
+    result: number;
+    currency: string | "RATE";
+    notes?: string;
+    regulatoryReference?: string;
+  }>;
+  method: string;
+  regulatoryCompliance: {
+    regulation: string;
+    reference: string;
+    compliance: boolean;
+  };
+  metadata: { calculatedAt: string; calculatedBy: number; version: string; inputs: VATCalculationInputs };
+};
+Please implement calculateVAT(inputs: VATCalculationInputs): CalculationResult with clear, UAE-appropriate step notes.
+CIT workflow – a pure TypeScript function computeCIT({ revenue, cogs, opex, deductions, rate }) that returns { taxableIncome, citPayable, breakdown }.
+Steps: Revenue → minus COGS → minus OPEX → minus Deductions → CIT @ rate.
+Keep it clean and auditable.
+Formatting requirements (very important):
+For each snippet, print exactly this structure:
+--- FILE: <suggested/path/Filename.ext>
+<code here>
+Use reasonable suggested paths like:
+apps/web/src/routes/CompanySetupForm.tsx
+apps/web/src/lib/compute/vat.ts
+apps/web/src/lib/compute/cit.ts
+Include minimal imports at the top as needed.
+No commentary between files. No filesystem writes. No placeholders like “...”.
+Project conventions to follow:
+Router: Wouter (but for the form snippet, no route setup is required).
+Forms: React Hook Form + Zod.
+Styling: Tailwind utility classes (light touch).
+Types: TypeScript strict.
+Local-only; do not import axios/fetch.
+Keep each snippet self-contained for copy-paste into documentation.
+When ready, output the three files in this order: CompanySetupForm → vat.ts → cit.ts, using the exact “--- FILE:” header before each fenced code block.
