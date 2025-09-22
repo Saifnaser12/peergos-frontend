@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Peergos Development Setup</title>
+    <style>
+        @media print {
+            body { margin: 0.5in; }
+            .no-print { display: none; }
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        strong {
+            color: #2c3e50;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            border: 1px solid #e9ecef;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        hr {
+            border: none;
+            height: 2px;
+            background: #3498db;
+            margin: 30px 0;
+        }
+        em {
+            font-style: italic;
+            color: #7f8c8d;
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 20px;
+        }
+        .print-instructions {
+            background-color: #e8f4fd;
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        .print-instructions h3 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-instructions no-print">
+        <h3>📄 Convert to PDF Instructions:</h3>
+        <ol>
+            <li>Press <strong>Ctrl+P</strong> (Windows/Linux) or <strong>Cmd+P</strong> (Mac)</li>
+            <li>Choose "Save as PDF" as the destination</li>
+            <li>Select "More settings" and ensure "Background graphics" is enabled</li>
+            <li>Save as "Peergos-Dev-Setup.pdf"</li>
+        </ol>
+    </div>
+    
+    <h1>Peergos – Development Setup (Local Only)</h1>
+<h2>Quick Start Guide</h2>
+<ol>
+<li><p><strong>Install Prerequisites</strong></p>
+<ul>
+<li>Install Node.js (LTS version)</li>
+<li>Install Git</li>
+</ul>
+</li>
+<li><p><strong>Repository Setup</strong></p>
+<ul>
+<li>Clone the repository</li>
+<li>Create <code>.env</code> file from <code>.env.example</code></li>
+</ul>
+</li>
+<li><p><strong>Install Dependencies</strong></p>
+<pre><code class="language-bash">npm install
+</code></pre>
+</li>
+<li><p><strong>Database Setup</strong></p>
+<ul>
+<li>Start PostgreSQL service</li>
+<li>Run database migrations:</li>
+</ul>
+<pre><code class="language-bash">npm run db:migrate
+</code></pre>
+</li>
+<li><p><strong>Seed Demo Data (Optional)</strong></p>
+<pre><code class="language-bash">npm run db:seed
+</code></pre>
+</li>
+<li><p><strong>Launch Application</strong></p>
+<ul>
+<li>Frontend: <code>npm run dev</code></li>
+<li>Backend: <code>npm run start</code></li>
+</ul>
+</li>
+<li><p><strong>Access Points</strong></p>
+<ul>
+<li>Frontend: <a href="http://localhost:5173">http://localhost:5173</a></li>
+<li>API Backend: <a href="http://localhost:3000">http://localhost:3000</a></li>
+</ul>
+</li>
+</ol>
+<h2>Important Notes</h2>
+<p><em>Note: No external APIs are integrated at this time.</em></p>
+<hr>
+<p><strong>Peergos UAE Tax Compliance System</strong><br><em>Development Environment Setup Guide</em></p>
+
+    
+    <div class="footer">
+        <strong>Peergos UAE Tax Compliance System</strong><br>
+        Development Environment Setup Guide
+    </div>
+</body>
+</html>
