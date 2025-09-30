@@ -105,10 +105,10 @@ function CalculationAudit() {
     queryKey: ['/api/calculation-audit/config'],
   });
 
-  // Use mock data as fallback when API fails
-  const displayAuditTrail = auditError ? mockAuditTrail : auditTrail;
-  const displayHistory = historyError ? mockCalculationHistory : history;
-  const displayTaxConfig = configError ? mockTaxConfig : taxConfig;
+  // Use mock data as fallback when API fails or data is undefined
+  const displayAuditTrail = auditError ? mockAuditTrail : (auditTrail || mockAuditTrail);
+  const displayHistory = historyError ? mockCalculationHistory : (history || mockCalculationHistory);
+  const displayTaxConfig = configError ? mockTaxConfig : (taxConfig || mockTaxConfig);
 
   const handleValidateCalculation = async () => {
     if (!validationAmount || !selectedType || !selectedPeriod) return;
