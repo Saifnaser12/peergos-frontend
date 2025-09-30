@@ -362,7 +362,7 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
                       <h5 className="font-semibold mb-2">Calculation Details</h5>
                       <div className="space-y-1 text-sm">
                         <div><strong>ID:</strong> {displayAuditTrail.calculationId}</div>
-                        <div><strong>Calculated At:</strong> {new Date(auditTrail.metadata.calculatedAt).toLocaleString()}</div>
+                        <div><strong>Calculated At:</strong> {new Date(displayAuditTrail.metadata.calculatedAt).toLocaleString()}</div>
                         <div><strong>Version:</strong> {displayAuditTrail.metadata.version}</div>
                       </div>
                     </div>
@@ -440,7 +440,7 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
             <CardContent>
               {configLoading ? (
                 <div className="text-center py-4">Loading configuration...</div>
-              ) : taxConfig ? (
+              ) : displayTaxConfig && displayTaxConfig.uaeTaxConfig ? (
                 <div className="space-y-6">
                   {/* VAT Configuration */}
                   <div>
