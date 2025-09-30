@@ -155,43 +155,44 @@ export default function Sidebar({
                   const IconComponent = item.icon;
 
                   const navItem = (
-                    <Link key={item.path} href={item.path}>
-                      <button
-                        type="button"
+                    <Link 
+                      key={item.path} 
+                      href={item.path}
+                      className={cn(
+                        'w-full h-11 relative group transition-all duration-200 flex items-center touch-action-manipulation block',
+                        // Layout: collapsed vs expanded
+                        isCollapsed ? 'justify-center px-2' : 'justify-start px-3',
+                        // Active state styling
+                        isItemActive
+                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-r-2 border-blue-600 shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900',
+                        // RTL support
+                        language === 'ar' && 'rtl:justify-start',
+                        language === 'ar' && isCollapsed && 'rtl:justify-center',
+                        language === 'ar' && isItemActive && 'rtl:border-r-0 rtl:border-l-2',
+                        // Focus styles
+                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                      )}
+                      data-testid={`nav-link-${item.path.replace('/', '')  || 'home'}`}
+                      aria-label={item.label}
+                      aria-current={isItemActive ? 'page' : undefined}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <IconComponent 
                         className={cn(
-                          'w-full h-11 relative group transition-all duration-200 flex items-center touch-action-manipulation',
-                          // Layout: collapsed vs expanded
-                          isCollapsed ? 'justify-center px-2' : 'justify-start px-3',
-                          // Active state styling
-                          isItemActive
-                            ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-r-2 border-blue-600 shadow-sm'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900',
-                          // RTL support
-                          language === 'ar' && 'rtl:justify-start',
-                          language === 'ar' && isCollapsed && 'rtl:justify-center',
-                          language === 'ar' && isItemActive && 'rtl:border-r-0 rtl:border-l-2',
-                          // Focus styles
-                          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                        )}
-                        data-testid={`nav-link-${item.path.replace('/', '')  || 'home'}`}
-                        aria-label={item.label}
-                      >
-                        <IconComponent 
-                          className={cn(
-                            'h-5 w-5 flex-shrink-0',
-                            !isCollapsed && 'mr-3',
-                            language === 'ar' && !isCollapsed && 'rtl:mr-0 rtl:ml-3'
-                          )} 
-                        />
-                        {!isCollapsed && (
-                          <span className={cn(
-                            "truncate text-sm font-medium",
-                            language === 'ar' && "rtl:text-right"
-                          )}>
-                            {item.label}
-                          </span>
-                        )}
-                      </Button>
+                          'h-5 w-5 flex-shrink-0',
+                          !isCollapsed && 'mr-3',
+                          language === 'ar' && !isCollapsed && 'rtl:mr-0 rtl:ml-3'
+                        )} 
+                      />
+                      {!isCollapsed && (
+                        <span className={cn(
+                          "truncate text-sm font-medium",
+                          language === 'ar' && "rtl:text-right"
+                        )}>
+                          {item.label}
+                        </span>
+                      )}
                     </Link>
                   );
 
