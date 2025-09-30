@@ -1,0 +1,124 @@
+Goal
+Fix two issues in the Vite + React + TS (Tailwind) Peergos frontend:
+1) On mobile (iOS/Android), taps on nav links don’t work—only the main page shows.
+2) The “Calculation Audit” page renders blank / errors.
+
+Deliverables
+- Working mobile navigation (taps/clicks) across iOS Safari/Chrome & Android Chrome.
+- Calculation Audit page renders deterministically (with mock data if backend is absent), shows results, and fails gracefully with an ErrorBoundary.
+- SPA routing remains intact on Vercel (no 404 on deep-links).
+- Create a PR/branch with clear commits and a short CHANGELOG in the repo root.
+
+Branch
+Create a new branch: fix/mobile-nav-and-audit
+
+Part A — Reproduce & Diagnose (mobile)
+1) In Chrome DevTools → Device Toolbar, test common devices (iPhone 14/Pro Max, Pixel 7).
+2) Check if any overlay is intercepting taps:
+   - Temporarily run this in console while clicking areas: 
+     document.addEventListener('click', e => console.log('CLICKED:', e.target), {capture:true});
+     Also inspect document.elementFromPoint(x,y) to find blockers.
+3) Common culprits to check & fix:
+   - A full-screen overlay (mobile menu, modal backdrop, drawer) with pointer-events enabled when it should be disabled.
+   - z-index stacking (header/overlay on top of content). Ensure a consistent z-index scale (e.g., Tailwind z-50 for open menu; otherwise pointer-events-none).
+   - Non-interactive elements used as links (div with onClick). Replace with <Link> or <button> + onClick, add role/aria where needed.
+   - 100vh iOS bug causing invisible overlays. Prefer min-h-[100svh] or min-h-screen + safe-area handling.
+   - Missing viewport meta tag or passive/touch behavior.
+   - PreventDefault on parent handlers that swallows child link taps.
+
+Part B — Concrete fixes (code)
+1) Ensure meta viewport:
+   - file: index.html → inside <head> add or verify:
+     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+2) Global CSS hardening (file: src/index.css or global.css):
+   - Ensure these rules exist:
+     html, body, #root { height: 100%; }
+     * { -webkit-tap-highlight-color: transparent; }
+   - For root app container (e.g., <div id="root"> wrapper), ensure min-height uses the small viewport unit on mobile:
+     className="min-h-[100svh]"  (or Tailwind plugin utility; otherwise use a CSS variable fallback)
+3) Mobile header/nav component (e.g., src/components/Nav/MobileNav.tsx):
+   - Replace clickable <div> links with <Link to="..."> or <button type="button">.
+   - When menu is CLOSED:
+       - Backdrop element should have class "pointer-events-none" and opacity-0, z-0.
+     When menu is OPEN:
+       - Backdrop: "pointer-events-auto opacity-100 z-40"
+       - Drawer/Sheet/Popover: "z-50"
+   - Add touch-action: manipulation to tappable buttons:
+       className="touch-action-manipulation"
+4) If using a layout overlay for side menu, ensure the overlay is only mounted when open, or is mounted with pointer-events-none when closed.
+5) Remove any global onClick on layout container that might cancel inner clicks; do not call e.preventDefault() or stopPropagation() on wrappers unless necessary.
+
+Part C — React Router hardening
+1) Ensure all nav items use <Link> from react-router-dom or <NavLink>.
+2) Do not rely on window.location for internal navigation.
+3) Verify <Router> is BrowserRouter (unless we chose HashRouter temporarily). Keep BrowserRouter + a Vercel SPA rewrite rule.
+4) Verify Vercel SPA rewrites exist (vercel.json):
+   {
+     "$schema": "https://openapi.vercel.sh/vercel.json",
+     "rewrites": [
+       { "source": "/api/(.*)", "destination": "/api/$1" },
+       { "source": "/(.*)", "destination": "/" }
+     ]
+   }
+
+Part D — Calculation Audit page robustness
+1) Add an ErrorBoundary (src/components/common/ErrorBoundary.tsx) and wrap the CalculationAudit route element with it.
+   Example:
+   function ErrorBoundary({children}) {
+     const [err, setErr] = useState<Error | null>(null);
+     return err
+       ? <div className="p-6 text-red-600">Sorry—something went wrong. Check console/logs.</div>
+       : <ErrorBoundaryImpl onError={setErr}>{children}</ErrorBoundaryImpl>;
+   }
+   (Implement ErrorBoundaryImpl with componentDidCatch in a class component or use a small library if already present.)
+2) Create a typed utility for the audit (src/features/audit/auditEngine.ts):
+   - Export a pure function: runAudit(input: AuditInput): AuditResult
+   - Validate input with a lightweight schema guard (zod if available; otherwise TS type-narrowing).
+   - Handle empty/undefined arrays safely:
+       const total = (arr ?? []).reduce((s, x) => s + (Number(x?.amount) || 0), 0);
+   - Never throw on bad input; return { issues: [...], summary: {...}, ok: boolean }.
+3) In the CalculationAudit page (src/pages/CalculationAudit.tsx):
+   - Load data from the current source (context/store/mock). If backend not ready, create a mock path:
+       import sample from "./__fixtures__/audit-sample.json";
+       const data = (liveDataAvailable ? liveData : sample);
+   - Call runAudit(data) in a try/catch; on error, show a friendly message and a “Copy Error Details” button that prints JSON.stringify(err).
+   - Render a visible result: totals, mismatches, list of flagged transactions, and a “Recalculate” button.
+   - Add a simple perf guard: if runAudit is heavy, schedule it via requestIdleCallback or a tiny web worker (optional) to keep UI responsive on mobile.
+4) Add a minimal unit test (vitest) for auditEngine.ts:
+   - empty arrays → ok=true, totals=0
+   - malformed entries → ok=false with issues[].length > 0
+   - normal dataset → ok=true with expected totals
+
+Part E — Accessibility & Mobile UX polish
+1) Ensure all interactive elements are <button> or <a>/<Link> with visible focus styles (Tailwind focus:outline-none focus:ring).
+2) Hit target size ≥ 44px on mobile (Tailwind: px-4 py-3 or h-11).
+3) Ensure no element overlays the main content when closed (pointer-events-none + aria-hidden="true").
+4) Add data-testid attributes to key nav targets for e2e probes.
+
+Part F — Tooling & CI
+1) Add a quick “mobile nav tap” e2e probe with Playwright (optional but preferred):
+   - Open /, toggle mobile menu, tap “CIT”, expect URL to become /cit and heading to match “CIT” in <h1>.
+2) Scripts:
+   - "test": "vitest run",
+   - "test:ui": "vitest",
+   - "e2e": "playwright test" (if added)
+3) Ensure build passes: npm run build
+
+Part G — Commits
+- chore: add viewport + global mobile CSS hardening
+- fix(nav): correct overlay pointer-events/z-index; use <Link>/<button>
+- feat(audit): add auditEngine with validation and safe defaults
+- feat(audit): add ErrorBoundary + mock data fallback
+- test(audit): unit tests for auditEngine
+- chore(vercel): add SPA rewrites in vercel.json
+- docs: CHANGELOG entry summarizing fixes and how to test on mobile
+
+Acceptance Criteria
+- iOS Safari/Chrome and Android Chrome: tapping each nav item changes route and renders correct page; no dead taps.
+- Direct URLs (e.g., /cit, /vat, /financials, /calculation-audit) load via BrowserRouter without 404 on Vercel.
+- Calculation Audit page shows totals/mismatches using either live data or fixtures; never stays blank. If an error occurs, UI displays a friendly message (no white screen).
+- All builds green: npm run build; unit tests pass.
+
+When done
+- Open a PR from fix/mobile-nav-and-audit with a short description and test notes.
+- Output a short summary of what broke (root cause) and what was changed (before/after).

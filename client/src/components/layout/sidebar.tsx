@@ -75,7 +75,9 @@ export default function Sidebar({
   return (
     <aside 
       className={cn(
-        "bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex-shrink-0 flex flex-col relative z-30",
+        "bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex-shrink-0 flex flex-col relative",
+        // Z-index: higher when open on mobile
+        isOpen ? "z-50" : "z-30",
         // Enhanced width logic: show icons+text by default, collapsed for icons-only
         isCollapsed ? "w-16" : "w-64",
         // Mobile behavior
@@ -85,6 +87,7 @@ export default function Sidebar({
         language === 'ar' && "rtl:right-0 rtl:left-auto rtl:border-r-0 rtl:border-l rtl:translate-x-0 rtl:lg:translate-x-0",
         language === 'ar' && !isOpen && "rtl:translate-x-full rtl:lg:translate-x-0"
       )}
+      data-testid="sidebar"
     >
       {/* Header with Logo and Collapse Toggle */}
       <div className={cn("flex items-center justify-between p-4 border-b border-gray-200 h-16")}>
@@ -153,10 +156,10 @@ export default function Sidebar({
 
                   const navItem = (
                     <Link key={item.path} href={item.path}>
-                      <Button
-                        variant="ghost"
+                      <button
+                        type="button"
                         className={cn(
-                          'w-full h-11 relative group transition-all duration-200',
+                          'w-full h-11 relative group transition-all duration-200 flex items-center touch-action-manipulation',
                           // Layout: collapsed vs expanded
                           isCollapsed ? 'justify-center px-2' : 'justify-start px-3',
                           // Active state styling
@@ -166,8 +169,12 @@ export default function Sidebar({
                           // RTL support
                           language === 'ar' && 'rtl:justify-start',
                           language === 'ar' && isCollapsed && 'rtl:justify-center',
-                          language === 'ar' && isItemActive && 'rtl:border-r-0 rtl:border-l-2'
+                          language === 'ar' && isItemActive && 'rtl:border-r-0 rtl:border-l-2',
+                          // Focus styles
+                          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                         )}
+                        data-testid={`nav-link-${item.path.replace('/', '')  || 'home'}`}
+                        aria-label={item.label}
                       >
                         <IconComponent 
                           className={cn(

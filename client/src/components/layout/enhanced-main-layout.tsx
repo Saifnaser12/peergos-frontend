@@ -143,7 +143,7 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
   return (
     <div 
       className={cn(
-        "min-h-screen bg-gray-50 flex",
+        "min-h-[100svh] bg-gray-50 flex",
         // RTL layout support
         language === 'ar' && "rtl"
       )}
@@ -152,8 +152,10 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
       {/* Mobile sidebar backdrop */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden pointer-events-auto touch-action-manipulation"
           onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+          data-testid="mobile-sidebar-backdrop"
         />
       )}
 
@@ -183,8 +185,9 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
               variant="ghost"
               size="sm"
               onClick={handleSidebarToggle}
-              className="md:hidden"
+              className="md:hidden touch-action-manipulation"
               aria-label={t('common.open')}
+              data-testid="mobile-menu-toggle"
             >
               <Menu className="h-5 w-5" />
             </Button>
