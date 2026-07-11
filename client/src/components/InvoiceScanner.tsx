@@ -208,12 +208,16 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
     setPreviewUrl(objectUrl);
     setStage("scanning");
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
     try {
       const { base64, mediaType } = await readFileAsBase64(file);
       const res = await apiRequest("POST", "/api/ai/extract-invoice", {
         fileBase64: base64,
         mediaType,
       });
+      clearTimeout(timeoutId);
       const data = await res.json();
 
       if (!data.aiAvailable) {
@@ -232,7 +236,13 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
       populateReviewFields(ext);
       setStage("review");
     } catch (err: any) {
-      setFallbackMsg(T.aiUnavailable);
+      clearTimeout(timeoutId);
+      const isTimeout = err?.name === "AbortError";
+      setFallbackMsg(
+        isTimeout
+          ? (isAr ? "انتهت مهلة المعالجة. يرجى المحاولة مرة أخرى أو الإدخال يدويًا." : "Request timed out. Please try again or enter manually.")
+          : T.aiUnavailable
+      );
       setStage("ai_unavailable");
     }
   }

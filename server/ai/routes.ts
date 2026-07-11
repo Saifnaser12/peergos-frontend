@@ -107,7 +107,7 @@ Return JSON with EXACTLY these keys:
   "category": string (best match from: ${JSON.stringify(EXPENSE_CATEGORIES)}),
   "warnings": [string] (anything unclear, missing or suspicious, e.g. "VAT is not 5% of subtotal", "TRN missing")
 }
-Rules: never invent values — use null when not readable. Numbers as plain numbers. If the document is not an invoice/receipt, return {"error": "not_an_invoice"}.`;
+Rules: never invent values — use null when not readable. Numbers as plain numbers. Dates on UAE invoices are DD/MM/YYYY unless clearly stated otherwise — 15/06/2026 means 2026-06-15. If the document is not an invoice/receipt, return {"error": "not_an_invoice"}.`;
 
     try {
       const extraction = await aiExtractJSON({
