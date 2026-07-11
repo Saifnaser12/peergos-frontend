@@ -38,6 +38,7 @@ import VisualDesignDemo from "./pages/visual-design-demo";
 import WorkflowTemplatesPage from "./pages/workflows/templates";
 import TaxCalculationsPage from "./pages/tax-calculations";
 import NotFound from "@/pages/not-found";
+import { TaxAdvisorWidget } from "./components/TaxAdvisorWidget";
 
 function TestEnvironmentBanner() {
   return (
@@ -111,6 +112,7 @@ function App() {
                     <NavigationProvider>
                       <Toaster />
                       <Router />
+                      <TaxAdvisorWidget />
                     </NavigationProvider>
                   </TaxClassificationProvider>
                 </NotificationProvider>

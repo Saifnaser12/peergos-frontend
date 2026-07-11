@@ -1,0 +1,219 @@
+dd an AI Tax Advisor to this app. Follow these instructions exactly — the
+code is provided and already tested; adapt paths only if this project's
+structure differs.
+
+RULES:
+
+
+Install only one new package: @anthropic-ai/sdk
+Do NOT change the database schema
+Do NOT put the API key anywhere in code — read process.env.ANTHROPIC_API_KEY (already set in Secrets)
+All AI endpoints must fail soft: if the AI call fails, return HTTP 200 with aiAvailable: false — the rest of the app must never break because AI is down
+Vendor code (the Anthropic SDK import) may appear in ONE file only: server/ai/provider.ts
+
+
+1. Create server/ai/config.ts
+
+tsimport path from "path";
+
+export const AI_CONFIG = {
+  // 'anthropic' today; later 'bedrock' (AWS UAE) or 'azure' — add a branch
+  // in provider.ts, change this env var, nothing else moves.
+  provider: process.env.AI_PROVIDER || "anthropic",
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  advisorModel: process.env.AI_ADVISOR_MODEL || "claude-sonnet-5",
+  fastModel: process.env.AI_FAST_MODEL || "claude-haiku-4-5-20251001",
+  advisorMaxTokens: 1024,
+  fastMaxTokens: 2048,
+  maxHistoryMessages: 12,
+  maxMessageChars: 4000,
+  knowledgeDir: path.join(import.meta.dirname, "knowledge"),
+  knowledgeCacheMs: 60_000,
+};
+
+2. Create server/ai/provider.ts — the ONLY vendor-aware file
+
+tsimport Anthropic from "@anthropic-ai/sdk";
+import { AI_CONFIG } from "./config";
+
+export class AIUnavailableError extends Error {}
+
+let client: Anthropic | null = null;
+
+function getClient(): Anthropic {
+  if (client) return client;
+  if (AI_CONFIG.provider !== "anthropic") {
+    throw new AIUnavailableError(`Provider '${AI_CONFIG.provider}' not configured`);
+  }
+  if (!AI_CONFIG.anthropicApiKey) {
+    throw new AIUnavailableError("ANTHROPIC_API_KEY secret is not set");
+  }
+  client = new Anthropic({ apiKey: AI_CONFIG.anthropicApiKey });
+  return client;
+}
+
+export type ChatMessage = { role: "user" | "assistant"; content: any };
+
+export async function aiChat(opts: {
+  system: string;
+  messages: ChatMessage[];
+  tier?: "advisor" | "fast";
+}): Promise<{ text: string }> {
+  const tier = opts.tier ?? "advisor";
+  const response = await getClient().messages.create({
+    model: tier === "advisor" ? AI_CONFIG.advisorModel : AI_CONFIG.fastModel,
+    max_tokens: tier === "advisor" ? AI_CONFIG.advisorMaxTokens : AI_CONFIG.fastMaxTokens,
+    system: opts.system,
+    messages: opts.messages,
+  });
+  const text = response.content
+    .filter((b) => b.type === "text")
+    .map((b: any) => b.text)
+    .join("");
+  return { text };
+}
+
+export function aiIsConfigured(): boolean {
+  return AI_CONFIG.provider === "anthropic" && Boolean(AI_CONFIG.anthropicApiKey);
+}
+
+3. Create server/ai/knowledge/uae-tax-reference.md
+
+This folder is the advisor's knowledge base — any .md file dropped here is
+loaded automatically (re-read within 60s, no restart). Create it with this
+starter content:
+
+md# UAE Tax Reference
+
+## Corporate Income Tax (CIT)
+- 0% on taxable income up to AED 375,000; 9% above (Federal Decree-Law 47/2022).
+- Small Business Relief: resident businesses with revenue ≤ AED 3,000,000 may
+  elect no taxable income — available for tax periods ending on or before
+  31 December 2026 only.
+- Qualifying Free Zone Persons: 0% on qualifying income, strict conditions.
+- CIT return + payment due within 9 months of the end of the tax period.
+- All taxable persons must register with the FTA even if below AED 375,000.
+
+## VAT
+- Standard rate 5% (Federal Decree-Law 8/2017, since 1 Jan 2018).
+- Mandatory registration: AED 375,000 taxable supplies (previous 12 months
+  or expected next 30 days). Voluntary: AED 187,500.
+- Returns usually quarterly via EmaraTax, due within 28 days of period end.
+- TRN is a 15-digit number; tax invoices must show supplier TRN, date,
+  sequential number, line items, VAT rate/amount, total.
+
+## E-Invoicing
+- Peppol-based 5-corner model. July 2026: pilot begins. Phased mandate —
+  all businesses in scope by July 2027, via Accredited Service Providers.
+
+## Deadlines summary
+- CIT: 9 months after financial year end.
+- VAT: 28 days after each period.
+- Small Business Relief ends for periods ending after 31 Dec 2026.
+
+4. Create server/ai/routes.ts and register it with the Express app
+
+tsimport fs from "fs";
+import path from "path";
+import type { Express, Request, Response } from "express";
+import { AI_CONFIG } from "./config";
+import { aiChat, aiIsConfigured, type ChatMessage } from "./provider";
+
+let cache = { text: "", loadedAt: 0 };
+function loadKnowledge(): string {
+  if (Date.now() - cache.loadedAt < AI_CONFIG.knowledgeCacheMs) return cache.text;
+  let text = "";
+  try {
+    const files = fs.readdirSync(AI_CONFIG.knowledgeDir).filter((f) => f.endsWith(".md")).sort();
+    text = files.map((f) => fs.readFileSync(path.join(AI_CONFIG.knowledgeDir, f), "utf8")).join("\n\n---\n\n");
+  } catch { /* folder missing — advisor still answers, less grounded */ }
+  cache = { text, loadedAt: Date.now() };
+  return text;
+}
+
+function advisorSystemPrompt(): string {
+  return `You are the Peergos AI Tax Advisor inside Peergos — a UAE platform helping SMEs with CIT, VAT, bookkeeping, e-invoicing and FTA filing.
+
+LANGUAGE: reply in the user's language (Arabic or English; Urdu supported). Proper Modern Standard Arabic.
+AUDIENCE: UAE SME owners, mostly not accountants. Simple language, concrete numbers, AED amounts.
+GROUNDING: base answers on the knowledge below; if not covered, say so and use only well-established UAE tax rules. Never invent article numbers or penalty amounts.
+BOUNDARIES: general information, NOT legal/tax advice. For complex cases (free zone qualification, disputes, penalties, restructuring) recommend an FTA-approved tax agent and mention Peergos can connect them. Never assist tax evasion. Filings always go through the user's review (human-in-the-loop).
+STYLE: concise, warm, professional. End judgment-call answers with a one-line general-information reminder.
+
+=== KNOWLEDGE BASE ===
+${loadKnowledge() || "(none loaded — be extra cautious)"}
+=== END ===`;
+}
+
+export function registerAiRoutes(app: Express) {
+  // Use this project's existing auth middleware on both routes if there is one.
+
+  app.get("/api/ai/status", (_req: Request, res: Response) => {
+    res.json({ aiAvailable: aiIsConfigured(), provider: AI_CONFIG.provider });
+  });
+
+  app.post("/api/ai/chat", async (req: Request, res: Response) => {
+    const { messages } = req.body ?? {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "messages array required" });
+    }
+    const history: ChatMessage[] = messages
+      .slice(-AI_CONFIG.maxHistoryMessages)
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .map((m: any) => ({ role: m.role, content: m.content.slice(0, AI_CONFIG.maxMessageChars) }));
+    if (!history.length || history[history.length - 1].role !== "user") {
+      return res.status(400).json({ error: "last message must be from user" });
+    }
+    try {
+      const { text } = await aiChat({ system: advisorSystemPrompt(), messages: history, tier: "advisor" });
+      res.json({ aiAvailable: true, reply: text });
+    } catch (err) {
+      console.error("AI chat failed:", (err as Error).message);
+      res.json({
+        aiAvailable: false,
+        reply: null,
+        fallback: {
+          en: "The AI assistant is temporarily unavailable. Your bookkeeping and filings are unaffected. For urgent tax questions, please consult an FTA-approved tax agent.",
+          ar: "المساعد الذكي غير متاح مؤقتًا. لا يؤثر ذلك على دفاتركم أو تقديماتكم الضريبية. للأسئلة العاجلة، يُرجى استشارة وكيل ضريبي معتمد من الهيئة الاتحادية للضرائب.",
+        },
+      });
+    }
+  });
+}
+
+Register registerAiRoutes(app) wherever the other API routes are registered.
+
+5. Create the chat widget client/src/components/TaxAdvisorWidget.tsx
+
+A floating chat button + panel styled with this project's existing Tailwind /
+shadcn components. Requirements:
+
+
+Floating round button fixed bottom-right (robot/sparkle icon); clicking
+toggles a chat panel (~380px wide, ~500px tall, rounded, shadow).
+Panel: header "AI Tax Advisor" / "المستشار الضريبي الذكي" (match the app's
+current language state if the app has one; otherwise default English),
+scrollable message list, input + send button, Enter sends.
+Set dir="rtl" on the panel when the language is Arabic or Urdu.
+POST to /api/ai/chat with { messages: [{role, content}, …] } (full
+visible history). On aiAvailable: false, show fallback text for the
+current language in an amber warning bubble. On network error show the
+same style with a generic unavailable message.
+Welcome message in the list before any user input: "Hello! I can help with
+UAE Corporate Tax, VAT, registration thresholds, deadlines and e-invoicing.
+Ask me in English or Arabic."
+Permanent footer caption: "General information only — not legal or tax
+advice." / "معلومات عامة فقط — ليست استشارة قانونية أو ضريبية."
+Show a small loading spinner in the message list while waiting.
+Mount the widget once in the app's root layout, only for logged-in users.
+
+
+6. Test
+
+Verify: (a) app builds and runs, (b) /api/ai/status returns
+aiAvailable: true once the secret is set, (c) asking "What is the CIT
+rate?" answers with 0%/9% and AED 375,000, (d) an Arabic question gets an
+Arabic answer, (e) temporarily rename the secret → chat shows the graceful
+fallback and the rest of the app still works. Do not modify anything outside
+the files listed above plus the single route-registration line and widget
+mount line.

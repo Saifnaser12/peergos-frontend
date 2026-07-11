@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
+import { registerAiRoutes } from "./ai/routes";
 import { insertTransactionSchema, insertTaxFilingSchema, insertInvoiceSchema, insertNotificationSchema, insertCreditNoteSchema, insertDebitNoteSchema, insertTransferPricingDocumentationSchema } from "@shared/schema";
 import { healthCheck } from "./health";
 
@@ -1794,6 +1795,8 @@ Company ID: ${req.user.companyId}
       res.status(500).json({ error: 'Failed to sync POS transactions' });
     }
   });
+
+  registerAiRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
