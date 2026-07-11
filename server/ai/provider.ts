@@ -49,7 +49,23 @@ export async function aiExtractJSON(opts: { system: string; messages: ChatMessag
     system: opts.system + "\n\nRespond ONLY with valid JSON. No markdown fences, no commentary.",
     messages: opts.messages,
   });
-  const text = response.content.filter((b) => b.type === "text").map((b: any) => b.text).join("");
-  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  return JSON.parse(cleaned);
+  const raw = response.content.filter((b) => b.type === "text").map((b: any) => b.text).join("");
+
+  // Pass 1: direct parse (model obeyed the instruction)
+  try { return JSON.parse(raw.trim()); } catch {}
+
+  // Pass 2: strip any leading/trailing markdown fences (``` or ```json)
+  const stripped = raw.trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+  try { return JSON.parse(stripped); } catch {}
+
+  // Pass 3: extract the first complete JSON object or array from the text
+  const match = raw.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+  if (match) {
+    try { return JSON.parse(match[1]); } catch {}
+  }
+
+  throw new SyntaxError(`Could not parse AI response as JSON. Raw (first 200 chars): ${raw.slice(0, 200)}`);
 }
