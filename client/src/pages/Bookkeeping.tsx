@@ -5,6 +5,7 @@ import { DollarSign, Receipt, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import TransactionForm from '@/components/accounting/transaction-form';
+import InvoiceScanner from '@/components/InvoiceScanner';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -189,7 +190,8 @@ export default function Bookkeeping() {
             Manage your revenue, expenses, and invoices
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <InvoiceScanner onOpenManualForm={() => handleAddTransaction('EXPENSE')} />
           <Button
             onClick={() => handleAddTransaction('EXPENSE')}
             className="flex items-center gap-2"

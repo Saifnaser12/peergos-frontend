@@ -41,3 +41,15 @@ export async function aiChat(opts: {
 export function aiIsConfigured(): boolean {
   return AI_CONFIG.provider === "anthropic" && Boolean(AI_CONFIG.anthropicApiKey);
 }
+
+export async function aiExtractJSON(opts: { system: string; messages: ChatMessage[] }): Promise<any> {
+  const response = await getClient().messages.create({
+    model: AI_CONFIG.fastModel,
+    max_tokens: AI_CONFIG.fastMaxTokens,
+    system: opts.system + "\n\nRespond ONLY with valid JSON. No markdown fences, no commentary.",
+    messages: opts.messages,
+  });
+  const text = response.content.filter((b) => b.type === "text").map((b: any) => b.text).join("");
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  return JSON.parse(cleaned);
+}
