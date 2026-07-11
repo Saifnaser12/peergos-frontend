@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/context/language-context";
+import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -80,6 +81,7 @@ interface Props {
 
 export default function InvoiceScanner({ onOpenManualForm }: Props) {
   const { language, direction } = useLanguage();
+  const { user, company } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +124,7 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
   const [fallbackMsg, setFallbackMsg] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // editable review fields
   const [vendor, setVendor] = useState("");
@@ -139,31 +142,33 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
     queryKey: ["/api/chart-of-accounts"],
   });
 
-  // save mutation — same path as manual TransactionForm
+  // save mutation — same payload shape as manual TransactionForm
   const saveMutation = useMutation({
     mutationFn: async () => {
       const totalNum = parseFloat(total) || 0;
       const vatNum = parseFloat(vatAmount) || 0;
+      // Matches the manual form: new Date(dateString).toISOString()
       const txDate = date ? new Date(date).toISOString() : new Date().toISOString();
-      const description = [
-        vendor ? `${vendor}` : "Invoice",
+      const descriptionParts = [
+        vendor || "Invoice",
         trn ? `TRN: ${trn}` : null,
         lineItems.length
           ? lineItems.map((li) => li.description).filter(Boolean).join(", ")
           : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
+      ].filter(Boolean);
 
-      await apiRequest("POST", "/api/transactions", {
+      const res = await apiRequest("POST", "/api/transactions", {
+        companyId: company?.id,            // required — NOT NULL
         type: "EXPENSE",
         category: categoryVal || "Office Supplies",
-        description: description || "Scanned invoice",
+        description: descriptionParts.join(" | ") || "Scanned invoice",
         amount: totalNum.toFixed(2),
         vatAmount: vatNum.toFixed(2),
         transactionDate: txDate,
         status: "PROCESSED",
+        createdBy: user?.id,               // required — NOT NULL
       });
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
@@ -171,7 +176,16 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
       handleClose();
     },
     onError: (err: Error) => {
-      toast({ title: err.message, variant: "destructive" });
+      // Parse server message out of "400: {\"message\":\"...\",\"error\":\"...\"}"
+      let msg = err.message;
+      try {
+        const jsonStart = msg.indexOf("{");
+        if (jsonStart !== -1) {
+          const parsed = JSON.parse(msg.slice(jsonStart));
+          msg = parsed.error || parsed.message || msg;
+        }
+      } catch {}
+      setSaveError(msg);
     },
   });
 
@@ -180,6 +194,7 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
     setPreviewUrl(null);
     setExtraction(null);
     setFallbackMsg("");
+    setSaveError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -465,11 +480,18 @@ export default function InvoiceScanner({ onOpenManualForm }: Props) {
             </div>
           </div>
 
+          {saveError && (
+            <Alert className="border-red-300 bg-red-50 dark:bg-red-950/20 mt-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              <AlertDescription className="text-red-700 dark:text-red-400 text-sm">{saveError}</AlertDescription>
+            </Alert>
+          )}
+
           <DialogFooter className="gap-2 pt-2">
             <Button variant="outline" onClick={handleClose} disabled={saveMutation.isPending}>
               {T.cancel}
             </Button>
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button onClick={() => { setSaveError(null); saveMutation.mutate(); }} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? (
                 <><Loader2 className="h-4 w-4 animate-spin mr-2" />{T.saving}</>
               ) : T.save}

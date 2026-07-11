@@ -1,6 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -14,7 +14,7 @@ function getFullUrl(endpoint: string): string {
     throw new Error('Endpoint is required for API requests');
   }
   
-  const baseUrl = API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5000'; // Remove trailing slash, fallback to localhost
+  const baseUrl = API_BASE_URL?.replace(/\/$/, '') || ''; // Remove trailing slash, fallback to localhost
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${baseUrl}${cleanEndpoint}`;
 }
