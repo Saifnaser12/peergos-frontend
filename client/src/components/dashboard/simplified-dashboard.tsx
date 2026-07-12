@@ -48,10 +48,9 @@ export default function SimplifiedDashboard() {
   const language = 'en'; // Default to English
   const { company, user } = useAuth();
 
-  // Fetch essential data
+  // Fetch essential data — no enabled guard; API uses || 1 fallback so it works before auth resolves
   const { data: kpiData = [] } = useQuery({
     queryKey: ['/api/kpi-data'],
-    enabled: !!company?.id,
   });
 
   const { data: notifications = [] } = useQuery({

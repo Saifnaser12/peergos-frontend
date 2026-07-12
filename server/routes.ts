@@ -174,7 +174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/companies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = req.body;
+      // Never allow external callers to reset setup completion status
+      const { setupCompleted, setupCompletedAt, ...safeUpdates } = req.body;
+      const updates = safeUpdates;
       
       const company = await storage.updateCompany(id, updates);
       if (!company) {
@@ -1275,12 +1277,15 @@ Company ID: ${req.user.companyId}
 
       let result;
       switch (module) {
-        case 'company':
+        case 'company': {
           const user = await storage.getUser(userId);
           if (user?.companyId) {
-            result = await storage.updateCompany(user.companyId, updateData);
+            // Never allow data-sync to overwrite setup completion status
+            const { setupCompleted, setupCompletedAt, ...safeData } = updateData;
+            result = await storage.updateCompany(user.companyId, safeData);
           }
           break;
+        }
         default:
           result = { updated: true, module, timestamp: new Date().toISOString() };
       }

@@ -215,9 +215,12 @@ router.put('/modules/:module/data', async (req, res) => {
     let result;
 
     switch (module) {
-      case 'company':
-        result = await storage.updateCompany(companyId, updateData);
+      case 'company': {
+        // Never allow data-sync to overwrite setup completion status
+        const { setupCompleted, setupCompletedAt, ...safeData } = updateData;
+        result = await storage.updateCompany(companyId, safeData);
         break;
+      }
       case 'transactions':
         // Handle transaction updates and trigger recalculations
         result = await storage.createTransaction?.({
