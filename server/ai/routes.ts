@@ -3,6 +3,7 @@ import path from "path";
 import type { Express, Request, Response } from "express";
 import { AI_CONFIG } from "./config";
 import { aiChat, aiExtractJSON, aiIsConfigured, type ChatMessage } from "./provider";
+import { storage } from "../storage";
 
 let cache = { text: "", loadedAt: 0 };
 function loadKnowledge(): string {
@@ -129,6 +130,145 @@ Rules: never invent values — use null when not readable. Numbers as plain numb
           en: "AI invoice capture is temporarily unavailable. You can still enter this invoice manually.",
           ar: "التقاط الفواتير بالذكاء الاصطناعي غير متاح مؤقتًا. لا يزال بإمكانك إدخال الفاتورة يدويًا.",
         },
+      });
+    }
+  });
+
+  // ── Chart of accounts lookup (matches seeded data) ────────────────────────
+  const COA = [
+    { code: "6001", name: "Office Supplies" },
+    { code: "6002", name: "Utilities" },
+    { code: "6003", name: "Bank Fees" },
+    { code: "6004", name: "Residential Rent" },
+    { code: "6005", name: "Entertainment & Hospitality" },
+    { code: "6006", name: "Motor Vehicle (private availability)" },
+    { code: "6007", name: "Statutory Fines & Penalties" },
+    { code: "6008", name: "Charitable Donation (non-approved)" },
+    { code: "6009", name: "Qualifying Expense (QFZP)" },
+    { code: "6010", name: "Non-qualifying Expense (QFZP)" },
+  ];
+  const COA_LABELS = COA.map((c) => `${c.code}|${c.name}`).join(", ");
+
+  app.post("/api/ai/classify-transaction", async (req: Request, res: Response) => {
+    const { description, amount, type, vendor, date, vatAmount, companyId: rawCompanyId } = req.body ?? {};
+
+    if (!description || amount == null || !type) {
+      return res.status(400).json({ error: "description, amount, and type are required" });
+    }
+
+    const companyId = parseInt(rawCompanyId) || 1;
+    const amountNum = parseFloat(amount) || 0;
+    const vatNum = parseFloat(vatAmount) || 0;
+
+    // ── Deterministic flags ──────────────────────────────────────────────────
+    type Flag = { code: string; severity: "info" | "warning"; messageEn: string; messageAr: string };
+    const flags: Flag[] = [];
+
+    try {
+      const allExpenses = await storage.getTransactions(companyId, { type });
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recent = allExpenses.filter(
+        (t) => t.transactionDate && new Date(t.transactionDate) >= thirtyDaysAgo
+      );
+
+      // 1. Possible duplicate: same amount (within 1%) + similar description or vendor within 30 days
+      const descKey = description.toLowerCase().slice(0, 25);
+      const vendorKey = (vendor || "").toLowerCase().slice(0, 15);
+      const dup = recent.find((t) => {
+        const tAmt = parseFloat(String(t.amount) || "0");
+        if (Math.abs(tAmt - amountNum) / Math.max(amountNum, 0.01) > 0.01) return false;
+        const tDesc = (t.description || "").toLowerCase();
+        return (
+          (descKey.length > 5 && tDesc.includes(descKey)) ||
+          (vendorKey.length > 3 && tDesc.includes(vendorKey))
+        );
+      });
+      if (dup) {
+        const dupDate = new Date(dup.transactionDate).toLocaleDateString("en-AE");
+        flags.push({
+          code: "possible-duplicate",
+          severity: "warning",
+          messageEn: `Possible duplicate of a ${type.toLowerCase()} from ${dupDate} for AED ${parseFloat(String(dup.amount)).toFixed(2)}.`,
+          messageAr: `معاملة محتملة مكررة من ${dupDate} بمبلغ ${parseFloat(String(dup.amount)).toFixed(2)} درهم.`,
+        });
+      }
+
+      // 2. VAT mismatch: vatAmount present but not ~5% of net (>1% tolerance)
+      if (vatNum > 0 && amountNum > 0) {
+        const expectedVat = amountNum * 0.05;
+        if (Math.abs(vatNum - expectedVat) / Math.max(amountNum, 0.01) > 0.01) {
+          flags.push({
+            code: "vat-mismatch",
+            severity: "warning",
+            messageEn: `VAT (AED ${vatNum.toFixed(2)}) is not ~5% of net AED ${amountNum.toFixed(2)}. Expected ~AED ${expectedVat.toFixed(2)}.`,
+            messageAr: `ضريبة القيمة المضافة (${vatNum.toFixed(2)} درهم) لا تساوي ~5% من الصافي (${amountNum.toFixed(2)} درهم). المتوقع ~${expectedVat.toFixed(2)} درهم.`,
+          });
+        }
+      }
+
+      // 3. Unusually large: amount > 5× company average expense (for EXPENSE type)
+      if (type === "EXPENSE" && allExpenses.length > 0) {
+        const avg = allExpenses.reduce((s, t) => s + parseFloat(String(t.amount) || "0"), 0) / allExpenses.length;
+        if (avg > 0 && amountNum > avg * 5) {
+          flags.push({
+            code: "unusually-large",
+            severity: "info",
+            messageEn: `AED ${amountNum.toFixed(2)} is more than 5× your average expense (AED ${avg.toFixed(2)}).`,
+            messageAr: `${amountNum.toFixed(2)} درهم أكثر من 5 أضعاف متوسط مصروفاتك (${avg.toFixed(2)} درهم).`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Classify deterministic check failed:", (err as Error).message);
+    }
+
+    // ── AI category suggestion ────────────────────────────────────────────────
+    const aiPrompt = `Classify this ${type} transaction for a UAE SME:
+Description: ${description}
+Amount: AED ${amountNum}${vendor ? `\nVendor: ${vendor}` : ""}${vatNum ? `\nVAT: AED ${vatNum}` : ""}
+
+Return JSON:
+{
+  "category": string (EXACT CODE|Name from list, or null),
+  "confidence": "high"|"medium"|"low",
+  "sectorFlag": string|null (one short English sentence if unusual for UAE SME, else null)
+}
+Available categories: ${COA_LABELS}`;
+
+    try {
+      const ai = await aiExtractJSON({
+        system: `You are a UAE accounting assistant. Classify transactions into the given chart of accounts. Always pick the single best matching category. High confidence = obvious match. Return valid JSON only.`,
+        messages: [{ role: "user", content: aiPrompt }],
+      });
+
+      if (ai.sectorFlag) {
+        flags.push({
+          code: "sector-unusual",
+          severity: "info",
+          messageEn: ai.sectorFlag,
+          messageAr: ai.sectorFlag,
+        });
+      }
+
+      // Validate the returned category is in our list
+      const validCategory = COA.find((c) => `${c.code}|${c.name}` === ai.category)
+        ? ai.category
+        : null;
+
+      res.json({
+        aiAvailable: true,
+        suggestion: {
+          category: validCategory,
+          confidence: (["high", "medium", "low"].includes(ai.confidence) ? ai.confidence : "low") as "high" | "medium" | "low",
+          flags,
+        },
+      });
+    } catch (err) {
+      console.error("AI classify failed:", (err as Error).message);
+      // Fail-soft: return deterministic flags only
+      res.json({
+        aiAvailable: false,
+        suggestion: { category: null, confidence: "low" as const, flags },
       });
     }
   });
