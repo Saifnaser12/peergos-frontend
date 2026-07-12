@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/context/language-context';
@@ -36,6 +36,24 @@ export default function Admin() {
     primaryColor: company?.primaryColor || '#1976d2',
     language: company?.language || 'en',
   });
+
+  // Sync form when company data loads from auth context
+  useEffect(() => {
+    if (company) {
+      setCompanySettings({
+        name: company.name || '',
+        trn: company.trn || '',
+        address: company.address || '',
+        phone: company.phone || '',
+        email: company.email || '',
+        industry: company.industry || '',
+        freeZone: company.freeZone || false,
+        vatRegistered: company.vatRegistered || false,
+        primaryColor: company.primaryColor || '#1976d2',
+        language: company.language || 'en',
+      });
+    }
+  }, [company?.id]);
 
   const updateCompanyMutation = useMutation({
     mutationFn: async (updates: Partial<typeof companySettings>) => {

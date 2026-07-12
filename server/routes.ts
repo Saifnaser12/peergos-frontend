@@ -422,7 +422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inVAT    = fy.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.vatAmount) || '0'), 0);
       const netIncome = revenue - expenses;
       const vatDue    = Math.max(0, outVAT - inVAT);
-      const citDue    = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09;
+      // UAE CIT: Small Business Relief applies when revenue ≤ AED 3M (CT Law Art. 21)
+      const citDue    = revenue <= 3000000 ? 0 : (netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09);
       res.json([{
         id: 1, companyId, period: 'FY-2025-2026',
         revenue:   revenue.toFixed(2),
