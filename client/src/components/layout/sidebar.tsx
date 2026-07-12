@@ -63,165 +63,199 @@ export default function Sidebar({
       section: 'Quick Links',
       items: [
         { path: '/visual-design-demo', icon: GitBranch, label: 'Design System', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
-        { path: '/roadmap', icon: Calendar, label: 'See what\'s next', roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
+        { path: '/roadmap', icon: Calendar, label: "See what's next", roles: ['ADMIN', 'ACCOUNTANT', 'ASSISTANT', 'SME_CLIENT'] },
       ],
     },
   ];
 
   const isActive = (path: string) => location === path || (path !== '/' && location.startsWith(path));
-
   const hasRole = (requiredRoles: string[]) => user && requiredRoles.includes(user.role);
 
+  const companyInitials = company?.name
+    ? company.name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
+    : 'CO';
+
   return (
-    <aside 
+    <aside
       className={cn(
-        "bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex-shrink-0 flex flex-col relative",
-        // Z-index: higher when open on mobile
-        isOpen ? "z-50" : "z-30",
-        // Enhanced width logic: show icons+text by default, collapsed for icons-only
-        isCollapsed ? "w-16" : "w-64",
-        // Mobile behavior
+        "transition-all duration-300 ease-in-out flex-shrink-0 flex flex-col relative",
         "fixed lg:relative inset-y-0 left-0",
+        isOpen ? "z-50" : "z-30",
+        isCollapsed ? "w-16" : "w-64",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-        // RTL support
         language === 'ar' && "rtl:right-0 rtl:left-auto rtl:border-r-0 rtl:border-l rtl:translate-x-0 rtl:lg:translate-x-0",
         language === 'ar' && !isOpen && "rtl:translate-x-full rtl:lg:translate-x-0"
       )}
+      style={{ backgroundColor: '#0A3A5C' }}
       data-testid="sidebar"
     >
-      {/* Header with Logo and Collapse Toggle */}
-      <div className={cn("flex items-center justify-between p-4 border-b border-gray-200 h-16")}>
-        <div className={cn("flex items-center", language === 'ar' && "rtl:flex-row-reverse")}>
-          <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: company?.primaryColor || '#1976d2' }}
-          >
-            <Building2 className="text-white" size={16} />
+      {/* Header — PEERGOS wordmark */}
+      <div className={cn(
+        "flex items-center h-16 flex-shrink-0",
+        isCollapsed ? "justify-center px-2" : "justify-between px-4",
+        "border-b border-white/10"
+      )}>
+        {isCollapsed ? (
+          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+            <span className="text-white font-black text-base tracking-tight">P</span>
           </div>
-          {!isCollapsed && (
-            <div className={cn("ml-3 min-w-0", language === 'ar' && "rtl:ml-0 rtl:mr-3")}>
-              <h1 className="text-sm font-extrabold tracking-widest text-blue-700 uppercase leading-tight">
-                PEERGOS
-              </h1>
-              <p className="text-xs text-gray-500 leading-tight">UAE SME Tax Compliance</p>
-              {company?.name && (
-                <p className="text-xs font-medium text-gray-700 truncate leading-tight mt-0.5">
-                  {company.name}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Collapse Toggle Button - Desktop Only */}
+        ) : (
+          <div className={cn("min-w-0", language === 'ar' && "rtl:text-right")}>
+            <h1 className="text-white font-black tracking-[0.18em] text-[13px] uppercase leading-tight">
+              PEERGOS
+            </h1>
+            <p className="text-white/50 text-[10px] leading-tight mt-0.5">UAE SME Tax Compliance</p>
+          </div>
+        )}
+
+        {/* Collapse toggle — desktop only */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onCollapse?.(!isCollapsed)}
           className={cn(
-            "p-1 h-8 w-8 hidden lg:flex",
+            "p-1 h-8 w-8 hidden lg:flex text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0",
             language === 'ar' && "rtl:rotate-180"
           )}
         >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {isCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
         </Button>
-        
-        {/* Mobile Close Button */}
+
+        {/* Mobile close button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className="p-1 h-8 w-8 lg:hidden"
+          className="p-1 h-8 w-8 lg:hidden text-white/60 hover:text-white hover:bg-white/10"
         >
           <Menu size={16} />
         </Button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto custom-scrollbar space-y-1">
         {navigationItems.map((section) => (
-          <div key={section.section} className="space-y-1">
-            {/* Section Header - Only show when not collapsed */}
+          <div key={section.section} className="space-y-0.5">
+            {/* Section label */}
             {!isCollapsed && section.section && (
               <h3 className={cn(
-                "px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+                "px-3 pt-4 pb-1 text-[10px] font-semibold text-white/35 uppercase tracking-[0.12em]",
                 language === 'ar' && "rtl:text-right"
               )}>
                 {section.section}
               </h3>
             )}
-            
-            {/* Navigation Items */}
-            <div className="space-y-1">
-              {section.items
-                .filter(item => item.roles.includes(user?.role || 'SME_CLIENT'))
-                .map((item) => {
-                  const isItemActive = isActive(item.path);
-                  const IconComponent = item.icon;
 
-                  const navItem = (
-                    <Link 
-                      key={item.path} 
-                      href={item.path}
-                      className={cn(
-                        'w-full h-11 relative group transition-all duration-200 flex items-center touch-action-manipulation block',
-                        // Layout: collapsed vs expanded
-                        isCollapsed ? 'justify-center px-2' : 'justify-start px-3',
-                        // Active state styling
-                        isItemActive
-                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-r-2 border-blue-600 shadow-sm'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900',
-                        // RTL support
-                        language === 'ar' && 'rtl:justify-start',
-                        language === 'ar' && isCollapsed && 'rtl:justify-center',
-                        language === 'ar' && isItemActive && 'rtl:border-r-0 rtl:border-l-2',
-                        // Focus styles
-                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                      )}
-                      data-testid={`nav-link-${item.path.replace('/', '')  || 'home'}`}
-                      aria-label={item.label}
-                      aria-current={isItemActive ? 'page' : undefined}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <IconComponent 
+            {section.items
+              .filter(item => item.roles.includes(user?.role || 'SME_CLIENT'))
+              .map((item) => {
+                const isItemActive = isActive(item.path);
+                const IconComponent = item.icon;
+
+                const navItem = (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className={cn(
+                      'relative flex items-center h-10 rounded-lg transition-all duration-150 select-none group',
+                      isCollapsed ? 'justify-center px-0 mx-auto w-10' : 'px-3',
+                      isItemActive
+                        ? 'bg-white/10 text-white'
+                        : 'text-white/65 hover:text-white hover:bg-white/8',
+                      language === 'ar' && !isCollapsed && 'rtl:flex-row-reverse',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30'
+                    )}
+                    data-testid={`nav-link-${item.path.replace('/', '') || 'home'}`}
+                    aria-label={item.label}
+                    aria-current={isItemActive ? 'page' : undefined}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    {/* Emerald left accent bar for active item */}
+                    {isItemActive && !isCollapsed && (
+                      <span
                         className={cn(
-                          'h-5 w-5 flex-shrink-0',
-                          !isCollapsed && 'mr-3',
-                          language === 'ar' && !isCollapsed && 'rtl:mr-0 rtl:ml-3'
-                        )} 
+                          "absolute top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full",
+                          language === 'ar' ? "right-0" : "left-0"
+                        )}
+                        style={{ backgroundColor: '#0E9F6E' }}
                       />
-                      {!isCollapsed && (
-                        <span className={cn(
-                          "truncate text-sm font-medium",
-                          language === 'ar' && "rtl:text-right"
-                        )}>
-                          {item.label}
-                        </span>
+                    )}
+                    {isItemActive && isCollapsed && (
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 left-0 w-[3px] h-6 rounded-full"
+                        style={{ backgroundColor: '#0E9F6E' }}
+                      />
+                    )}
+
+                    <IconComponent
+                      className={cn(
+                        'h-[18px] w-[18px] flex-shrink-0 transition-colors',
+                        isItemActive ? 'text-white' : 'text-white/55 group-hover:text-white/80',
+                        !isCollapsed && (language === 'ar' ? 'ml-3' : 'mr-3')
                       )}
-                    </Link>
+                    />
+                    {!isCollapsed && (
+                      <span className={cn(
+                        "truncate text-[13px] font-medium",
+                        language === 'ar' && "rtl:text-right"
+                      )}>
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+
+                if (isCollapsed) {
+                  return (
+                    <TooltipProvider key={item.path}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>{navItem}</TooltipTrigger>
+                        <TooltipContent side={language === 'ar' ? 'left' : 'right'} className="text-xs">
+                          {item.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   );
+                }
 
-                  if (isCollapsed) {
-                    return (
-                      <TooltipProvider key={item.path}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            {navItem}
-                          </TooltipTrigger>
-                          <TooltipContent side="right">
-                            {item.label}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  }
-
-                  return navItem;
-                })}
-            </div>
+                return navItem;
+              })}
           </div>
         ))}
       </nav>
+
+      {/* Bottom company section */}
+      <div className="border-t border-white/10 p-3 flex-shrink-0">
+        {isCollapsed ? (
+          <div className="flex justify-center">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold"
+              style={{ backgroundColor: 'rgba(14,159,110,0.25)' }}
+            >
+              {companyInitials.charAt(0)}
+            </div>
+          </div>
+        ) : (
+          <div className={cn("flex items-center gap-2.5", language === 'ar' && "rtl:flex-row-reverse")}>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+              style={{ backgroundColor: 'rgba(14,159,110,0.25)', color: '#0E9F6E' }}
+            >
+              {companyInitials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white/75 text-[12px] font-semibold truncate leading-tight">
+                {company?.name || 'Your Company'}
+              </p>
+              {(company as any)?.trn && (
+                <p className="text-white/35 text-[10px] truncate leading-tight">
+                  TRN: {(company as any).trn}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

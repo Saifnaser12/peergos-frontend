@@ -26,7 +26,6 @@ interface EnhancedMainLayoutProps {
   children: React.ReactNode;
 }
 
-// Page configuration for breadcrumbs and help
 const pageConfig: Record<string, { title: string; breadcrumb: { label: string; href?: string; current?: boolean }[]; help?: string }> = {
   '/': { title: 'Dashboard', breadcrumb: [] },
   '/dashboard': { title: 'Dashboard', breadcrumb: [] },
@@ -85,11 +84,10 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout } = useAuth();
-  const { language, direction, t } = useLanguage();
+  const { language, direction, setLanguage, t } = useLanguage();
   const { items: breadcrumbItems, updateBreadcrumb } = useBreadcrumb();
   const { focusElement } = useFocusManagement();
 
-  // Update breadcrumb based on current page
   useEffect(() => {
     const config = pageConfig[location];
     if (config) {
@@ -97,20 +95,10 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
     }
   }, [location, updateBreadcrumb]);
 
-  // Keyboard shortcuts
   const shortcuts = [
-    {
-      ...commonShortcuts.search,
-      action: () => setIsSearchOpen(true)
-    },
-    {
-      ...commonShortcuts.dashboard,
-      action: () => navigate('/')
-    },
-    {
-      ...commonShortcuts.taxes,
-      action: () => navigate('/taxes')
-    },
+    { ...commonShortcuts.search, action: () => setIsSearchOpen(true) },
+    { ...commonShortcuts.dashboard, action: () => navigate('/') },
+    { ...commonShortcuts.taxes, action: () => navigate('/taxes') },
     {
       ...commonShortcuts.cancel,
       action: () => {
@@ -122,55 +110,30 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
 
   useKeyboardNavigation({ shortcuts });
 
-  // Handle mobile responsiveness
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(false);
-      }
+      if (window.innerWidth >= 768) setIsSidebarOpen(false);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Close mobile sidebar when location changes
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location]);
 
   const currentPageConfig = pageConfig[location as keyof typeof pageConfig];
 
-  const handleSidebarToggle = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const handleSidebarCollapse = (collapsed: boolean) => {
-    setIsSidebarCollapsed(collapsed);
-  };
-
-  const handleUserMenuToggle = () => {
-    setShowUserMenu(!showUserMenu);
-  };
-
-  const handleLogout = () => {
-    logout();
-    setShowUserMenu(false);
-  };
-
   return (
-    <div 
-      className={cn(
-        "min-h-[100svh] bg-gray-50 flex",
-        // RTL layout support
-        language === 'ar' && "rtl"
-      )}
+    <div
+      className={cn("min-h-[100svh] flex", language === 'ar' && "rtl")}
+      style={{ backgroundColor: '#F6F8FA' }}
       dir={direction}
     >
       {/* Mobile sidebar backdrop */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden pointer-events-auto touch-action-manipulation"
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden pointer-events-auto"
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
           data-testid="mobile-sidebar-backdrop"
@@ -180,117 +143,108 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
       {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
-        onToggle={handleSidebarToggle}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         isCollapsed={isSidebarCollapsed}
-        onCollapse={handleSidebarCollapse}
+        onCollapse={setIsSidebarCollapsed}
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        {/* 3px signature gradient line — very top of app */}
+        <div
+          className="h-[3px] w-full flex-shrink-0"
+          style={{ background: 'linear-gradient(to right, #0A3A5C, #0E9F6E)' }}
+        />
+
         {/* Top navigation bar */}
         <header className={cn(
-          "bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between",
-          // RTL adjustments
+          "bg-white border-b px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between flex-shrink-0",
+          "border-[#E5EAF0]",
           language === 'ar' && "rtl:flex-row-reverse"
         )}>
-          {/* Left section (Right in RTL) */}
+          {/* Left section */}
           <div className={cn(
-            "flex items-center space-x-4",
-            language === 'ar' && "rtl:space-x-reverse rtl:flex-row-reverse"
+            "flex items-center gap-4",
+            language === 'ar' && "rtl:flex-row-reverse"
           )}>
-            {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleSidebarToggle}
-              className="md:hidden touch-action-manipulation"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="md:hidden h-9 w-9 p-0 text-gray-500 hover:text-gray-900"
               aria-label={t('common.open')}
               data-testid="mobile-menu-toggle"
             >
               <Menu className="h-5 w-5" />
             </Button>
 
-            {/* Breadcrumb */}
-            <Breadcrumb 
-              items={breadcrumbItems}
-              className="hidden md:flex"
-            />
+            <Breadcrumb items={breadcrumbItems} className="hidden md:flex" />
 
-            {/* Page help */}
             {currentPageConfig?.help && (
-              <Tooltip 
+              <Tooltip
                 content={currentPageConfig.help}
                 className="hidden md:block"
               >
-                <Button variant="ghost" size="sm" aria-label={t('common.help')}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400" aria-label={t('common.help')}>
                   <HelpCircle className="h-4 w-4" />
                 </Button>
               </Tooltip>
             )}
           </div>
 
-          {/* Right section (Left in RTL) */}
+          {/* Right section */}
           <div className={cn(
-            "flex items-center space-x-3",
-            language === 'ar' && "rtl:space-x-reverse rtl:flex-row-reverse"
+            "flex items-center gap-2",
+            language === 'ar' && "rtl:flex-row-reverse"
           )}>
-            {/* Search button */}
+            {/* Search */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchOpen(true)}
               className={cn(
-                "hidden md:flex items-center space-x-2 text-gray-600 hover:text-gray-900",
-                language === 'ar' && "rtl:space-x-reverse"
+                "hidden md:flex items-center gap-2 text-gray-500 hover:text-gray-900 h-9 px-3",
               )}
               aria-label={t('common.search')}
             >
               <Search className="h-4 w-4" />
-              <span className="hidden lg:inline">{t('common.search')}</span>
-              <kbd className="hidden lg:inline px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded">
-                ⌘K
-              </kbd>
+              <span className="hidden lg:inline text-sm">{t('common.search')}</span>
+              <kbd className="hidden lg:inline px-1.5 py-0.5 text-[10px] bg-gray-100 border border-gray-200 rounded font-mono">⌘K</kbd>
             </Button>
 
-            {/* Mobile search button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsSearchOpen(true)}
-              className="md:hidden"
+              className="md:hidden h-9 w-9 p-0 text-gray-500"
               aria-label={t('common.search')}
             >
               <Search className="h-5 w-5" />
             </Button>
 
             {/* Notifications */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="relative"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative h-9 w-9 p-0 text-gray-500"
               aria-label={t('common.notifications')}
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-4 w-4" />
               <span className={cn(
-                "absolute -top-1 h-3 w-3 bg-red-500 rounded-full",
-                language === 'ar' ? "rtl:-left-1" : "-right-1"
-              )}></span>
+                "absolute top-1.5 h-2 w-2 rounded-full bg-red-500",
+                language === 'ar' ? "left-1.5" : "right-1.5"
+              )} />
             </Button>
 
-            {/* Language Toggle */}
+            {/* Language toggle */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-              className={cn(
-                "flex items-center space-x-2 text-gray-600 hover:text-gray-900",
-                language === 'ar' && "rtl:space-x-reverse"
-              )}
+              className="h-9 px-3 text-sm font-medium text-gray-600 hover:text-[#0A3A5C]"
               aria-label={t('common.language')}
             >
-              <span className="text-sm font-medium">
-                {language === 'en' ? 'العربية' : 'English'}
-              </span>
+              {language === 'en' ? 'العربية' : 'English'}
             </Button>
 
             {/* User menu */}
@@ -298,95 +252,67 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleUserMenuToggle}
+                onClick={() => setShowUserMenu(!showUserMenu)}
                 className={cn(
-                  "flex items-center space-x-2",
-                  language === 'ar' && "rtl:space-x-reverse"
+                  "flex items-center gap-2 h-9 px-2",
+                  language === 'ar' && "rtl:flex-row-reverse"
                 )}
                 aria-label={t('common.profile')}
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: '#0A3A5C' }}
+                >
+                  <User className="h-3.5 w-3.5 text-white" />
                 </div>
-                <span className="hidden lg:inline font-medium">
+                <span className="hidden lg:inline text-sm font-medium text-gray-700">
                   {user?.username || 'User'}
                 </span>
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
               </Button>
 
-              {/* User dropdown menu */}
               {showUserMenu && (
                 <div className={cn(
-                  "absolute mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50",
-                  language === 'ar' ? "rtl:left-0" : "right-0"
+                  "absolute top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-[#E5EAF0] py-1 z-50",
+                  language === 'ar' ? "left-0" : "right-0"
                 )}>
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className={cn(
-                      "text-sm font-medium text-gray-900",
-                      language === 'ar' && "rtl:text-right"
-                    )}>
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className={cn("text-sm font-semibold text-gray-900", language === 'ar' && "rtl:text-right")}>
                       {user?.username}
                     </p>
-                    <p className={cn(
-                      "text-xs text-gray-600",
-                      language === 'ar' && "rtl:text-right"
-                    )}>
+                    <p className={cn("text-xs text-gray-500 mt-0.5", language === 'ar' && "rtl:text-right")}>
                       {user?.email}
                     </p>
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      navigate('/admin');
-                      setShowUserMenu(false);
-                    }}
-                    className={cn(
-                      "w-full justify-start px-4 py-2 text-sm",
-                      language === 'ar' && "rtl:justify-end rtl:flex-row-reverse"
-                    )}
+                    onClick={() => { navigate('/admin'); setShowUserMenu(false); }}
+                    className={cn("w-full justify-start px-4 py-2 text-sm text-gray-700", language === 'ar' && "rtl:justify-end rtl:flex-row-reverse")}
                   >
-                    <Settings className={cn(
-                      "h-4 w-4",
-                      language === 'ar' ? "rtl:ml-3" : "mr-3"
-                    )} />
+                    <Settings className={cn("h-4 w-4", language === 'ar' ? "ml-3" : "mr-3")} />
                     {t('common.settings')}
                   </Button>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setIsSearchOpen(true);
-                      setShowUserMenu(false);
-                    }}
-                    className={cn(
-                      "w-full justify-start px-4 py-2 text-sm",
-                      language === 'ar' && "rtl:justify-end rtl:flex-row-reverse"
-                    )}
+                    onClick={() => { setIsSearchOpen(true); setShowUserMenu(false); }}
+                    className={cn("w-full justify-start px-4 py-2 text-sm text-gray-700", language === 'ar' && "rtl:justify-end rtl:flex-row-reverse")}
                   >
-                    <HelpCircle className={cn(
-                      "h-4 w-4",
-                      language === 'ar' ? "rtl:ml-3" : "mr-3"
-                    )} />
+                    <HelpCircle className={cn("h-4 w-4", language === 'ar' ? "ml-3" : "mr-3")} />
                     {t('common.help')}
                   </Button>
-                  
+
                   <div className="border-t border-gray-100 mt-1 pt-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleLogout}
-                      className={cn(
-                        "w-full justify-start px-4 py-2 text-sm text-red-600 hover:bg-red-50",
-                        language === 'ar' && "rtl:justify-end rtl:flex-row-reverse"
-                      )}
+                      onClick={() => { logout(); setShowUserMenu(false); }}
+                      className={cn("w-full justify-start px-4 py-2 text-sm text-red-600 hover:bg-red-50", language === 'ar' && "rtl:justify-end rtl:flex-row-reverse")}
                     >
-                      <LogOut className={cn(
-                        "h-4 w-4",
-                        language === 'ar' ? "rtl:ml-3" : "mr-3"
-                      )} />
+                      <LogOut className={cn("h-4 w-4", language === 'ar' ? "ml-3" : "mr-3")} />
                       {t('common.logout')}
                     </Button>
                   </div>
@@ -396,12 +322,8 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
           </div>
         </header>
 
-        {/* Main content */}
-        <main className={cn(
-          "flex-1 overflow-auto",
-          // Add proper spacing based on sidebar state
-          !isSidebarCollapsed ? "lg:pl-0" : "lg:pl-0"
-        )}>
+        {/* Page content */}
+        <main className="flex-1 overflow-auto">
           <div className="container mx-auto px-4 py-6">
             {children}
           </div>
@@ -410,10 +332,7 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
 
       {/* Global Search Modal */}
       {isSearchOpen && (
-        <GlobalSearch
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
+        <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       )}
     </div>
   );
