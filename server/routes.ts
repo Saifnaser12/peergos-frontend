@@ -408,10 +408,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/kpi-data", async (req, res) => {
     try {
       const companyId = parseInt(req.query.companyId as string) || 1;
-      const period = req.query.period as string;
-      
-      const data = await storage.getKpiData(companyId, period);
-      res.json(data);
+      // Live computation from transactions — UAE FY 1 Jul 2025 – 30 Jun 2026
+      const fyStart = new Date('2025-07-01');
+      const fyEnd   = new Date('2026-06-30T23:59:59');
+      const all = await storage.getTransactions(companyId);
+      const fy = all.filter(t => {
+        const d = new Date(t.transactionDate);
+        return d >= fyStart && d <= fyEnd;
+      });
+      const revenue  = fy.filter(t => t.type === 'REVENUE').reduce((s, t) => s + parseFloat(String(t.amount)  || '0'), 0);
+      const expenses = fy.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)  || '0'), 0);
+      const outVAT   = fy.filter(t => t.type === 'REVENUE').reduce((s, t) => s + parseFloat(String(t.vatAmount) || '0'), 0);
+      const inVAT    = fy.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.vatAmount) || '0'), 0);
+      const netIncome = revenue - expenses;
+      const vatDue    = Math.max(0, outVAT - inVAT);
+      const citDue    = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09;
+      res.json([{
+        id: 1, companyId, period: 'FY-2025-2026',
+        revenue:   revenue.toFixed(2),
+        expenses:  expenses.toFixed(2),
+        netIncome: netIncome.toFixed(2),
+        vatDue:    vatDue.toFixed(2),
+        citDue:    citDue.toFixed(2),
+        calculatedAt: new Date()
+      }]);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }

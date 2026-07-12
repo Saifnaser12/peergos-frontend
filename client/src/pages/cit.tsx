@@ -40,19 +40,23 @@ export default function CIT() {
     enabled: !!company?.id,
   });
 
-  const currentYearRevenue = Array.isArray(transactions) ? transactions.filter((t: any) => 
-    t.type === 'REVENUE' && 
-    new Date(t.transactionDate).getFullYear() === new Date().getFullYear()
-  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) : 0;
+  // UAE financial year 1 Jul 2025 – 30 Jun 2026
+  const fyStart = new Date('2025-07-01');
+  const fyEnd   = new Date('2026-06-30T23:59:59');
+  const inFY = (t: any) => { const d = new Date(t.transactionDate); return d >= fyStart && d <= fyEnd; };
 
-  const currentYearExpenses = Array.isArray(transactions) ? transactions.filter((t: any) => 
-    t.type === 'EXPENSE' && 
-    new Date(t.transactionDate).getFullYear() === new Date().getFullYear()
-  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) : 0;
+  const currentYearRevenue = Array.isArray(transactions) ? transactions.filter((t: any) =>
+    t.type === 'REVENUE' && inFY(t)
+  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0) : 0;
+
+  const currentYearExpenses = Array.isArray(transactions) ? transactions.filter((t: any) =>
+    t.type === 'EXPENSE' && inFY(t)
+  ).reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0) : 0;
 
   const netIncome = currentYearRevenue - currentYearExpenses;
-  // Use centralized tax configuration for CIT calculation
-  const estimatedCIT = netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09; // UAE Small Business Relief + 9% CIT rate
+  // UAE CIT: Small Business Relief if annual revenue ≤ AED 3M (CT Law Art. 21)
+  const isSBREligible = currentYearRevenue <= 3000000;
+  const estimatedCIT = isSBREligible ? 0 : (netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09);
 
   // UX Fallback checks for missing data
   if (!company) {
@@ -171,7 +175,7 @@ export default function CIT() {
           <CardContent className="p-6">
             <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Current Year Revenue</p>
+                <p className="text-sm font-medium text-gray-600">FY 2025–26 Revenue</p>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(currentYearRevenue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
@@ -217,8 +221,8 @@ export default function CIT() {
                 <p className="text-xl font-bold text-primary-600">
                   {formatCurrency(estimatedCIT, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
-                {netIncome <= 375000 && (
-                  <p className="text-xs text-success-600 mt-1">Small Business Relief Applied</p>
+                {isSBREligible && (
+                  <p className="text-xs text-success-600 mt-1">Small Business Relief Applied (Revenue &lt; AED 3M)</p>
                 )}
               </div>
               <Download size={20} className="text-primary-500" />

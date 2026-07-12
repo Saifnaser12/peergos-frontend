@@ -55,10 +55,7 @@ export function DataSyncProvider({ children }: { children: React.ReactNode }) {
   // Sync data mutation
   const syncDataMutation = useMutation({
     mutationFn: async (modules: string[]) => {
-      return await apiRequest('/api/sync-modules', {
-        method: 'POST',
-        body: { modules }
-      });
+      return await apiRequest('POST', '/api/sync-modules', { modules });
     },
     onMutate: () => {
       setSyncState(prev => ({ ...prev, syncStatus: 'syncing' }));
@@ -83,10 +80,7 @@ export function DataSyncProvider({ children }: { children: React.ReactNode }) {
   // Update module data mutation
   const updateModuleDataMutation = useMutation({
     mutationFn: async ({ module, data }: { module: string; data: any }) => {
-      return await apiRequest(`/api/modules/${module}/data`, {
-        method: 'PUT',
-        body: data
-      });
+      return await apiRequest('PUT', `/api/modules/${module}/data`, data);
     },
     onSuccess: (_, { module }) => {
       setSyncState(prev => ({
@@ -106,8 +100,8 @@ export function DataSyncProvider({ children }: { children: React.ReactNode }) {
   // Validate data consistency
   const validateDataConsistency = useCallback(async (): Promise<ValidationError[]> => {
     try {
-      const response = await apiRequest('/api/validate-data-consistency');
-      const errors = response as ValidationError[];
+      const response = await apiRequest('GET', '/api/validate-data-consistency');
+      const errors = (await response.json()) as ValidationError[];
       
       setSyncState(prev => ({
         ...prev,

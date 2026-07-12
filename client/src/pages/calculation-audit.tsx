@@ -143,7 +143,7 @@ CALCULATION AUDIT REPORT
 Calculation ID: ${displayAuditTrail.calculationId}
 Type: ${displayAuditTrail.type}
 Period: ${displayAuditTrail.period}
-Total Amount: ${displayAuditTrail.totalAmount.toFixed(2)} AED
+Total Amount: ${Number(displayAuditTrail.totalAmount ?? 0).toFixed(2)} AED
 Calculated At: ${new Date(displayAuditTrail.metadata.calculatedAt).toLocaleString()}
 Version: ${displayAuditTrail.metadata.version}
 
@@ -151,7 +151,7 @@ CALCULATION STEPS:
 ${displayAuditTrail.steps.map(step => `
 Step ${step.step}: ${step.description}
 Calculation: ${step.calculation}
-Amount: ${step.amount.toFixed(2)} AED
+Amount: ${Number(step.amount ?? 0).toFixed(2)} AED
 ${step.notes ? `Notes: ${step.notes}` : ''}
 ${step.regulation ? `Regulation: ${step.regulation}` : ''}
 `).join('\n')}
@@ -288,7 +288,7 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {displayAuditTrail.totalAmount.toFixed(2)} AED
+                        {Number(displayAuditTrail.totalAmount ?? 0).toFixed(2)} AED
                       </div>
                       <div className="text-sm text-gray-600">Total {displayAuditTrail.type} Amount</div>
                     </div>
@@ -341,7 +341,7 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
                           </div>
                           <div className="text-right">
                             <div className="text-lg font-bold">
-                              {step.amount.toFixed(2)} AED
+                              {Number(step.amount ?? 0).toFixed(2)} AED
                             </div>
                           </div>
                         </div>
@@ -411,7 +411,7 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">{item.totalAmount.toFixed(2)} AED</div>
+                        <div className="font-bold">{Number(item.totalAmount ?? 0).toFixed(2)} AED</div>
                         <Badge variant={item.status === 'completed' ? 'default' : 'secondary'}>
                           {item.status}
                         </Badge>

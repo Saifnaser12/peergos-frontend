@@ -79,7 +79,7 @@ export default function SimplifiedDashboard() {
   // Dashboard metrics
   const metrics: DashboardMetric[] = [
     {
-      label: 'Monthly Revenue',
+      label: 'Annual Revenue',
       value: formatCurrency(revenue),
       icon: TrendingUp,
       color: 'text-green-600',

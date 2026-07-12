@@ -43,18 +43,19 @@ export default function VAT() {
     enabled: !!company?.id,
   });
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
-  const monthlyTransactions = Array.isArray(transactions) ? transactions.filter((t: any) => {
+  // UAE financial year 1 Jul 2025 – 30 Jun 2026
+  const fyStart = new Date('2025-07-01');
+  const fyEnd   = new Date('2026-06-30T23:59:59');
+
+  const fyTransactions = Array.isArray(transactions) ? transactions.filter((t: any) => {
     const date = new Date(t.transactionDate);
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    return date >= fyStart && date <= fyEnd;
   }) : [];
 
-  const monthlySales = monthlyTransactions.filter((t: any) => t.type === 'REVENUE')
+  const monthlySales = fyTransactions.filter((t: any) => t.type === 'REVENUE')
     .reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0);
-  
-  const monthlyPurchases = monthlyTransactions.filter((t: any) => t.type === 'EXPENSE')
+
+  const monthlyPurchases = fyTransactions.filter((t: any) => t.type === 'EXPENSE')
     .reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0);
 
   const currentMonthRevenue = monthlySales;
@@ -98,8 +99,10 @@ export default function VAT() {
     },
   });
 
-  const outputVat = monthlySales * 0.05;
-  const inputVat = monthlyPurchases * 0.05;
+  const outputVat = fyTransactions.filter((t: any) => t.type === 'REVENUE')
+    .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || '0'), 0);
+  const inputVat = fyTransactions.filter((t: any) => t.type === 'EXPENSE')
+    .reduce((sum: number, t: any) => sum + parseFloat(t.vatAmount || '0'), 0);
   const netVatDue = Math.max(0, outputVat - inputVat);
 
   // Handle VAT201 operations
@@ -220,7 +223,7 @@ export default function VAT() {
   }
 
   // Check if VAT registration is required but missing
-  if (currentMonthRevenue > 31250 && !company.vatRegistered) { // AED 375k annually = ~31.25k monthly
+  if (currentMonthRevenue > 375000 && !company.vatRegistered) { // AED 375k annual VAT registration threshold
     console.warn('[VAT Page] Revenue exceeds VAT threshold but company not registered');
     return (
       <div className="space-y-6">
@@ -265,7 +268,7 @@ export default function VAT() {
           <CardContent className="p-6">
             <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Sales</p>
+                <p className="text-sm font-medium text-gray-600">FY 2025–26 Sales</p>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(monthlySales, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
@@ -279,7 +282,7 @@ export default function VAT() {
           <CardContent className="p-6">
             <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Purchases</p>
+                <p className="text-sm font-medium text-gray-600">FY 2025–26 Purchases</p>
                 <p className="text-xl font-bold text-gray-900">
                   {formatCurrency(monthlyPurchases, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
