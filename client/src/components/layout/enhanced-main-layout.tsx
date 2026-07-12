@@ -27,37 +27,55 @@ interface EnhancedMainLayoutProps {
 }
 
 // Page configuration for breadcrumbs and help
-const pageConfig = {
-  '/': { title: 'Dashboard', breadcrumb: [{ label: 'Dashboard', current: true }] },
-  '/taxes/vat': { 
-    title: 'VAT Calculator', 
-    breadcrumb: [
-      { label: 'Taxes', href: '/taxes' },
-      { label: 'VAT Calculator', current: true }
-    ],
+const pageConfig: Record<string, { title: string; breadcrumb: { label: string; href?: string; current?: boolean }[]; help?: string }> = {
+  '/': { title: 'Dashboard', breadcrumb: [] },
+  '/dashboard': { title: 'Dashboard', breadcrumb: [] },
+  '/bookkeeping': { title: 'Bookkeeping', breadcrumb: [{ label: 'Bookkeeping', current: true }] },
+  '/taxes': { title: 'Taxes', breadcrumb: [{ label: 'Taxes', current: true }] },
+  '/taxes/vat': {
+    title: 'VAT Calculator',
+    breadcrumb: [{ label: 'Taxes', href: '/taxes' }, { label: 'VAT Calculator', current: true }],
     help: 'Calculate 5% VAT for your transactions according to UAE FTA regulations.'
   },
-  '/taxes/cit': { 
-    title: 'CIT Calculator', 
-    breadcrumb: [
-      { label: 'Taxes', href: '/taxes' },
-      { label: 'CIT Calculator', current: true }
-    ],
+  '/taxes/cit': {
+    title: 'CIT Calculator',
+    breadcrumb: [{ label: 'Taxes', href: '/taxes' }, { label: 'CIT Calculator', current: true }],
     help: 'Calculate 9% Corporate Income Tax with Small Business Relief and QFZP considerations.'
   },
-  '/financials': { 
-    title: 'Financial Reports', 
-    breadcrumb: [{ label: 'Financial Reports', current: true }],
+  '/vat': {
+    title: 'VAT Returns',
+    breadcrumb: [{ label: 'Taxes', href: '/taxes' }, { label: 'VAT Returns', current: true }],
+    help: 'Calculate 5% VAT for your transactions according to UAE FTA regulations.'
+  },
+  '/cit': {
+    title: 'Corporate Income Tax',
+    breadcrumb: [{ label: 'Taxes', href: '/taxes' }, { label: 'Corporate Income Tax', current: true }],
+    help: 'Calculate 9% Corporate Income Tax with Small Business Relief and QFZP considerations.'
+  },
+  '/documents': { title: 'Documents', breadcrumb: [{ label: 'Documents', current: true }] },
+  '/workflows/templates': { title: 'Workflow Templates', breadcrumb: [{ label: 'Workflow Templates', current: true }] },
+  '/enhanced-data-entry': { title: 'Data Entry', breadcrumb: [{ label: 'Data Entry', current: true }] },
+  '/calculation-audit': { title: 'Calculation Audit', breadcrumb: [{ label: 'Calculation Audit', current: true }] },
+  '/financials': {
+    title: 'Financial Reports',
+    breadcrumb: [{ label: 'Reports', current: true }],
     help: 'Generate comprehensive financial statements and reports for tax compliance.'
   },
+  '/reports': { title: 'Financial Reports', breadcrumb: [{ label: 'Reports', current: true }] },
+  '/tax-assistant': { title: 'AI Tax Assistant', breadcrumb: [{ label: 'AI Assistant', current: true }] },
+  '/ai': { title: 'AI Tax Assistant', breadcrumb: [{ label: 'AI Assistant', current: true }] },
+  '/admin': { title: 'Administration', breadcrumb: [{ label: 'Administration', current: true }] },
   '/admin/tax-settings': {
     title: 'Tax Settings',
-    breadcrumb: [
-      { label: 'Administration', href: '/admin' },
-      { label: 'Tax Settings', current: true }
-    ],
+    breadcrumb: [{ label: 'Administration', href: '/admin' }, { label: 'Tax Settings', current: true }],
     help: 'Configure tax rates, thresholds, and compliance settings for your organization.'
-  }
+  },
+  '/accounting': { title: 'Accounting', breadcrumb: [{ label: 'Accounting', current: true }] },
+  '/invoicing': { title: 'Invoicing', breadcrumb: [{ label: 'Invoicing', current: true }] },
+  '/compliance': { title: 'Compliance', breadcrumb: [{ label: 'Compliance', current: true }] },
+  '/calendar': { title: 'Calendar', breadcrumb: [{ label: 'Calendar', current: true }] },
+  '/transfer-pricing': { title: 'Transfer Pricing', breadcrumb: [{ label: 'Transfer Pricing', current: true }] },
+  '/tax-calculations': { title: 'Tax Calculations', breadcrumb: [{ label: 'Tax Calculations', current: true }] },
 };
 
 export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps) {
@@ -73,8 +91,8 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
 
   // Update breadcrumb based on current page
   useEffect(() => {
-    const config = pageConfig[location as keyof typeof pageConfig];
-    if (config?.breadcrumb) {
+    const config = pageConfig[location];
+    if (config) {
       updateBreadcrumb(config.breadcrumb);
     }
   }, [location, updateBreadcrumb]);
@@ -193,12 +211,10 @@ export default function EnhancedMainLayout({ children }: EnhancedMainLayoutProps
             </Button>
 
             {/* Breadcrumb */}
-            {breadcrumbItems.length > 0 && (
-              <Breadcrumb 
-                items={breadcrumbItems}
-                className="hidden md:flex"
-              />
-            )}
+            <Breadcrumb 
+              items={breadcrumbItems}
+              className="hidden md:flex"
+            />
 
             {/* Page help */}
             {currentPageConfig?.help && (

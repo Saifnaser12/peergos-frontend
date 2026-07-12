@@ -1,0 +1,3 @@
+- [UAE CIT SBR rule](sbr-rule.md) — revenue ≤ AED 3M → CIT = 0 (SBR); must apply in BOTH KPI endpoint and CIT page
+- [Progress source of truth](progress-source.md) — dashboard and all sub-pages read /api/workflow-status; never use navigation-context progress for UI display
+- [AI chat API format](ai-chat-api.md) — POST /api/ai/chat takes {messages:[{role,content}]}; response field is .response or .message or .content

@@ -1164,25 +1164,30 @@ Company ID: ${req.user.companyId}
 
       // Gather data from all modules
       const company = companyId ? await storage.getCompany(companyId) : null;
-      const transactions = []; // Will be populated from actual transaction data
-      const taxSettings = null; // Will be populated from actual tax settings
-
-      // Auto-calculate VAT from transactions
+      const transactions = await storage.getTransactions(companyId);
+      const taxSettings = null;
+      const n = (v: any) => parseFloat(v ?? '0') || 0;
+      const revTx = transactions.filter((t: any) => String(t.type).toUpperCase() === 'REVENUE');
+      const expTx = transactions.filter((t: any) => String(t.type).toUpperCase() === 'EXPENSE');
+      const totalIncome = revTx.reduce((a: number, t: any) => a + n(t.amount), 0);
+      const deductibleExpenses = expTx.reduce((a: number, t: any) => a + n(t.amount), 0);
+      const totalVATCollected = revTx.reduce((a: number, t: any) => a + n(t.vatAmount), 0);
+      const totalVATInput = expTx.reduce((a: number, t: any) => a + n(t.vatAmount), 0);
       const vatCalculations = {
-        totalVATCollected: 0,
-        totalVATInput: 0,
-        netVATLiability: 0,
+        totalVATCollected,
+        totalVATInput,
+        netVATLiability: totalVATCollected - totalVATInput,
         vatRate: 0.05
       };
-      
-      // Auto-calculate CIT from transactions
+      const taxableIncome = Math.max(0, totalIncome - deductibleExpenses);
+      const isEligibleForSBR = totalIncome <= 3000000;
       const citCalculations = {
-        totalIncome: 0,
-        deductibleExpenses: 0,
-        taxableIncome: 0,
-        citLiability: 0,
+        totalIncome,
+        deductibleExpenses,
+        taxableIncome,
+        citLiability: isEligibleForSBR ? 0 : Math.max(0, taxableIncome - 375000) * 0.09,
         citRate: 0.09,
-        isEligibleForSBR: true
+        isEligibleForSBR
       };
 
       const crossModuleData = {

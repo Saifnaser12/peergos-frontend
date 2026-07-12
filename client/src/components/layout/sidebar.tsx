@@ -99,11 +99,16 @@ export default function Sidebar({
             <Building2 className="text-white" size={16} />
           </div>
           {!isCollapsed && (
-            <div className={cn("ml-3", language === 'ar' && "rtl:ml-0 rtl:mr-3")}>
-              <h1 className="text-lg font-semibold text-gray-900 truncate">
-                {company?.name || 'Peergos'}
+            <div className={cn("ml-3 min-w-0", language === 'ar' && "rtl:ml-0 rtl:mr-3")}>
+              <h1 className="text-sm font-extrabold tracking-widest text-blue-700 uppercase leading-tight">
+                PEERGOS
               </h1>
-              <p className="text-xs text-gray-500">Tax Compliance</p>
+              <p className="text-xs text-gray-500 leading-tight">UAE SME Tax Compliance</p>
+              {company?.name && (
+                <p className="text-xs font-medium text-gray-700 truncate leading-tight mt-0.5">
+                  {company.name}
+                </p>
+              )}
             </div>
           )}
         </div>

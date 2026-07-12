@@ -41,6 +41,7 @@ import NotFound from "@/pages/not-found";
 import { TaxAdvisorWidget } from "./components/TaxAdvisorWidget";
 
 function TestEnvironmentBanner() {
+  if (import.meta.env.VITE_SHOW_TEST_BANNER !== 'true') return null;
   return (
     <div className="bg-amber-100 border-b border-amber-200 text-amber-800 text-center py-2 px-4 text-sm font-medium">
       Test Environment – Do Not Use Real Data

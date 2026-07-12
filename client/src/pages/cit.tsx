@@ -25,6 +25,8 @@ export default function CIT() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
   const { company } = useAuth();
+
+  const { data: workflowStatus } = useQuery({ queryKey: ['/api/workflow-status'] });
   const { language, t } = useLanguage();
   const taxCalculation = useTaxCalculation();
   const navigation = useNavigation();
@@ -137,8 +139,25 @@ export default function CIT() {
 
   return (
     <div className={cn("space-y-6", language === 'ar' && "rtl:text-right")}>
-      {/* Progress Tracker */}
-      <ProgressTracker variant="header" showNavigation={true} />
+      {/* Progress Tracker — same source as dashboard */}
+      {(() => {
+        const pct = (workflowStatus as any)?.overallProgress ?? 0;
+        const step = ((workflowStatus as any)?.currentStep ?? 0) + 1;
+        return (
+          <div className="flex items-center gap-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-blue-900">Progress</span>
+                <span className="text-sm text-blue-700">Step {step} of 7</span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+            <span className="text-lg font-bold text-blue-700">{pct}%</span>
+          </div>
+        );
+      })()}
       
       {/* Header */}
       <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>

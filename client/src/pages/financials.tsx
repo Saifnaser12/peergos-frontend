@@ -19,7 +19,7 @@ import { formatCurrency } from '@/lib/i18n';
 
 export default function Financials() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedPeriod, setSelectedPeriod] = useState('2024');
+  const [selectedPeriod, setSelectedPeriod] = useState('fy2025-26');
   const [incomeStatementNotes, setIncomeStatementNotes] = useState<FinancialNote[]>([]);
   const [balanceSheetNotes, setBalanceSheetNotes] = useState<FinancialNote[]>([]);
   const [cashFlowNotes, setCashFlowNotes] = useState<FinancialNote[]>([]);
@@ -65,9 +65,8 @@ export default function Financials() {
       companyInfo
     );
 
-    const currentYear = new Date().getFullYear();
-    const startDate = `${currentYear}-01-01`;
-    const endDate = `${currentYear}-12-31`;
+    const startDate = selectedPeriod === 'fy2025-26' ? '2025-07-01' : `${selectedPeriod}-01-01`;
+    const endDate   = selectedPeriod === 'fy2025-26' ? '2026-06-30' : `${selectedPeriod}-12-31`;
 
     return {
       companyInfo,
@@ -78,7 +77,7 @@ export default function Financials() {
       notes: generator.generateStandardNotes(),
       generationDate: new Date().toISOString(),
     };
-  }, [transactions, company]);
+  }, [transactions, company, selectedPeriod]);
 
   const currentKpi = Array.isArray(kpiData) && kpiData.length > 0 ? kpiData[0] : null;
   const revenue = parseFloat(currentKpi?.revenue || '0');
@@ -175,9 +174,9 @@ export default function Financials() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="fy2025-26">FY 2025–26</SelectItem>
               <SelectItem value="2024">2024</SelectItem>
               <SelectItem value="2023">2023</SelectItem>
-              <SelectItem value="2022">2022</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => handleExport('pdf')}>

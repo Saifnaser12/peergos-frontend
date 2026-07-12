@@ -75,8 +75,8 @@ export default function TaxAssistant() {
 
   // Calculate key metrics
   const currentData = Array.isArray(kpiData) && kpiData.length > 0 ? kpiData[0] : null;
-  const revenue = currentData?.revenue || 0;
-  const expenses = currentData?.expenses || 0;
+  const revenue = parseFloat(String(currentData?.revenue || '0'));
+  const expenses = parseFloat(String(currentData?.expenses || '0'));
   const netIncome = revenue - expenses;
   const vatDue = currentData?.vatDue || 0;
   const citDue = currentData?.citDue || 0;
@@ -164,7 +164,7 @@ export default function TaxAssistant() {
   const highPriorityInsights = taxInsights.filter(insight => insight.priority === 'high');
   const totalPotentialSavings = taxInsights.reduce((sum, insight) => sum + insight.impact, 0);
 
-  // Handle AI chat functionality
+  // Handle AI chat functionality — calls real /api/ai/chat endpoint
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -175,43 +175,43 @@ export default function TaxAssistant() {
       timestamp: new Date(),
     };
 
+    const userText = inputMessage;
     setChatMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
-      const aiResponse: ChatMessage = {
-        id: chatMessages.length + 2,
-        type: 'assistant',
-        content: getAIResponse(inputMessage),
-        timestamp: new Date(),
-      };
-      setChatMessages(prev => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1000);
-  };
+    try {
+      const history = chatMessages
+        .filter(m => m.type === 'user' || m.type === 'assistant')
+        .map(m => ({ role: m.type === 'user' ? 'user' : 'assistant', content: m.content }));
 
-  const getAIResponse = (question: string): string => {
-    const lowerQ = question.toLowerCase();
-    
-    if (lowerQ.includes('vat rate') || lowerQ.includes('vat percentage')) {
-      return 'The UAE VAT rate is 5% on most goods and services. Some items are zero-rated (like basic food items) or exempt (like healthcare and education).';
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [...history, { role: 'user', content: userText }] }),
+      });
+
+      const data = await res.json();
+      const reply = data?.response || data?.message || data?.content ||
+        (Array.isArray(data?.messages) ? data.messages[data.messages.length - 1]?.content : null) ||
+        'I could not retrieve a response. Please try again.';
+
+      setChatMessages(prev => [...prev, {
+        id: prev.length + 2,
+        type: 'assistant',
+        content: reply,
+        timestamp: new Date(),
+      }]);
+    } catch {
+      setChatMessages(prev => [...prev, {
+        id: prev.length + 2,
+        type: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (lowerQ.includes('vat registration') || lowerQ.includes('register for vat')) {
-      return 'You must register for VAT if your annual taxable supplies exceed AED 375,000. You can voluntarily register if your supplies are between AED 187,500 and AED 375,000.';
-    }
-    
-    if (lowerQ.includes('cit') || lowerQ.includes('corporate income tax')) {
-      return 'UAE Corporate Income Tax rate is 9% for businesses with profits above AED 375,000. Small Business Relief provides 0% rate for the first AED 375,000 of profits.';
-    }
-    
-    if (lowerQ.includes('deadline') || lowerQ.includes('filing')) {
-      return 'VAT returns are due 28 days after the end of each tax period. CIT returns are due within 9 months of your financial year-end.';
-    }
-    
-    return 'Thank you for your question about UAE tax matters. For specific advice tailored to your situation, I recommend consulting with a qualified tax professional or reviewing the official FTA guidelines. Is there a particular aspect of UAE taxation you\'d like to know more about?';
   };
 
   const quickQuestions = [
