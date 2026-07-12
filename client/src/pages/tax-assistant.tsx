@@ -224,71 +224,85 @@ export default function TaxAssistant() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">AI Tax Assistant</h1>
-          <p className="text-gray-600">Smart tax optimization and compliance guidance for UAE SMEs</p>
+          <h1 className="text-[22px] font-bold text-gray-900">AI Tax Assistant</h1>
+          <p className="text-[13px] text-gray-500 mt-0.5">Smart tax optimization and compliance guidance for UAE SMEs</p>
         </div>
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-full border border-[#E5EAF0] flex-shrink-0" style={{ backgroundColor: 'rgba(14,159,110,0.08)', color: '#0E9F6E' }}>
           Powered by AI
-        </Badge>
+        </span>
       </div>
 
       {/* Quick Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-5 w-5 text-green-600" />
-              <span className="font-medium">Compliance Score</span>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Compliance Score</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1" style={{ color: '#0E9F6E' }}>
+                  {highPriorityInsights.length === 0 ? '95%' : '75%'}
+                </p>
+                <p className="text-[12px] mt-1" style={{ color: '#0E9F6E' }}>
+                  {highPriorityInsights.length === 0 ? 'Excellent' : 'Needs attention'}
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(14,159,110,0.10)' }}>
+                <Shield size={20} style={{ color: '#0E9F6E' }} />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-green-700">
-              {highPriorityInsights.length === 0 ? '95%' : '75%'}
-            </p>
-            <p className="text-sm text-green-600">
-              {highPriorityInsights.length === 0 ? 'Excellent' : 'Needs attention'}
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="h-5 w-5 text-blue-600" />
-              <span className="font-medium">Tax Rate</span>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Tax Rate</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1" style={{ color: '#0A3A5C' }}>
+                  {revenue > 375000 ? '9%' : '0%'}
+                </p>
+                <p className="text-[12px] mt-1 text-gray-400">CIT + {revenue > 375000 ? '5%' : '0%'} VAT</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(10,58,92,0.10)' }}>
+                <Calculator size={20} style={{ color: '#0A3A5C' }} />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-blue-700">
-              {revenue > 375000 ? '9%' : '0%'}
-            </p>
-            <p className="text-sm text-blue-600">
-              CIT + {revenue > 375000 ? '5%' : '0%'} VAT
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="h-5 w-5 text-purple-600" />
-              <span className="font-medium">Savings Potential</span>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Savings Potential</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1" style={{ color: '#7C3AED' }}>
+                  AED {Math.round(totalPotentialSavings).toLocaleString()}
+                </p>
+                <p className="text-[12px] mt-1 text-gray-400">Annual optimization</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(124,58,237,0.10)' }}>
+                <Target size={20} style={{ color: '#7C3AED' }} />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-purple-700">
-              AED {Math.round(totalPotentialSavings).toLocaleString()}
-            </p>
-            <p className="text-sm text-purple-600">Annual optimization</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-5 w-5 text-orange-600" />
-              <span className="font-medium">Action Items</span>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Action Items</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1 text-amber-600">
+                  {taxInsights.filter(i => i.actionRequired).length}
+                </p>
+                <p className="text-[12px] mt-1 text-gray-400">Require attention</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(217,119,6,0.10)' }}>
+                <Zap size={20} className="text-amber-600" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-orange-700">
-              {taxInsights.filter(i => i.actionRequired).length}
-            </p>
-            <p className="text-sm text-orange-600">Require attention</p>
           </CardContent>
         </Card>
       </div>
@@ -327,30 +341,24 @@ export default function TaxAssistant() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1">
-          <TabsTrigger value="overview" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Smart Insights</span>
-            <span className="md:hidden">Insights</span>
+        <TabsList className="bg-gray-100/70 p-1 rounded-xl h-auto flex flex-wrap gap-1">
+          <TabsTrigger value="overview" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Smart Insights
           </TabsTrigger>
-          <TabsTrigger value="health" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Health Check</span>
-            <span className="md:hidden">Health</span>
+          <TabsTrigger value="health" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Health Check
           </TabsTrigger>
-          <TabsTrigger value="chat" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Ask AI</span>
-            <span className="md:hidden">Chat</span>
+          <TabsTrigger value="chat" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Ask AI
           </TabsTrigger>
-          <TabsTrigger value="deductions" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Tax Optimizer</span>
-            <span className="md:hidden">Optimizer</span>
+          <TabsTrigger value="deductions" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Tax Optimizer
           </TabsTrigger>
-          <TabsTrigger value="expenses" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Smart Tracking</span>
-            <span className="md:hidden">Tracking</span>
+          <TabsTrigger value="expenses" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Expense Tracking
           </TabsTrigger>
-          <TabsTrigger value="planning" className="text-xs md:text-sm px-2 md:px-4">
-            <span className="hidden md:inline">Tax Planning</span>
-            <span className="md:hidden">Planning</span>
+          <TabsTrigger value="planning" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold px-3 py-2">
+            Tax Planning
           </TabsTrigger>
         </TabsList>
 
@@ -475,9 +483,10 @@ export default function TaxAssistant() {
                       <div
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                           message.type === 'user'
-                            ? 'bg-blue-500 text-white'
+                            ? 'text-white'
                             : 'bg-gray-100 text-gray-900'
                         }`}
+                        style={message.type === 'user' ? { backgroundColor: '#0A3A5C' } : {}}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           {message.type === 'assistant' && <Bot className="h-4 w-4" />}

@@ -1,3 +1,2 @@
-- [UAE CIT SBR rule](sbr-rule.md) — revenue ≤ AED 3M → CIT = 0 (SBR); must apply in BOTH KPI endpoint and CIT page
-- [Progress source of truth](progress-source.md) — dashboard and all sub-pages read /api/workflow-status; never use navigation-context progress for UI display
-- [AI chat API format](ai-chat-api.md) — POST /api/ai/chat takes {messages:[{role,content}]}; response field is .response or .message or .content
+- [UAE Fintech Design System](design-system.md) — navy #0A3A5C primary, emerald #0E9F6E accent, gold #C9A227; applied to all pages in Runs 1+2.
+- [KPI Data Shape](kpi-data-shape.md) — /api/kpi-data returns array [{revenue, vatDue, citDue, expenses}]; use kpiData[0].revenue not {metric,value} pairs.

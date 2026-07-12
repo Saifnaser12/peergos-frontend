@@ -53,10 +53,9 @@ export function TaxAdvisorWidget() {
       if (data.aiAvailable && data.reply) {
         setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
       } else {
-        const fallbackText =
-          isRTL
-            ? data.fallback?.ar ?? 'المساعد الذكي غير متاح مؤقتًا.'
-            : data.fallback?.en ?? 'The AI assistant is temporarily unavailable.';
+        const fallbackText = isRTL
+          ? data.fallback?.ar ?? 'المساعد الذكي غير متاح مؤقتًا.'
+          : data.fallback?.en ?? 'The AI assistant is temporarily unavailable.';
         setMessages((prev) => [...prev, { role: 'assistant', content: fallbackText, isWarning: true }]);
       }
     } catch {
@@ -77,10 +76,13 @@ export function TaxAdvisorWidget() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — navy with emerald ring on focus */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        style={{ backgroundColor: '#0A3A5C' }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0D4A75')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0A3A5C')}
         aria-label={title}
       >
         {open ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
@@ -90,15 +92,23 @@ export function TaxAdvisorWidget() {
       {open && (
         <div
           dir={isRTL ? 'rtl' : 'ltr'}
-          className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+          className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-[#E5EAF0] flex flex-col overflow-hidden"
         >
-          {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white">
-            <Bot className="w-5 h-5 flex-shrink-0" />
-            <span className="font-semibold text-sm flex-1">{title}</span>
+          {/* Header — navy gradient matching sidebar */}
+          <div
+            className="flex items-center gap-2.5 px-4 py-3 text-white flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #0A3A5C 0%, #0D4A75 100%)' }}
+          >
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(14,159,110,0.25)' }}>
+              <Bot className="w-4 h-4" style={{ color: '#0E9F6E' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[13px] leading-tight">{title}</p>
+              <p className="text-white/50 text-[10px] leading-tight tracking-wide">PEERGOS · UAE Tax Compliance</p>
+            </div>
             <button
               onClick={() => setOpen(false)}
-              className="hover:bg-blue-500 rounded-full p-1 transition-colors"
+              className="rounded-full p-1 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
@@ -106,12 +116,15 @@ export function TaxAdvisorWidget() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ backgroundColor: '#F6F8FA' }}>
             {messages.map((msg, i) => {
               if (msg.role === 'user') {
                 return (
                   <div key={i} className="flex justify-end">
-                    <div className="max-w-[80%] bg-blue-600 text-white text-sm rounded-2xl rounded-tr-sm px-3 py-2 whitespace-pre-wrap">
+                    <div
+                      className="max-w-[80%] text-white text-[13px] rounded-2xl rounded-tr-sm px-3 py-2 whitespace-pre-wrap"
+                      style={{ backgroundColor: '#0A3A5C' }}
+                    >
                       {msg.content}
                     </div>
                   </div>
@@ -119,15 +132,15 @@ export function TaxAdvisorWidget() {
               }
               if (msg.isWarning) {
                 return (
-                  <div key={i} className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-800">{msg.content}</p>
+                  <div key={i} className="flex items-start gap-2 rounded-xl px-3 py-2" style={{ backgroundColor: '#FFF7ED', border: '1px solid #FED7AA' }}>
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
+                    <p className="text-[13px] text-amber-800">{msg.content}</p>
                   </div>
                 );
               }
               return (
                 <div key={i} className="flex justify-start">
-                  <div className="max-w-[80%] bg-gray-100 text-gray-800 text-sm rounded-2xl rounded-tl-sm px-3 py-2 whitespace-pre-wrap">
+                  <div className="max-w-[80%] bg-white text-gray-800 text-[13px] rounded-2xl rounded-tl-sm px-3 py-2 whitespace-pre-wrap shadow-sm border border-[#E5EAF0]">
                     {msg.content}
                   </div>
                 </div>
@@ -135,21 +148,21 @@ export function TaxAdvisorWidget() {
             })}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2">
-                  <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
+                <div className="bg-white border border-[#E5EAF0] rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#0A3A5C' }} />
                 </div>
               </div>
             )}
             <div ref={bottomRef} />
           </div>
 
-          {/* Footer caption */}
-          <div className="px-4 py-1 text-center text-[11px] text-gray-400 border-t border-gray-100">
+          {/* Footer disclaimer */}
+          <div className="px-4 py-1.5 text-center text-[10px] text-gray-400 border-t border-[#E5EAF0]">
             {footer}
           </div>
 
-          {/* Input */}
-          <div className="flex items-center gap-2 px-3 py-3 border-t border-gray-100">
+          {/* Input area */}
+          <div className="flex items-center gap-2 px-3 py-3 border-t border-[#E5EAF0] bg-white">
             <input
               type="text"
               value={input}
@@ -157,12 +170,16 @@ export function TaxAdvisorWidget() {
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
               placeholder={placeholder}
               disabled={loading}
-              className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="flex-1 text-[13px] border border-[#E5EAF0] rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:border-[#0A3A5C] disabled:opacity-50 bg-[#F6F8FA]"
+              style={{ '--tw-ring-color': '#0A3A5C' } as any}
             />
             <button
               onClick={send}
               disabled={loading || !input.trim()}
-              className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center flex-shrink-0 transition-colors"
+              className="w-9 h-9 rounded-full disabled:opacity-40 text-white flex items-center justify-center flex-shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1"
+              style={{ backgroundColor: '#0A3A5C' }}
+              onMouseEnter={e => { if (!loading && input.trim()) e.currentTarget.style.backgroundColor = '#0D4A75'; }}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0A3A5C')}
               aria-label="Send"
             >
               <Send className="w-4 h-4" />

@@ -104,39 +104,34 @@ export default function Admin() {
       {/* Header */}
       <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Administration</h1>
-          <p className="text-gray-600">Manage system settings and configurations</p>
+          <h1 className="text-[22px] font-bold text-gray-900">Administration</h1>
+          <p className="text-[13px] text-gray-500 mt-0.5">Manage system settings and configurations</p>
         </div>
-        <Badge className="bg-primary-100 text-primary-800">Admin Panel</Badge>
+        <Badge className="text-[11px] font-semibold border-[#E5EAF0]" style={{ backgroundColor: 'rgba(10,58,92,0.08)', color: '#0A3A5C' }}>Admin Panel</Badge>
       </div>
 
       {/* Main Content */}
-      <Card className="material-elevation-1">
+      <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
         <CardHeader>
           <CardTitle>System Administration</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="company" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Building2 size={16} />
-                Company
+            <TabsList className="bg-gray-100/70 p-1 rounded-xl h-auto grid w-full grid-cols-5">
+              <TabsTrigger value="company" className={cn("flex items-center gap-1.5 rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Building2 size={14} />Company
               </TabsTrigger>
-              <TabsTrigger value="users" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Users size={16} />
-                Users
+              <TabsTrigger value="users" className={cn("flex items-center gap-1.5 rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Users size={14} />Users
               </TabsTrigger>
-              <TabsTrigger value="fta" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Link size={16} />
-                FTA
+              <TabsTrigger value="fta" className={cn("flex items-center gap-1.5 rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Link size={14} />FTA
               </TabsTrigger>
-              <TabsTrigger value="appearance" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Palette size={16} />
-                Appearance
+              <TabsTrigger value="appearance" className={cn("flex items-center gap-1.5 rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Palette size={14} />Appearance
               </TabsTrigger>
-              <TabsTrigger value="localization" className={cn("flex items-center gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
-                <Globe size={16} />
-                Localization
+              <TabsTrigger value="localization" className={cn("flex items-center gap-1.5 rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2", language === 'ar' && "rtl:flex-row-reverse")}>
+                <Globe size={14} />Localization
               </TabsTrigger>
             </TabsList>
             
@@ -223,8 +218,15 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <Button onClick={handleSaveCompanySettings} disabled={updateCompanyMutation.isPending}>
-                  {updateCompanyMutation.isPending ? 'Saving...' : 'Save Company Settings'}
+                <Button
+                  onClick={handleSaveCompanySettings}
+                  disabled={updateCompanyMutation.isPending}
+                  className="h-9 text-[13px] font-semibold text-white"
+                  style={{ backgroundColor: '#0A3A5C' }}
+                  onMouseEnter={e => { if (!updateCompanyMutation.isPending) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0D4A75'; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0A3A5C'}
+                >
+                  {updateCompanyMutation.isPending ? 'Saving…' : 'Save Company Settings'}
                 </Button>
               </div>
             </TabsContent>
@@ -277,7 +279,14 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <Button onClick={handleSaveCompanySettings} disabled={updateCompanyMutation.isPending}>
+                <Button
+                  onClick={handleSaveCompanySettings}
+                  disabled={updateCompanyMutation.isPending}
+                  className="h-9 text-[13px] font-semibold text-white"
+                  style={{ backgroundColor: '#0A3A5C' }}
+                  onMouseEnter={e => { if (!updateCompanyMutation.isPending) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0D4A75'; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0A3A5C'}
+                >
                   Save Appearance Settings
                 </Button>
               </div>
@@ -314,7 +323,14 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <Button onClick={handleSaveCompanySettings} disabled={updateCompanyMutation.isPending}>
+                <Button
+                  onClick={handleSaveCompanySettings}
+                  disabled={updateCompanyMutation.isPending}
+                  className="h-9 text-[13px] font-semibold text-white"
+                  style={{ backgroundColor: '#0A3A5C' }}
+                  onMouseEnter={e => { if (!updateCompanyMutation.isPending) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0D4A75'; }}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#0A3A5C'}
+                >
                   Save Localization Settings
                 </Button>
               </div>
@@ -334,7 +350,7 @@ export default function Admin() {
                   <CardContent className="p-6">
                     <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
                       <div className={cn("flex items-center gap-4", language === 'ar' && "rtl:flex-row-reverse")}>
-                        <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#0A3A5C' }}>
                           <span className="text-white font-medium">
                             {user?.firstName?.[0]}{user?.lastName?.[0]}
                           </span>
@@ -345,8 +361,8 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className={cn("flex items-center gap-3", language === 'ar' && "rtl:flex-row-reverse")}>
-                        <Badge className="bg-primary-100 text-primary-800">{user?.role}</Badge>
-                        <Badge className="bg-success-100 text-success-800">Active</Badge>
+                        <Badge className="text-[11px] font-semibold border-[#E5EAF0]" style={{ backgroundColor: 'rgba(10,58,92,0.08)', color: '#0A3A5C' }}>{user?.role}</Badge>
+                        <Badge className="text-[11px] font-semibold" style={{ backgroundColor: 'rgba(14,159,110,0.10)', color: '#0E9F6E', borderColor: 'rgba(14,159,110,0.20)' }}>Active</Badge>
                       </div>
                     </div>
                   </CardContent>

@@ -159,12 +159,12 @@ export default function Financials() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-[22px] font-bold text-gray-900">Financial Reports</h1>
+          <p className="text-[13px] text-gray-500 mt-0.5">
             Comprehensive financial statements and business reports
           </p>
         </div>
@@ -187,76 +187,74 @@ export default function Financials() {
       </div>
 
       {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="material-elevation-1">
-          <CardContent className="p-6">
-            <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className={cn("flex items-start justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-success-600">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Total Revenue</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1" style={{ color: '#0E9F6E' }}>
                   {formatCurrency(revenue, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
-                <p className="text-sm text-success-500 flex items-center mt-1">
-                  <TrendingUp size={12} className={cn("mr-1", language === 'ar' && "rtl:mr-0 rtl:ml-1")} />
-                  +12.8% YoY
+                <p className="text-[12px] mt-1 flex items-center gap-1" style={{ color: '#0E9F6E' }}>
+                  <TrendingUp size={11} />+12.8% YoY
                 </p>
               </div>
-              <div className="w-12 h-12 bg-success-50 rounded-lg flex items-center justify-center">
-                <TrendingUp size={24} className="text-success-500" />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(14,159,110,0.10)' }}>
+                <TrendingUp size={20} style={{ color: '#0E9F6E' }} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="material-elevation-1">
-          <CardContent className="p-6">
-            <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className={cn("flex items-start justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-error-600">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Total Expenses</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1 text-red-600">
                   {formatCurrency(expenses, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">Operating costs</p>
+                <p className="text-[12px] text-gray-400 mt-1">Operating costs</p>
               </div>
-              <div className="w-12 h-12 bg-error-50 rounded-lg flex items-center justify-center">
-                <BarChart3 size={24} className="text-error-500" />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(220,38,38,0.10)' }}>
+                <BarChart3 size={20} className="text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="material-elevation-1">
-          <CardContent className="p-6">
-            <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className={cn("flex items-start justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Net Income</p>
-                <p className={cn("text-2xl font-bold", netIncome >= 0 ? "text-success-600" : "text-error-600")}>
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Net Income</p>
+                <p className={cn("text-[26px] font-bold tabular-nums mt-1", netIncome >= 0 ? "text-[#0E9F6E]" : "text-red-600")}>
                   {formatCurrency(netIncome, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {((netIncome / revenue) * 100).toFixed(1)}% margin
+                <p className="text-[12px] text-gray-400 mt-1">
+                  {revenue > 0 ? ((netIncome / revenue) * 100).toFixed(1) : '0'}% margin
                 </p>
               </div>
-              <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center", 
-                netIncome >= 0 ? "bg-success-50" : "bg-error-50")}>
-                <FileText size={24} className={netIncome >= 0 ? "text-success-500" : "text-error-500"} />
+              <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0")} style={{ backgroundColor: netIncome >= 0 ? 'rgba(14,159,110,0.10)' : 'rgba(220,38,38,0.10)' }}>
+                <FileText size={20} style={{ color: netIncome >= 0 ? '#0E9F6E' : '#DC2626' }} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="material-elevation-1">
-          <CardContent className="p-6">
-            <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
+        <Card className="rounded-xl border border-[#E5EAF0] shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className={cn("flex items-start justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
               <div>
-                <p className="text-sm font-medium text-gray-600">Assets</p>
-                <p className="text-2xl font-bold text-primary-600">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">Assets</p>
+                <p className="text-[26px] font-bold tabular-nums mt-1" style={{ color: '#0A3A5C' }}>
                   {formatCurrency(revenue * 1.2, 'AED', language === 'ar' ? 'ar-AE' : 'en-AE')}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">Current + Fixed</p>
+                <p className="text-[12px] text-gray-400 mt-1">Current + Fixed</p>
               </div>
-              <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
-                <BarChart3 size={24} className="text-primary-500" />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(10,58,92,0.10)' }}>
+                <BarChart3 size={20} style={{ color: '#0A3A5C' }} />
               </div>
             </div>
           </CardContent>
@@ -264,10 +262,10 @@ export default function Financials() {
       </div>
 
       {/* Main Content */}
-      <Card className="material-elevation-1">
+      <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
         <CardHeader>
           <div className={cn("flex items-center justify-between", language === 'ar' && "rtl:flex-row-reverse")}>
-            <CardTitle>Financial Statements</CardTitle>
+            <CardTitle className="text-[15px] font-semibold text-gray-900">Financial Statements</CardTitle>
             <div className={cn("flex gap-2", language === 'ar' && "rtl:flex-row-reverse")}>
               <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}>
                 <Download size={14} className={cn("mr-1", language === 'ar' && "rtl:mr-0 rtl:ml-1")} />
@@ -283,11 +281,11 @@ export default function Financials() {
         <CardContent>
           {/* Financial Statements Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="income">Income Statement</TabsTrigger>
-              <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
-              <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+            <TabsList className="bg-gray-100/70 p-1 rounded-xl h-auto grid w-full grid-cols-4">
+              <TabsTrigger value="overview" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">Overview</TabsTrigger>
+              <TabsTrigger value="income" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">Income Statement</TabsTrigger>
+              <TabsTrigger value="balance" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">Balance Sheet</TabsTrigger>
+              <TabsTrigger value="cashflow" className="rounded-lg text-[12px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">Cash Flow</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">

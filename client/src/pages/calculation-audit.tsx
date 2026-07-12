@@ -174,24 +174,30 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Calculation Audit</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-[22px] font-bold text-gray-900">Calculation Audit</h1>
+          <p className="text-[13px] text-gray-500 mt-0.5">
             Review detailed calculation steps and ensure compliance transparency
           </p>
         </div>
-        <Button onClick={() => refetchAudit()} variant="outline">
-          <Calculator className="h-4 w-4 mr-2" />
+        <Button
+          onClick={() => refetchAudit()}
+          className="h-9 text-[13px] font-semibold text-white flex items-center gap-2 flex-shrink-0"
+          style={{ backgroundColor: '#0A3A5C' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0D4A75')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#0A3A5C')}
+        >
+          <Calculator className="h-4 w-4" />
           Recalculate
         </Button>
       </div>
 
       {/* Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
+      <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <CardTitle className="text-[15px] font-semibold text-gray-900 flex items-center gap-2">
+            <Eye className="h-4 w-4 text-gray-400" />
             Audit Controls
           </CardTitle>
         </CardHeader>
@@ -247,47 +253,49 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="audit-trail" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Audit Trail
+        <TabsList className="bg-gray-100/70 p-1 rounded-xl h-auto grid w-full grid-cols-3">
+          <TabsTrigger value="audit-trail" className="flex items-center gap-1.5 rounded-lg text-[13px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">
+            <FileText className="h-3.5 w-3.5" />Audit Trail
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            History
+          <TabsTrigger value="history" className="flex items-center gap-1.5 rounded-lg text-[13px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">
+            <History className="h-3.5 w-3.5" />History
           </TabsTrigger>
-          <TabsTrigger value="regulations" className="flex items-center gap-2">
-            <Gavel className="h-4 w-4" />
-            Regulations
+          <TabsTrigger value="regulations" className="flex items-center gap-1.5 rounded-lg text-[13px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#0A3A5C] data-[state=active]:font-semibold py-2">
+            <Gavel className="h-3.5 w-3.5" />Regulations
           </TabsTrigger>
         </TabsList>
 
         {/* Audit Trail Tab */}
         <TabsContent value="audit-trail" className="space-y-6">
           {auditLoading ? (
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center">Loading calculation audit...</div>
+            <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
+              <CardContent className="p-6 space-y-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="space-y-2">
+                    <div className="animate-pulse rounded bg-gray-200/80 h-4 w-1/3" />
+                    <div className="animate-pulse rounded bg-gray-200/80 h-3 w-2/3" />
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ) : displayAuditTrail ? (
             <>
               {/* Summary */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
+              <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
+                <CardHeader className="px-5 pt-5 pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-[15px] font-semibold text-gray-900 flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-gray-400" />
                     {displayAuditTrail.type} Calculation Summary
                   </CardTitle>
-                  <Button onClick={downloadAuditReport} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
+                  <Button onClick={downloadAuditReport} variant="outline" size="sm" className="h-8 text-[12px] border-[#E5EAF0]">
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
                     Export Report
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-5 pb-5">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold tabular-nums" style={{ color: '#0A3A5C' }}>
                         {Number(displayAuditTrail.totalAmount ?? 0).toFixed(2)} AED
                       </div>
                       <div className="text-sm text-gray-600">Total {displayAuditTrail.type} Amount</div>
@@ -311,14 +319,14 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
               </Card>
 
               {/* Calculation Steps */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Detailed Calculation Steps</CardTitle>
+              <Card className="rounded-xl border border-[#E5EAF0] shadow-sm">
+                <CardHeader className="px-5 pt-5 pb-3">
+                  <CardTitle className="text-[15px] font-semibold text-gray-900">Detailed Calculation Steps</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="px-5 pb-5">
+                  <div className="space-y-3">
                     {displayAuditTrail.steps.map((step, index) => (
-                      <div key={index} className="border rounded-lg p-4">
+                      <div key={index} className="border border-[#E5EAF0] rounded-xl p-4 hover:bg-gray-50/50 transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
@@ -399,7 +407,14 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
             </CardHeader>
             <CardContent>
               {historyLoading ? (
-                <div className="text-center py-4">Loading history...</div>
+                <div className="space-y-3 py-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="flex justify-between items-center p-3 border border-[#E5EAF0] rounded-lg">
+                      <div className="space-y-1.5"><div className="animate-pulse rounded bg-gray-200/80 h-4 w-36" /><div className="animate-pulse rounded bg-gray-200/80 h-3 w-48" /></div>
+                      <div className="animate-pulse rounded bg-gray-200/80 h-5 w-28" />
+                    </div>
+                  ))}
+                </div>
               ) : displayHistory && displayHistory.length > 0 ? (
                 <div className="space-y-3">
                   {displayHistory.map((item, index) => (
@@ -439,7 +454,9 @@ ${displayAuditTrail.metadata.regulations.map(reg => `- ${reg}`).join('\n')}
             </CardHeader>
             <CardContent>
               {configLoading ? (
-                <div className="text-center py-4">Loading configuration...</div>
+                <div className="space-y-4 py-2">
+                  {[1,2,3].map(i => (<div key={i} className="animate-pulse rounded bg-gray-200/80 h-4 w-full" />))}
+                </div>
               ) : displayTaxConfig && displayTaxConfig.uaeTaxConfig ? (
                 <div className="space-y-6">
                   {/* VAT Configuration */}
