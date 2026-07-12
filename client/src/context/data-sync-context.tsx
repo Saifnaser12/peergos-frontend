@@ -60,13 +60,13 @@ export function DataSyncProvider({ children }: { children: React.ReactNode }) {
     onMutate: () => {
       setSyncState(prev => ({ ...prev, syncStatus: 'syncing' }));
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       setSyncState(prev => ({ 
         ...prev, 
         syncStatus: 'idle',
         lastUpdated: {
           ...prev.lastUpdated,
-          ...Object.fromEntries(modules.map(m => [m, new Date().toISOString()]))
+          ...Object.fromEntries(variables.map(m => [m, new Date().toISOString()]))
         }
       }));
       // Invalidate related queries

@@ -24,7 +24,7 @@ export default function CIT() {
   const [activeTab, setActiveTab] = useState('calculator');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
-  const { company } = useAuth();
+  const { company, isLoading: authLoading } = useAuth();
 
   const { data: workflowStatus } = useQuery({ queryKey: ['/api/workflow-status'] });
   const { language, t } = useLanguage();
@@ -61,6 +61,8 @@ export default function CIT() {
   const estimatedCIT = isSBREligible ? 0 : (netIncome <= 375000 ? 0 : (netIncome - 375000) * 0.09);
 
   // UX Fallback checks for missing data
+  if (authLoading) return null;
+
   if (!company) {
     console.warn('[CIT Page] Company data missing - user needs to complete setup');
     return (

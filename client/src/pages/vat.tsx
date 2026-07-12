@@ -26,7 +26,7 @@ export default function VAT() {
   const [activeTab, setActiveTab] = useState('vat201');
   const [currentVAT201, setCurrentVAT201] = useState<VAT201Data | null>(null);
   const [taxResult, setTaxResult] = useState<TaxCalculationResult | null>(null);
-  const { company } = useAuth();
+  const { company, isLoading: authLoading } = useAuth();
   const { language, t } = useLanguage();
   const navigation = useNavigation();
   const { toast } = useToast();
@@ -172,6 +172,8 @@ export default function VAT() {
   };
 
   // UX Fallback checks for missing data
+  if (authLoading) return null;
+
   if (!company) {
     console.warn('[VAT Page] Company data missing - user needs to complete setup');
     return (
